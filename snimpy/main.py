@@ -80,6 +80,11 @@ def interact():
 
     mib.ms.load(conf.mibs)
 
+    if len(sys.argv) > 1:
+        sys.argv = sys.argv[1:]
+        execfile(sys.argv[0], local)
+        return
+
     if IPShellEmbed and conf.ipython:
         argv = ["-prompt_in1", "Snimpy [\\#]> ",
                 "-prompt_out", "Snimpy [\\#]: "]
