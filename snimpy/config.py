@@ -22,7 +22,6 @@ import os.path
 import imp
 
 class Conf:
-    version = "snapshot"
     prompt = "\033[1m[snimpy]>\033[0m "
     histfile = "~/.snimpy_history" # Not used with IPython
     userconf = "~/.snimpy.conf"

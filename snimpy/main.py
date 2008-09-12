@@ -49,6 +49,7 @@ except ImportError:
 
 import mib, snmp
 from config import conf
+from version import VERSION
 
 def write_history_file():
     if readline and conf.histfile:
@@ -58,7 +59,7 @@ def write_history_file():
             pass
 
 def interact():
-    banner  = "\033[1mSnimpy\033[0m (%s) -- An interactive SNMP tool.\n" % conf.version
+    banner  = "\033[1mSnimpy\033[0m (%s) -- An interactive SNMP tool.\n" % VERSION
     banner += "  load        -> load an additional MIB\n"
     banner += "  M           -> MIB store\n"
     banner += "  S           -> SNMP session\n"
