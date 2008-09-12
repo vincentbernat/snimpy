@@ -370,6 +370,12 @@ lib.smiGetNextNamedNumber.restype = POINTER(SMINAMEDNUMBER)
 SMIERRORHANDLER = CFUNCTYPE(None, c_char_p, c_int, c_int, c_char_p, c_char_p)
 lib.smiSetErrorHandler.argtypes = [SMIERRORHANDLER]
 lib.smiSetErrorHandler.restype = None
+lib.smiSetErrorLevel.argtypes = [c_int]
+lib.smiSetErrorLevel.restype = None
+lib.smiGetFlags.argtypes = []
+lib.smiGetFlags.restype = c_int
+lib.smiSetFlags.argtypes = [c_int]
+lib.smiSetFlags.restype = None
 
 # Exceptions
 class SMIException(Exception): pass
@@ -414,7 +420,10 @@ if result != 0:
 def handle_parse_error(path, line, severity, message, tag):
     if severity < 0:
         raise SMIParseError(path, line, severity, message, tag)
-lib.smiSetErrorHandler(SMIERRORHANDLER(handle_parse_error))
+lib.smiSetErrorLevel(1)
+flags = lib.smiGetFlags() | 0x2000 | 0x4000 | 0x8000
+lib.smiSetFlags(flags)
+#lib.smiSetErrorHandler(SMIERRORHANDLER(handle_parse_error))
 
 class OID:
     """Representation for one OID"""
