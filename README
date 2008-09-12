@@ -1,0 +1,74 @@
+snimpy -- Interactive SNMP tool
+===============================
+
+Introduction
+------------
+
+Snimpy is a Python-based replacement for tools like snmpget, snmpwalk
+and snmpset. It provides a simple Pythonic interface to build SNMP
+query and to navigate into MIB objects.
+
+Requirements
+------------
+
+Snimpy needs libsmi2 and libsnmp from Net-SNMP project. libsmi2 is
+used to parse MIB while libsnmp handle SNMP packets. libsmi2 provides
+a simple and straightforward interface for walking a MIB.
+
+Snimpy relies on ctypes to interface to those libraries. While
+avoiding to compile anything to get it working, this is not a robust
+way to interface to library.
+
+Snimpy uses IPython to provide a cleaner console if
+available. Otherwise, it uses internal Python console.
+
+License
+-------
+
+Snimpy is licensed under MIT/X11 license. See at the top of source
+files for details.
+
+Installation and usage
+----------------------
+
+You can install using:
+ python setup.py install
+
+Or juste launch:
+ python bin/snimpy.py
+
+Snimpy is not really targeted at a general SNMP library. It is far for
+complete. It is aimed at interactive SNMP use or simple scripts. The
+best way to use it is to use the provided console (the snimpy binary
+will invoke it).
+
+See examples in examples/ directory.
+
+History
+-------
+
+There are a lot of SNMP tools available but most of them have
+important drawback when you something as simple as snmpget while still
+being able to automatize repetitive tasks.
+
+snmpget, snmpset and snmpwalk are difficult to use in scripts. Errors
+are printed on standard output and there is no easy way to tell if the
+command was successful or not. Moreover, results can be multiline (a
+long HexString for example). At least, automatisation is done through
+the shell and OID or bit manipulation are quite difficult.
+
+Net-SNMP provides officiel bindings for Perl and
+Python. Unfortunately, the integration is quite poor. You don't have
+an easy way to load and browse MIBs and error handling is
+inexistant. For example, the Python bindings will return None for a
+non-existant OID. Having to check for this on each request is quite
+cumbersome.
+
+For Python, there are other bindings. For example, pysnmp provides a
+pure Python implementation. However, MIBs need to be
+compiled. Moreover, the exposed interface is still low-level. Sending
+a simple SNMP GET can either take 10 lines or one line wrapped into 10
+lines.
+
+Other Python bindings are not maintained any more. For example yasnmp
+does not compile with current libsnmp.
