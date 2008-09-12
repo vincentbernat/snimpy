@@ -153,7 +153,7 @@ With the help of the MIB, you get some smart setter for value:
     >>> ms.IF_MIB.ifAdminStatus(15) << "inexistent"
     Traceback (most recent call last):
     ...
-    NotImplementedError: 'inexistent' does not exist in possible values for this OID
+    ValueError: 'inexistent' does not exist in possible values for this OID
     >>> ms.IF_MIB.ifAdminStatus(15) << 2
     <OID IF-MIB::ifAdminStatus.15 = down(2)>
     >>> a = ms.IF_MIB.ifAdminStatus(15)
@@ -219,13 +219,30 @@ We also handle IP addresses:
     <OID RFC1213-MIB::ipRouteNextHop.0.0.0.1 (SNMPv2-SMI::IpAddress) = 27.18.19.33>
 
 Please note that "&" operator will return a boolean and "+=" and "-="
-will alter and return the copy by adding or removing some bits. No
-other operators are allowed. Something like that won't work:
+will alter and return the copy by adding or removing some bits.
 
+When an OID has a value, comparison and inclusion are altered to work
+on the value instead of the OID:
+
+    >>> a = ms.P_BRIDGE_MIB.dot1dDeviceCapabilities(0) << ["dot1qIVLCapable", "dot1dLocalVlanCapable"]
     >>> "dot1dLocalVlanCapable" in a
-    False
+    True
+    >>> ["dot1dLocalVlanCapable", "dot1qIVLCapable"] in a
+    True
     >>> 7 in a
+    True
+    >>> a -= 7
+    >>> a == ["dot1qIVLCapable"]
+    True
+    >>> a = ms.IF_MIB.ifAdminStatus(15) << 2
+    >>> a == "up"
     False
+    >>> a == "down"
+    True
+    >>> a == "inexistant"
+    Traceback (most recent call last):
+    ...
+    ValueError: 'inexistant' does not exist in possible values for this OID
 
 The "in" operator is of the OID, not its value. You can't use any
 other binary operators.
@@ -465,39 +482,52 @@ class OID:
             self.set(value)
 
     def __cmp__(self, other):
-        if not isinstance(other, OID):
-            other = OID(other)
-        if self.oid < other.oid:
-            return -1
-        if self.oid == other.oid:
-            return 0
-        return 1
+        """Compare two OID.
 
-    def __hash__(self):
-        return tuple(self.oid).__hash__()
+        The comparison is different if the current OID has a value or not.
+        """
+        if self.value is None:
+            if not isinstance(other, OID):
+                other = OID(other)
+            if self.oid < other.oid:
+                return -1
+            if self.oid == other.oid:
+                return 0
+            return 1
+        o = OID(self.oid, value=other)
+        if self.value == o.value:
+            return 0
+        if self.value < o.value:
+            return -1
+        return 1
 
     def __contains__(self, item):
         """Check if the given item is a suboid.
 
         @param item: suboid to check
         """
-        if not isinstance(item, OID):
-            try:
-                item = OID(item)
-            except ValueError:
+        if self.value is None:
+            if not isinstance(item, OID):
+                try:
+                    item = OID(item)
+                except ValueError:
+                    return False
+            if len(item.oid) < len(self.oid):
                 return False
-        if len(item.oid) < len(self.oid):
-            return False
-        return item.oid[:len(self.oid)] == self.oid
+            return item.oid[:len(self.oid)] == self.oid
+        o = OID(self.oid, value=item).value
+        if type(o) not in [list, tuple]:
+            return o in self.value
+        for oo in o:
+            if oo not in self.value:
+                return False
+        return True
 
     def __len__(self):
         return len(self.oid)
 
     def __getitem__(self, nb):
         return self.oid[nb]
-
-    def __iter__(self):
-        return self.oid.__iter__()
 
     def __repr__(self):
         value = ""
