@@ -8,16 +8,39 @@ Snimpy is a Python-based replacement for tools like snmpget, snmpwalk
 and snmpset. It provides a simple Pythonic interface to build SNMP
 query and to navigate into MIB objects.
 
-Requirements
-------------
+This is not a general-use SNMP module. You can find better ones:
+ - pycopia
+ - pynetsnmp, a ctype based implementation using Net-SNMP
+ - PySNMP, a pure Python implementation
+ - Net-SNMP own library Python
+ - many others
 
-Snimpy needs libsmi2 and libsnmp from Net-SNMP project. libsmi2 is
-used to parse MIB while libsnmp handle SNMP packets. libsmi2 provides
-a simple and straightforward interface for walking a MIB.
+Snimpy is aimed at being the more Pythonic possible. You should forget
+that you are doing SNMP requests. Snimpy will rely on MIB to hide SNMP
+details. Here are some "features" of snmimpy:
+ - MIB parser based on libsmi
+ - SNMP requests are handled by libnetsnmp
+ - scalars are just attributes of your session object
+ - columns are translated to Python dictionary and made available as
+   an attribute
+ - getting an attribute is like issuing a GET method
+ - setting an attribute is like issuing a SET method
+ - iterating over a table or a node is like using GETNEXT
+ - interactive interpreter based on Python own interpreter or IPython
 
-Snimpy relies on ctypes to interface to those libraries. While
-avoiding to compile anything to get it working, this is not a robust
-way to interface to library.
+Here is a very simple example:
+
+ s = Session(host="snmp.example.org")
+ print s.sysDescr
+ s.sysName = "anothername"
+ for id in s.ifDescr:
+     print "Interface %d: %s" % (id, s.ifDescr[id])
+
+And here are the limitations
+ - only work with MIB, no MIB, no access
+ - only work with scalars, table, columns and nodes (no row, no
+   notification, no group, no compliance, no capabilities)
+ - SNMPv1/v2 only (SNMPv3 would be simple to implement though)
 
 Snimpy uses IPython to provide a cleaner console if
 available. Otherwise, it uses internal Python console.
@@ -26,21 +49,18 @@ License
 -------
 
 Snimpy is licensed under MIT/X11 license. See at the top of source
-files for details.
+files for details. This license allows to interface freely with
+Net-SNMP and OpenSSL.
 
 Installation and usage
 ----------------------
 
 You can install using:
+ python setup.py build
  python setup.py install
 
-Or juste launch:
+Or without installation:
  python bin/snimpy.py
-
-Snimpy is not really targeted at a general SNMP library. It is far for
-complete. It is aimed at interactive SNMP use or simple scripts. The
-best way to use it is to use the provided console (the snimpy binary
-will invoke it).
 
 See examples in examples/ directory.
 
@@ -72,3 +92,6 @@ lines.
 
 Other Python bindings are not maintained any more. For example yasnmp
 does not compile with current libsnmp.
+
+Have a look at pycopia. It contains a great SNMP library:
+ http://code.google.com/p/pycopia/

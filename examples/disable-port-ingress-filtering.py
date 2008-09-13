@@ -7,14 +7,13 @@ import sys
 
 load("Q-BRIDGE-MIB")
 
-S.host=sys.argv[1]
-S.community=sys.argv[2]
+s = S(host=sys.argv[1], community=sys.argv[2])
 
-if "Ethernet Routing Switch 5510" not in get(M.SNMPv2_MIB.sysDescr(0)):
+if "Ethernet Routing Switch 5510" not in s.sysDescr:
     print "Not a 5510"
     sys.exit(1)
 
-for o in walk(M.Q_BRIDGE_MIB.dot1qPortIngressFiltering):
-    if o != "false":
-        print "Filtering on port %d of %s is not disabled, disable it." % (o.iid, S.host)
-        set(o << "false")
+for id in s.dot1qPortIngressFiltering:
+    if s.dot1qPortIngressFiltering[id] != "false":
+        print "Filtering on port %d of %s is not disabled, disable it." % (id, sys.argv[1])
+        s.dot1qPortIngressFiltering[id] = "false"
