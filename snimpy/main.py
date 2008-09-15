@@ -75,7 +75,8 @@ def interact():
               "walk": snmp.walk,
               "set": snmp.set,
               "OID": mib.OID,
-              "timedelta": mib.timedelta
+              "timedelta": mib.timedelta,
+              "snmp": snmp
               }
 
     mib.ms.load(conf.mibs)
