@@ -1,0 +1,240 @@
+SNIMPY-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    IpAddress, Integer32, Gauge32,
+    TimeTicks, Counter64,
+    Counter32, mib-2                  FROM SNMPv2-SMI
+    DisplayString,
+    PhysAddress, TruthValue           FROM SNMPv2-TC
+    IANAifType                        FROM IANAifType-MIB;
+
+
+snimpy MODULE-IDENTITY
+    LAST-UPDATED "200809160000Z"
+    ORGANIZATION
+           "snimpy
+            http://trac.luffy.cx/snimpy/"
+    CONTACT-INFO
+           "Lorem ipsum, etc, etc."
+    DESCRIPTION
+           "This is a test MIB module for snimpy."
+
+    REVISION      "200809160000Z"
+    DESCRIPTION   "Last revision"
+    ::= { mib-2 45121 }
+
+snimpyScalars OBJECT IDENTIFIER ::= { snimpy 1 }
+snimpyTables  OBJECT IDENTIFIER ::= { snimpy 2 }
+
+snimpyIpAddress OBJECT-TYPE
+    SYNTAX 	IpAddress
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An IP address"
+    ::= { snimpyScalars 1 }
+
+snimpyString OBJECT-TYPE
+    SYNTAX 	DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An string to display"
+    ::= { snimpyScalars 2 }
+
+snimpyInteger OBJECT-TYPE
+    SYNTAX 	INTEGER (1..54754)
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An integer"
+    ::= { snimpyScalars 3 }
+
+snimpyEnum OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  up(1),
+                  down(2),
+                  testing(3)
+                }
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An enumeration"
+    ::= { snimpyScalars 4 }
+
+snimpyObjectId OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An oid"
+    ::= { snimpyScalars 5 }
+
+snimpyBoolean OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A boolean"
+    ::= { snimpyScalars 6 }
+
+snimpyCounter OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A 32 bits counter"
+    ::= { snimpyScalars 7 }
+
+snimpyGauge OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A 32 bits gauge"
+    ::= { snimpyScalars 8 }
+
+snimpyTimeticks OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A timetick"
+    ::= { snimpyScalars 9 }
+
+snimpyCounter64 OBJECT-TYPE
+    SYNTAX	Counter64
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A 64-bit counter"
+    ::= { snimpyScalars 10 }
+
+snimpyBits	OBJECT-TYPE
+    SYNTAX	BITS {
+                  first(0),
+		  second(1),
+		  third(2),
+		  last(7)
+		}
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A bit field"
+    ::= { snimpyScalars 11 }
+
+-- A simple table
+
+snimpySimpleTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpySimpleEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table"
+    ::= { snimpyTables 1 }
+
+snimpySimpleEntry OBJECT-TYPE
+    SYNTAX      SnimpySimpleEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our simple table"
+    INDEX   { snimpySimpleIndex }
+    ::= { snimpySimpleTable 1 }
+
+SnimpySimpleEntry ::=
+    SEQUENCE {
+        snimpySimpleIndex	Integer32,
+        snimpySimpleDescr       DisplayString,
+        snimpySimpleType        IANAifType,
+        snimpySimplePhys        PhysAddress
+    }
+
+snimpySimpleIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..30)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Index for snimpy simple table"
+    ::= { snimpySimpleEntry 1 }
+
+snimpySimpleDescr OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpySimpleEntry 2 }
+
+snimpySimpleType OBJECT-TYPE
+    SYNTAX      IANAifType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpySimpleEntry 3 }
+
+snimpySimplePhys OBJECT-TYPE
+    SYNTAX      PhysAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpySimpleEntry 4 }
+
+-- A more complex table
+
+snimpyComplexTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpyComplexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A more complex table"
+    ::= { snimpyTables 2 }
+
+snimpyComplexEntry OBJECT-TYPE
+    SYNTAX      SnimpyComplexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our complex table"
+    INDEX   { snimpyComplexFirstIP, snimpyComplexSecondIP }
+    ::= { snimpyComplexTable 1 }
+
+SnimpyComplexEntry ::=
+    SEQUENCE {
+        snimpyComplexFirstIP	 IpAddress,
+        snimpyComplexSecondIP    IpAddress,
+        snimpyComplexState       INTEGER
+    }
+
+snimpyComplexFirstIP OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "First IP address for index"
+    ::= { snimpyComplexEntry 1 }
+
+snimpyComplexSecondIP OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Second IP address for index"
+    ::= { snimpyComplexEntry 2 }
+
+snimpyComplexState OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  up(1),
+                  down(2),
+                  testing(3)
+		}
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+	"State for our both IP"
+    ::= { snimpyComplexEntry 3 }
+
+END
