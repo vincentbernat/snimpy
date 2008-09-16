@@ -365,6 +365,7 @@ class Session:
         Other named args are passed to netsnmp session structure. This
         should allow to do many things but is widely untested.
         """
+        self.sess = None
         if host is None:
             host = Session.host
         if community is None:
@@ -432,7 +433,7 @@ class Session:
                             value = ".".join(o.value.oid)
                         elif type(o.value) in [list, tuple]:
                             t = 'b'
-                            value = " ".join(o.value)
+                            value = " ".join(map(str,o.value))
                         else:
                             raise SNMPException("unable to handle %r" % o)
                 else:
@@ -456,7 +457,7 @@ class Session:
                         value = str(o.value)
                     elif mib.SmiBaseType[o.type.basetype] == "bits":
                         t = 'b'
-                        value = " ".join(o.value)
+                        value = " ".join(map(str,o.value))
                     else:
                         raise SNMPException("unable to handle %r for set operation" % o)
                 if lib.snmp_add_var(req, (oid*len(o))(*o.oid), len(o), t, value) != 0:
