@@ -1,5 +1,5 @@
 from snimpy.version import VERSION
-from distutils.core import setup
+from distutils.core import setup, Extension
 
 if __name__ == "__main__":
     setup(name="snimpy",
@@ -8,6 +8,10 @@ if __name__ == "__main__":
           author="Vincent Bernat",
           author_email="bernat@luffy.cx",
           packages=["snimpy"],
-          requires=["ctypes (>= 1.1)",],
           scripts=["bin/snimpy"],
+          ext_modules = [
+            Extension('snimpy.mib',
+                      libraries = ['smi'],
+                      sources= ['snimpy/mib.c']) ]
           )
+    
