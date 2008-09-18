@@ -12,6 +12,10 @@ if __name__ == "__main__":
           ext_modules = [
             Extension('snimpy.mib',
                       libraries = ['smi'],
-                      sources= ['snimpy/mib.c']) ]
+                      sources= ['snimpy/mib.c']),
+            Extension('snimpy.snmp',
+                      libraries = ['netsnmp', 'crypto'],
+                      sources= ['snimpy/snmp.c'])
+            ]
           )
     

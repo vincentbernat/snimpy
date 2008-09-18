@@ -162,3 +162,4 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a, "\x37\x20\x00")
         a |= 31
         self.assertEqual(a, "\x37\x20\x00\x01")
+
