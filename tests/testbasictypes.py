@@ -1,7 +1,7 @@
 import unittest
 import os
 from datetime import timedelta
-from snimpy import mib, basictypes
+from snimpy import mib, basictypes, snmp
 
 class TestBasicTypes(unittest.TestCase):
 
@@ -97,7 +97,7 @@ class TestBasicTypes(unittest.TestCase):
         self.assert_(a)
         self.assert_(not(not(a)))
         self.assertEqual(not(a), False)
-        a.set(0)
+        a.set("false")
         self.assertEqual(a, False)
         b = basictypes.build("SNIMPY-MIB", "snimpyBoolean", True)
         self.assertEqual(a or b, True)
@@ -163,3 +163,41 @@ class TestBasicTypes(unittest.TestCase):
         a |= 31
         self.assertEqual(a, "\x37\x20\x00\x01")
 
+    def testPacking(self):
+        """Test pack() function"""
+        import struct
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyString",
+                                          "Hello world").pack(),
+                         (snmp.ASN_OCTET_STR, "Hello world"))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyInteger",
+                                          18).pack(),
+                         (snmp.ASN_INTEGER, struct.pack("l", 18)))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyInteger",
+                                          1804).pack(),
+                         (snmp.ASN_INTEGER, struct.pack("l", 1804)))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyEnum",
+                                          "testing").pack(),
+                         (snmp.ASN_INTEGER, struct.pack("l", 3)))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyIpAddress",
+                                          "10.11.12.13").pack(),
+                         (snmp.ASN_IPADDRESS, "\x0a\x0b\x0c\x0d"))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyObjectId",
+                                          (1,2,3,4)).pack(),
+                         (snmp.ASN_OBJECT_ID, ("%s"*4) % (struct.pack("l", 1),
+                                                        struct.pack("l", 2),
+                                                        struct.pack("l", 3),
+                                                        struct.pack("l", 4))))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyTimeticks",
+                                          timedelta(3, 2)).pack(),
+                         (snmp.ASN_INTEGER, struct.pack("l", 3*3600*24*100 + 2*100)))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyBits",
+                                          [1,7]).pack(),
+                         (snmp.ASN_OCTET_STR, "\x41"))

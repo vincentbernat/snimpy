@@ -23,10 +23,11 @@ Snimpy will use the types defined in this module to make a bridge
 between the MIB and SNMP.
 """
 
+import struct
 import socket
 from datetime import timedelta
 
-import mib
+import mib, snmp
 
 class Type:
     """Base class for all types"""
@@ -46,6 +47,9 @@ class Type:
         self.set(value)
 
     def set(self, value):
+        raise NotImplementedError
+
+    def pack(self):
         raise NotImplementedError
 
     def __repr__(self):
@@ -68,6 +72,10 @@ class IpAddress(Type):
         except:
             raise ValueError("%r is not a valid IP" % value)
         self.value = [int(a) for a in value.split(".")]
+
+    def pack(self):
+        return (snmp.ASN_IPADDRESS,
+                socket.inet_aton(".".join(["%d" % x for x in self.value])))
 
     def __str__(self):
         return ".".join([str(a) for a in self.value])
@@ -92,6 +100,9 @@ class String(Type):
 
     def set(self, value):
         self.value = str(value)
+
+    def pack(self):
+        return (snmp.ASN_OCTET_STR, self.value)
 
     def __str__(self):
         return self.value
@@ -146,14 +157,32 @@ class Integer(Type):
     """Class for any integer"""
 
     def set(self, value):
-        self.value = int(value)
+        self.value = long(value)
+
+    def pack(self):
+        if self.value >= (1L << 64):
+            raise OverflowError("too large to be packed")
+        if self.value >= (1L << 32):
+            # Pack in a 64 bit counter
+            return (snmp.ASN_OCTET_STR,
+                    struct.pack("LL",
+                                self.value/(1L << 32),
+                                self.value%(1L << 32)))
+        if self.value >= 0:
+            return (snmp.ASN_INTEGER, struct.pack("L", self.value))
+        if self.value >= -(1L << 31):
+            return (snmp.ASN_INTEGER, struct.pack("l", self.value))
+        raise OverflowError("too small to be packed")
 
     def __int__(self):
-        return self.value
+        return int(self.value)
+
+    def __long__(self):
+        return long(self.value)
 
     def __getattr__(self, attr):
         # Ugly hack to be like an integer
-        return getattr(int(self), attr)
+        return getattr(long(self), attr)
 
 class Enum(Type):
     """Class for enumeration"""
@@ -169,10 +198,13 @@ class Enum(Type):
         raise ValueError("%r is not a valid value for %s" % (value,
                                                              self.entity))
 
+    def pack(self):
+        return (snmp.ASN_INTEGER, struct.pack("l", self.value))
+
     def __eq__(self, other):
-        if not isinstance(other, Enum):
+        if not isinstance(other, self.__class__):
             try:
-                other = Enum(self.entity, other)
+                other = self.__class__(self.entity, other)
             except:
                 raise NotImplementedError
         return self.value == other.value
@@ -192,7 +224,10 @@ class Oid(Type):
             self.value = tuple(value.oid)
         else:
             raise TypeError("don't know how to convert %r to OID" % value)
-
+            
+    def pack(self):
+        return (snmp.ASN_OBJECT_ID, "".join([struct.pack("l", x) for x in self.value]))
+                 
     def __cmp__(self, other):
         if not isinstance(other, Oid):
             other = Oid(self.entity, other)
@@ -214,13 +249,18 @@ class Boolean(Enum):
     """Class for boolean"""
 
     def set(self, value):
-        if bool(value):
-            Enum.set(self, "true")
+        if type(value) is bool:
+            if value:
+                Enum.set(self, "true")
+            else:
+                Enum.set(self, "false")
         else:
-            Enum.set(self, "false")
+            Enum.set(self, value)
 
     def __getattr__(self, attr):
-        return getattr(bool(self.value), attr)
+        if self.value == 1:
+            return getattr(True, attr)
+        return getattr(False, attr)
 
 class Timeticks(Type):
     """Class for timeticks"""
@@ -233,6 +273,12 @@ class Timeticks(Type):
             self.value = value
         else:
             raise TypeError("dunno how to handle %r" % value)
+
+    def pack(self):
+        return (snmp.ASN_INTEGER,
+                struct.pack("l",
+                            self.value.days*3600*24*100 + self.value.seconds*100 +
+                            self.value.microseconds/10000))
 
     def __str__(self):
         return str(self.value)
@@ -279,6 +325,14 @@ class Bits(Type):
                 raise ValueError("%r is not a valid bit value" % v)
         bits.sort()
         self.value = bits
+
+    def pack(self):
+        string = []
+        for b in self.value:
+            if len(string) < b/16 + 1:
+                string.extend([0]*(b/16 - len(string)+1))
+            string[b/16] |= 1 << (7 - b%16)
+        return (snmp.ASN_OCTET_STR, "".join([chr(x) for x in string]))
 
     def __eq__(self, other):
         if not isinstance(other, Bits):

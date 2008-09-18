@@ -12,7 +12,7 @@ class TestSnmp2(unittest.TestCase):
         mib.load('IF-MIB')
         mib.load('SNMPv2-MIB')
         self.session = snmp.Session(host="localhost",
-                                    community="private",
+                                    community="public",
                                     version=self.version)
 
     def testGetString(self):
@@ -41,18 +41,6 @@ class TestSnmp2(unittest.TestCase):
         self.assertEqual(oid, ooid + (0,))
         self.assertEqual(a, " ".join(os.uname()))
 
-    def testSet(self):
-        """Set a value"""
-        ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
-        oid, orig = self.session.get(ooid)
-        oid, a = self.session.set(ooid, basictypes.build('SNMPv2-MIB', 'sysDescr',
-                                                         "new hostname"))
-        self.assertEqual(oid, ooid)
-        self.assertEqual(a, "new hostname")
-        oid, a = self.session.set(ooid, basictypes.build('SNMPv2-MIB', 'sysDescr',
-                                                         orig))
-        self.assertEqual(a, orig)
-
     def testInexistant(self):
         """Get an inexistant value"""
         self.assertRaises(snmp.SNMPNoSuchObject, self.session.get,
@@ -60,7 +48,8 @@ class TestSnmp2(unittest.TestCase):
 
     def testVariousSet(self):
         """Set value of many types. This test should be monitored with a traffic capture"""
-        mib.load('SNIMPY-MIB')
+        mib.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "SNIMPY-MIB.mib"))
         for oid, value in [('snimpyIpAddress', '10.14.12.12'),
                            ('snimpyInteger', 1574512),
                            ('snimpyEnum', 'testing'),
@@ -69,7 +58,7 @@ class TestSnmp2(unittest.TestCase):
                            ('snimpyGauge', 4857544),
                            ('snimpyTimeticks', timedelta(3, 18)),
                            ('snimpyBits', ["third", "last"])]:
-            self.assertRaises(snmp.SNMPNoSuchObject, self.session.set,
+            self.assertRaises(snmp.SNMPNoaccess, self.session.set,
                               mib.get('SNIMPY-MIB', oid).oid + (0,),
                               basictypes.build('SNIMPY-MIB', oid, value))
 

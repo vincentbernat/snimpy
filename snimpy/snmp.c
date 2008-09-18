@@ -179,201 +179,40 @@ Snmp_repr(SnmpObject *self)
 }
 
 static u_char*
-Snmp_convert_integer(PyObject *obj, int *type, int *bufsize)
+Snmp_convert_object(PyObject *obj, int *type, ssize_t *bufsize)
 {
-	long *value;
-	PyObject *tmp;
-	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
-		return NULL;
-	if ((value = (long*)malloc(sizeof(long))) == NULL) {
-		PyErr_NoMemory();
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	*type = ASN_INTEGER;
-	*bufsize = sizeof(long);
-	*value = PyInt_AsLong(tmp);
-	if (PyErr_Occurred()) {
-		free(value);
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	Py_DECREF(tmp);
-	return (u_char*)value;
-}
+	PyObject *BasicType=NULL, *convertor=NULL, *ptype=NULL, *pvalue=NULL;
+	u_char *buffer, *result;
 
-static u_char*
-Snmp_convert_ip(PyObject *obj, int *type, int *bufsize)
-{
-	in_addr_t *ip;
-	PyObject *tmp;
-	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
-		return NULL;
-	*type = ASN_IPADDRESS;
-	*bufsize = sizeof(in_addr_t);
-	if (PyString_AsString(tmp) == NULL) {
-		PyErr_SetString(SnmpException,
-		    "incompatible value while converting IP");
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	if ((ip = (in_addr_t*)malloc(sizeof(in_addr_t))) == NULL) {
-		PyErr_NoMemory();
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	*ip = inet_addr(PyString_AsString(tmp));
-	Py_DECREF(tmp);
-	return (u_char*)ip;
-}
-
-static u_char*
-Snmp_convert_string(PyObject *obj, int *type, int *bufsize)
-{
-	PyObject *tmp;
-	char *string, *newstring;
-	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
-		return NULL;
-	if (PyString_AsStringAndSize(tmp, &string, bufsize) == -1) {
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	*bufsize++;
-	*type = ASN_OCTET_STR;
-	if ((newstring = (char*)malloc(*bufsize)) == NULL) {
-		PyErr_NoMemory();
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	memcpy(newstring, string, *bufsize);
-	Py_DECREF(tmp);
-	return (u_char*)newstring;
-}
-
-static u_char*
-Snmp_convert_oid(PyObject *obj, int *type, int *bufsize)
-{
-	PyObject *tmp, *item;
-	ssize_t len;
-	int i;
-	oid *anoid;
-	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
-		return NULL;
-	if ((len = PyTuple_Size(tmp)) == -1) {
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	*bufsize = len*sizeof(oid);
-	*type = ASN_OBJECT_ID;
-	if ((anoid = (oid*)malloc(*bufsize)) == NULL) {
-		PyErr_NoMemory();
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	for (i = 0; i < len; i++) {
-		if ((item = PyTuple_GetItem(tmp, i)) == NULL) {
-			free(anoid);
-			Py_DECREF(tmp);
-			return NULL;
-		}
-		if (PyLong_Check(item))
-			anoid[i] = PyLong_AsUnsignedLong(item);
-		else
-			anoid[i] = PyInt_AsUnsignedLong(item);
-		if (PyErr_Occurred()) {
-			free(anoid);
-			Py_DECREF(tmp);
-			return NULL;
-		}
-	}
-	Py_DECREF(tmp);
-	return (u_char*)anoid;
-}
-
-static u_char*
-Snmp_convert_timeticks(PyObject *obj, int *type, int *bufsize)
-{
-	PyObject *tmp, *seconds, *days;
-	unsigned long *result;
-	long *bool;
-	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
-		return NULL;
-	if ((seconds = PyObject_GetAttrString(tmp, "seconds")) == NULL) {
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	if ((days = PyObject_GetAttrString(tmp, "days")) == NULL) {
-		Py_DECREF(tmp);
-		Py_DECREF(seconds);
-		return NULL;
-	}
-	*type = ASN_COUNTER;
-	*bufsize = sizeof(unsigned long);
-	if ((result = (unsigned long*)malloc(sizeof(unsigned long))) == NULL) {
-		PyErr_NoMemory();
-		Py_DECREF(seconds);
-		Py_DECREF(days);
-		Py_DECREF(tmp);
-		return NULL;
-	}
-	*result = PyInt_AsUnsignedLong(days) * 3600 * 24 * 100 +
-	    PyInt_AsUnsignedLong(seconds) * 100;
-	if (PyErr_Occurred()) {
-		Py_DECREF(seconds);
-		Py_DECREF(days);
-		Py_DECREF(tmp);
-		free(result);
-		return NULL;
-	}
-	return result;
-}
-
-struct TypeAndFunction {
-	char *type;
-	u_char*(*function)(PyObject*, int*, int*);
-};
-struct TypeAndFunction typeFunctor[] = {
-	{"Integer", Snmp_convert_integer},
-	{"IpAddress", Snmp_convert_ip},
-	{"String", Snmp_convert_string},
-	{"Enum", Snmp_convert_integer},
-	{"Oid", Snmp_convert_oid},
-	{"Timeticks", Snmp_convert_timeticks},
-	{"Bits", Snmp_convert_bits},
-	{NULL}
-};
-
-static u_char*
-Snmp_convert_object(PyObject *obj, int *type, int *bufsize)
-{
-	PyObject *BasicType, *aType;
-	TypeAndFunction *tf;
 	if ((BasicType = PyObject_GetAttrString(TypesModule, "Type")) == NULL)
 		return NULL;
 	if (!PyObject_IsInstance(obj, BasicType)) {
 		PyErr_SetString(SnmpException, "can only set basictypes");
-		Py_DECREF(BasicType);
-		return NULL;
+		goto converterr;
 	}
-	for (tf = typeFunctor; tf.type; tf++) {
-		if ((aType = PyObject_GetAttrString(TypesModule,
-			    tf.type)) == NULL) {
-			Py_DECREF(BasicType);
-			return NULL;
-		}
-		if (PyObject_IsInstance(obj, aType))
-			break;
-		Py_DECREF(aType);
+	if ((convertor = PyObject_CallMethod(obj, "pack", NULL)) == NULL)
+		goto converterr;
+	if ((ptype = PyTuple_GetItem(convertor, 0)) == NULL)
+		goto converterr;
+	if ((pvalue = PyTuple_GetItem(convertor, 1)) == NULL)
+		goto converterr;
+	*type = (int)PyInt_AsLong(ptype);
+	if (PyErr_Occurred()) goto converterr;
+	if (PyString_AsStringAndSize(pvalue, (char**)&buffer, bufsize) == -1)
+		goto converterr;
+	if ((result = (u_char*)malloc(*bufsize)) == NULL) {
+		PyErr_NoMemory();
+		goto converterr;
 	}
-	if (!tf.type) {
-		PyErr_SetString(SnmpException, "don't know how to handle this type");
-		Py_DECREF(BasicType);
-		return NULL;
-	}
-
-	Py_DECREF(aType);
-	Py_DECREF(BasicType);
-	return tf.function(obj, type, bufsize);
+	memcpy(result, buffer, *bufsize);
+	Py_XDECREF(BasicType);
+	Py_XDECREF(convertor);
+	return result;
+		
+converterr:
+	Py_XDECREF(BasicType);
+	Py_XDECREF(convertor);
+	return NULL;
 }
 
 static PyObject*
@@ -625,7 +464,7 @@ PyDoc_STRVAR(module_doc,
 PyMODINIT_FUNC
 initsnmp(void)
 {
-	PyObject *m, *exc;
+	PyObject *m, *exc, *c;
 	char *name;
 	struct ErrorException *e;
 	
@@ -664,6 +503,19 @@ initsnmp(void)
 		PyModule_AddObject(m, e->name, e->exception);
 	}
 
+	/* Constants */
+#define ADDCONSTANT(x)				\
+	if ((c = PyInt_FromLong(x)) == NULL)	\
+		return;				\
+	PyModule_AddObject(m, #x, c)
+	ADDCONSTANT(ASN_BOOLEAN);
+	ADDCONSTANT(ASN_INTEGER);
+	ADDCONSTANT(ASN_BIT_STR);
+	ADDCONSTANT(ASN_OCTET_STR);
+	ADDCONSTANT(ASN_NULL);
+	ADDCONSTANT(ASN_OBJECT_ID);	
+	ADDCONSTANT(ASN_IPADDRESS);
+	
 	Py_INCREF(&SnmpType);
 	PyModule_AddObject(m, "Session", (PyObject *)&SnmpType);
 
