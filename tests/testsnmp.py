@@ -1,5 +1,6 @@
 import unittest
 import os
+from datetime import timedelta
 from snimpy import basictypes, snmp, mib
 
 """Those tests need a local SNMP agent. They are not deterministic"""
@@ -56,6 +57,21 @@ class TestSnmp2(unittest.TestCase):
         """Get an inexistant value"""
         self.assertRaises(snmp.SNMPNoSuchObject, self.session.get,
                           (1,2,3))
+
+    def testVariousSet(self):
+        """Set value of many types. This test should be monitored with a traffic capture"""
+        mib.load('SNIMPY-MIB')
+        for oid, value in [('snimpyIpAddress', '10.14.12.12'),
+                           ('snimpyInteger', 1574512),
+                           ('snimpyEnum', 'testing'),
+                           ('snimpyObjectId', (1,2,3,4,5,6)),
+                           ('snimpyCounter', 545424),
+                           ('snimpyGauge', 4857544),
+                           ('snimpyTimeticks', timedelta(3, 18)),
+                           ('snimpyBits', ["third", "last"])]:
+            self.assertRaises(snmp.SNMPNoSuchObject, self.session.set,
+                              mib.get('SNIMPY-MIB', oid).oid + (0,),
+                              basictypes.build('SNIMPY-MIB', oid, value))
 
 # Do the same tests with SNMPv1
 class TestSnmp1(unittest.TestCase):

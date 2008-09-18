@@ -178,20 +178,225 @@ Snmp_repr(SnmpObject *self)
 	return result;
 }
 
+static u_char*
+Snmp_convert_integer(PyObject *obj, int *type, int *bufsize)
+{
+	long *value;
+	PyObject *tmp;
+	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
+		return NULL;
+	if ((value = (long*)malloc(sizeof(long))) == NULL) {
+		PyErr_NoMemory();
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	*type = ASN_INTEGER;
+	*bufsize = sizeof(long);
+	*value = PyInt_AsLong(tmp);
+	if (PyErr_Occurred()) {
+		free(value);
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	Py_DECREF(tmp);
+	return (u_char*)value;
+}
+
+static u_char*
+Snmp_convert_ip(PyObject *obj, int *type, int *bufsize)
+{
+	in_addr_t *ip;
+	PyObject *tmp;
+	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
+		return NULL;
+	*type = ASN_IPADDRESS;
+	*bufsize = sizeof(in_addr_t);
+	if (PyString_AsString(tmp) == NULL) {
+		PyErr_SetString(SnmpException,
+		    "incompatible value while converting IP");
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	if ((ip = (in_addr_t*)malloc(sizeof(in_addr_t))) == NULL) {
+		PyErr_NoMemory();
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	*ip = inet_addr(PyString_AsString(tmp));
+	Py_DECREF(tmp);
+	return (u_char*)ip;
+}
+
+static u_char*
+Snmp_convert_string(PyObject *obj, int *type, int *bufsize)
+{
+	PyObject *tmp;
+	char *string, *newstring;
+	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
+		return NULL;
+	if (PyString_AsStringAndSize(tmp, &string, bufsize) == -1) {
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	*bufsize++;
+	*type = ASN_OCTET_STR;
+	if ((newstring = (char*)malloc(*bufsize)) == NULL) {
+		PyErr_NoMemory();
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	memcpy(newstring, string, *bufsize);
+	Py_DECREF(tmp);
+	return (u_char*)newstring;
+}
+
+static u_char*
+Snmp_convert_oid(PyObject *obj, int *type, int *bufsize)
+{
+	PyObject *tmp, *item;
+	ssize_t len;
+	int i;
+	oid *anoid;
+	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
+		return NULL;
+	if ((len = PyTuple_Size(tmp)) == -1) {
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	*bufsize = len*sizeof(oid);
+	*type = ASN_OBJECT_ID;
+	if ((anoid = (oid*)malloc(*bufsize)) == NULL) {
+		PyErr_NoMemory();
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	for (i = 0; i < len; i++) {
+		if ((item = PyTuple_GetItem(tmp, i)) == NULL) {
+			free(anoid);
+			Py_DECREF(tmp);
+			return NULL;
+		}
+		if (PyLong_Check(item))
+			anoid[i] = PyLong_AsUnsignedLong(item);
+		else
+			anoid[i] = PyInt_AsUnsignedLong(item);
+		if (PyErr_Occurred()) {
+			free(anoid);
+			Py_DECREF(tmp);
+			return NULL;
+		}
+	}
+	Py_DECREF(tmp);
+	return (u_char*)anoid;
+}
+
+static u_char*
+Snmp_convert_timeticks(PyObject *obj, int *type, int *bufsize)
+{
+	PyObject *tmp, *seconds, *days;
+	unsigned long *result;
+	long *bool;
+	if ((tmp = PyObject_GetAttrString(obj, "value")) == NULL)
+		return NULL;
+	if ((seconds = PyObject_GetAttrString(tmp, "seconds")) == NULL) {
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	if ((days = PyObject_GetAttrString(tmp, "days")) == NULL) {
+		Py_DECREF(tmp);
+		Py_DECREF(seconds);
+		return NULL;
+	}
+	*type = ASN_COUNTER;
+	*bufsize = sizeof(unsigned long);
+	if ((result = (unsigned long*)malloc(sizeof(unsigned long))) == NULL) {
+		PyErr_NoMemory();
+		Py_DECREF(seconds);
+		Py_DECREF(days);
+		Py_DECREF(tmp);
+		return NULL;
+	}
+	*result = PyInt_AsUnsignedLong(days) * 3600 * 24 * 100 +
+	    PyInt_AsUnsignedLong(seconds) * 100;
+	if (PyErr_Occurred()) {
+		Py_DECREF(seconds);
+		Py_DECREF(days);
+		Py_DECREF(tmp);
+		free(result);
+		return NULL;
+	}
+	return result;
+}
+
+struct TypeAndFunction {
+	char *type;
+	u_char*(*function)(PyObject*, int*, int*);
+};
+struct TypeAndFunction typeFunctor[] = {
+	{"Integer", Snmp_convert_integer},
+	{"IpAddress", Snmp_convert_ip},
+	{"String", Snmp_convert_string},
+	{"Enum", Snmp_convert_integer},
+	{"Oid", Snmp_convert_oid},
+	{"Timeticks", Snmp_convert_timeticks},
+	{"Bits", Snmp_convert_bits},
+	{NULL}
+};
+
+static u_char*
+Snmp_convert_object(PyObject *obj, int *type, int *bufsize)
+{
+	PyObject *BasicType, *aType;
+	TypeAndFunction *tf;
+	if ((BasicType = PyObject_GetAttrString(TypesModule, "Type")) == NULL)
+		return NULL;
+	if (!PyObject_IsInstance(obj, BasicType)) {
+		PyErr_SetString(SnmpException, "can only set basictypes");
+		Py_DECREF(BasicType);
+		return NULL;
+	}
+	for (tf = typeFunctor; tf.type; tf++) {
+		if ((aType = PyObject_GetAttrString(TypesModule,
+			    tf.type)) == NULL) {
+			Py_DECREF(BasicType);
+			return NULL;
+		}
+		if (PyObject_IsInstance(obj, aType))
+			break;
+		Py_DECREF(aType);
+	}
+	if (!tf.type) {
+		PyErr_SetString(SnmpException, "don't know how to handle this type");
+		Py_DECREF(BasicType);
+		return NULL;
+	}
+
+	Py_DECREF(aType);
+	Py_DECREF(BasicType);
+	return tf.function(obj, type, bufsize);
+}
+
 static PyObject*
 Snmp_op(SnmpObject *self, PyObject *args, int op)
 {
-	PyObject *roid, *poid, *resultvalue=NULL, *resultoid=NULL, *result, *tmp;
+	PyObject *roid, *poid, *resultvalue=NULL, *resultoid=NULL, *result, *tmp, *setobject;
 	struct snmp_pdu *pdu, *response=NULL;
 	struct variable_list *vars;
 	oid anOID[MAX_OID_LEN];
 	size_t anOID_len = MAX_OID_LEN;
-	int i, status;
+	int i, status, type;
 	struct ErrorException *e;
 	long long counter64;
+	u_char* buffer=NULL;
+	ssize_t bufsize;
 
-	if (!PyArg_ParseTuple(args, "O", &roid))
-		return NULL;
+	if (op == SNMP_MSG_SET) {
+		if (!PyArg_ParseTuple(args, "OO", &roid, &setobject))
+			return NULL;
+	} else {
+		if (!PyArg_ParseTuple(args, "O", &roid))
+			return NULL;
+	}
 	if (!PyTuple_Check(roid)) {
 		PyErr_SetString(PyExc_TypeError,
 		    "argument should be a tuple of integers");
@@ -218,7 +423,15 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 		}
 	}
 	pdu = snmp_pdu_create(op);
-	snmp_add_null_var(pdu, anOID, anOID_len);
+	if (op != SNMP_MSG_SET)
+		snmp_add_null_var(pdu, anOID, anOID_len);
+	else {
+		if ((buffer = Snmp_convert_object(setobject,
+			    &type, &bufsize)) == NULL)
+			goto operror;
+		snmp_pdu_add_variable(pdu, anOID, anOID_len,
+		    type, buffer, bufsize);
+	}
 	status = snmp_synch_response(self->ss, pdu, &response);
 	if (status != STAT_SUCCESS) {
 		Snmp_raise_error(self->ss);
@@ -323,11 +536,13 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	Py_DECREF(resultoid);
 	Py_DECREF(resultvalue);
 	snmp_free_pdu(response);
+	free(buffer);
 	return result;
 	
 operror:
 	Py_XDECREF(resultvalue);
 	Py_XDECREF(resultoid);
+	free(buffer);
 	if (response)
 		snmp_free_pdu(response);
 	return NULL;
@@ -345,13 +560,19 @@ Snmp_getnext(PyObject *self, PyObject *args)
 	return Snmp_op((SnmpObject*)self, args, SNMP_MSG_GETNEXT);
 }
 
+static PyObject*
+Snmp_set(PyObject *self, PyObject *args)
+{
+	return Snmp_op((SnmpObject*)self, args, SNMP_MSG_SET);
+}
+
 static PyMethodDef Snmp_methods[] = {
 	{"get", Snmp_get,
 	 METH_VARARGS, "Retrieve an OID value using GET"},
 	{"getnext", Snmp_getnext,
 	 METH_VARARGS, "Retrieve an OID value using GETNEXT"},
-/*	{"set", Snmp_set,
-	METH_VARARGS, "Set an OID value using SET"}, */
+	{"set", Snmp_set,
+	 METH_VARARGS, "Set an OID value using SET"},
 	{NULL}  /* Sentinel */
 };
 

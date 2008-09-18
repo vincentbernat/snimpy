@@ -185,11 +185,11 @@ class Oid(Type):
 
     def set(self, value):
         if type(value) in [list, tuple]:
-            self.value = [int(v) for v in value]
+            self.value = tuple([int(v) for v in value])
         elif type(value) is str:
-            self.value = [int(i) for i in value.split(".") if i]
+            self.value = tuple([int(i) for i in value.split(".") if i])
         elif isinstance(value, mib.Entity):
-            self.value = value.oid
+            self.value = tuple(value.oid)
         else:
             raise TypeError("don't know how to convert %r to OID" % value)
 
@@ -210,14 +210,17 @@ class Oid(Type):
             tuple(self.value[:len(self.value)])
 
 
-class Boolean(Type):
+class Boolean(Enum):
     """Class for boolean"""
 
     def set(self, value):
-        self.value = bool(value)
+        if bool(value):
+            Enum.set(self, "true")
+        else:
+            Enum.set(self, "false")
 
     def __getattr__(self, attr):
-        return getattr(self.value, attr)
+        return getattr(bool(self.value), attr)
 
 class Timeticks(Type):
     """Class for timeticks"""
