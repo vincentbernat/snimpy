@@ -25,6 +25,8 @@
 
 /* Exceptions */
 static PyObject *SmiException;
+
+/* Types */
 static PyObject *TypesModule;
 
 /* MIB objects:
@@ -550,7 +552,7 @@ entity_repr(EntityObject *self)
 }
 
 static PyObject*
-mib_reset(PyObject *self, PyObject *args)
+mib_reset(PyObject *self)
 {
 	smiExit();
 	if (smiInit("snimpy") != 0) {
@@ -691,7 +693,7 @@ mib_get(PyObject* self, PyObject *args)
 }
 
 static PyMethodDef mib_methods[] = {
-	{"reset",       mib_reset,
+	{"reset",       (PyCFunction)mib_reset,
 	 METH_NOARGS,  "Reset libsmi to its initial state" },
 	{"load",        mib_load,
 	 METH_VARARGS,  "Load a MIB into the library" },
@@ -750,9 +752,10 @@ initmib(void)
 	Py_INCREF(&NodeType);
 	PyModule_AddObject(m, "Node", (PyObject *)&NodeType);
 
-	if ((TypesModule = PyImport_ImportModule("snimpy.basictypes")) == NULL)
-		return;
+	if (TypesModule == NULL)
+		if ((TypesModule = PyImport_ImportModule("snimpy.basictypes")) == NULL)
+			return;
 	Py_INCREF(TypesModule);
 
-	Py_XDECREF(mib_reset(NULL, NULL));
+	Py_XDECREF(mib_reset(NULL));
 }
