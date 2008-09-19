@@ -32,19 +32,25 @@ import mib, snmp
 class Type:
     """Base class for all types"""
 
+    consume = 0                 # Consume all suboid if built from OID
+
     def __init__(self, entity, value):
         """Create a new typed value
 
         @param entity: L{mib.Entity} instance
         @param value: value to set
         """
+        self.value = 0          # To avoid some recursive loop
         if not isinstance(entity, mib.Entity):
             raise TypeError("%r not a mib.Entity instance" % entity)
         if entity.type != self.__class__:
             raise ValueError("MIB node is %r. We are %r" % (entity.type,
                                                             self.__class))
         self.entity = entity
-        self.set(value)
+        if isinstance(value, Type):
+            self.set(self.value)
+        else:
+            self.set(value)
 
     def set(self, value):
         raise NotImplementedError
@@ -53,22 +59,29 @@ class Type:
         raise NotImplementedError
 
     def toOid(self):
+        """Convert to an OID.
+
+        If this function is implemented, you should also ensure that
+        constructor accepts a tuple to build the type (tuple being OID
+        index). In this case, the consume class attribute should be
+        set to the length of the index, 0 being "as long as possible".
+        """
         raise NotImplementedError
 
     def display(self):
         return str(self)
 
     def __repr__(self):
-        r = repr(self.value)
-        if r.startswith("<"):
-            return '<%s = %s>' % (self.__class__.__name__,
-                                  r)
-        else:
-            return '%s(%s)' % (self.__class__.__name__,
-                               r)
+        try:
+            return '<%s: %s>' % (self.__class__.__name__,
+                                 self.display())
+        except:
+            return '<%s ????>' % self.__class__.__name__
 
 class IpAddress(Type):
     """Class for IP address"""
+
+    consume = 4                 # Consume 4 suboid if built from OID
 
     def set(self, value):
         if type(value) in [list, tuple]:
@@ -108,7 +121,10 @@ class String(Type):
     """Class for any string"""
 
     def set(self, value):
-        self.value = str(value)
+        if type(value) is tuple:
+            self.value = "".join([chr(x) for x in value])
+        else:
+            self.value = str(value)
 
     def pack(self):
         return (snmp.ASN_OCTET_STR, self.value)
@@ -237,7 +253,11 @@ class String(Type):
 class Integer(Type):
     """Class for any integer"""
 
+    consume = 1
+
     def set(self, value):
+        if type(value) is tuple:
+            value = value[0]
         self.value = long(value)
 
     def pack(self):
@@ -295,12 +315,16 @@ class Integer(Type):
 
     def __getattr__(self, attr):
         # Ugly hack to be like an integer
-        return getattr(long(self), attr)
+        return getattr(self.value, attr)
 
 class Enum(Type):
     """Class for enumeration"""
 
+    consume = 1
+
     def set(self, value):
+        if type(value) is tuple:
+            value = value[0]
         if value in self.entity.enum:
             self.value = value
             return
@@ -384,7 +408,11 @@ class Boolean(Enum):
 class Timeticks(Type):
     """Class for timeticks"""
 
+    consume = 1
+
     def set(self, value):
+        if type(value) is tuple:
+            value = value[0]
         if type(value) is int:
             # Value in centiseconds
             self.value = timedelta(0, value/100.)
