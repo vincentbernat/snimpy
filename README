@@ -4,9 +4,21 @@ snimpy -- Interactive SNMP tool
 Introduction
 ------------
 
-Snimpy is a Python-based replacement for tools like snmpget, snmpwalk
-and snmpset. It provides a simple Pythonic interface to build SNMP
-query and to navigate into MIB objects.
+Snimpy is a Python-based tool providing a simple interface to build
+SNMP query. Here is a very simplistic example that allows to display
+the routing table of a given host:
+
+load("IP-FORWARD-MIB")
+m=M()
+routes = m.ipCidrRouteNextHop
+for x in routes:
+    net, netmask, tos, src = x
+    print "%15s/%-15s via %-15s src %-15s" % (net, netmask, routes[x], src)
+
+You can either use snimpy interactively throught its console (derived
+from Python own console or from IPython if available) or write snimpy
+scripts which are just Python scripts with some global variables
+available.
 
 This is not a general-use SNMP module. You can find better ones:
  - pycopia
@@ -15,35 +27,25 @@ This is not a general-use SNMP module. You can find better ones:
  - Net-SNMP own library Python
  - many others
 
+This is not really a replacement for snmpget, snmpwalk and
+snmpset. You cannot query arbitrary OID and you can only walk tables,
+not any node. Moreover, if remote host sends bogus value, snimpy will
+just stop with an exception (this is also a feature).
+
+At least, snimpy does not support SNMPv3 yet.
+
 Snimpy is aimed at being the more Pythonic possible. You should forget
 that you are doing SNMP requests. Snimpy will rely on MIB to hide SNMP
 details. Here are some "features" of snmimpy:
  - MIB parser based on libsmi
  - SNMP requests are handled by libnetsnmp
  - scalars are just attributes of your session object
- - columns are translated to Python dictionary and made available as
+ - columns are like a Python dictionary and made available as
    an attribute
  - getting an attribute is like issuing a GET method
  - setting an attribute is like issuing a SET method
- - iterating over a table or a node is like using GETNEXT
- - interactive interpreter based on Python own interpreter or IPython
-
-Here is a very simple example:
-
- s = Session(host="snmp.example.org")
- print s.sysDescr
- s.sysName = "anothername"
- for id in s.ifDescr:
-     print "Interface %d: %s" % (id, s.ifDescr[id])
-
-And here are the limitations
- - only work with MIB, no MIB, no access
- - only work with scalars, table, columns and nodes (no row, no
-   notification, no group, no compliance, no capabilities)
- - SNMPv1/v2 only (SNMPv3 would be simple to implement though)
-
-Snimpy uses IPython to provide a cleaner console if
-available. Otherwise, it uses internal Python console.
+ - iterating over a table is like using GETNEXT
+ - when something goes wrong, you get an exception
 
 License
 -------
@@ -62,14 +64,44 @@ You can install using:
 Or without installation:
  python bin/snimpy.py
 
-See examples in examples/ directory.
+See examples in examples/ directory for some real examples on how to
+use it.
 
-History
--------
+If you don't specify a file, the interactive console is
+spawned. Otherwise, the given script is executed and the remaining
+arguments are served as arguments for the script.
+
+You get a classic Python environment. There are two additional objects
+available:
+
+ - The load() method that takes a MIB name or a path to a
+   filename. The MIB will be loaded into memory and made available in
+   all SNMP managers:
+      load("IF-MIB")
+      load("/usr/share/mibs/ietf/IF-MIB")
+ - the M class which is used to instantiate a manager (a SNMP client):
+      m = M(host="localhost", community="private", version=2)
+      m = M("localhost", "private", 2)
+      m = M(community="private")
+
+A manager instance contains all the scalars and the columns that are
+in the MIB loaded with the load() method. There is no table, node or
+other entities. For a scalar, getting and setting a value is a simple
+as :
+  print m.sysDescr
+  m.sysName = "newhostname"
+
+For a column, you get a dictionary-like interface:
+  for index in m.ifDescr: print repr(m.ifDescr[i])
+  m.ifAdminStatus[3] = "down"
+
+That's all!
+
+Why another tool?
+-----------------
 
 There are a lot of SNMP tools available but most of them have
-important drawback when you something as simple as snmpget while still
-being able to automatize repetitive tasks.
+important drawback when you need to reliably automatize operations.
 
 snmpget, snmpset and snmpwalk are difficult to use in scripts. Errors
 are printed on standard output and there is no easy way to tell if the
@@ -90,8 +122,14 @@ compiled. Moreover, the exposed interface is still low-level. Sending
 a simple SNMP GET can either take 10 lines or one line wrapped into 10
 lines.
 
-Other Python bindings are not maintained any more. For example yasnmp
-does not compile with current libsnmp.
+Some other Python bindings are not maintained any more. For example
+yasnmp does not compile with current libsnmp.
 
-Have a look at pycopia. It contains a great SNMP library:
+The two main points of snimpy are:
+ - very high-level interface
+ - raise exceptions when something goes wrong
+
+If you want a more complete interface to SNMP, you can have a look at
+pycopia. It contains a great SNMP library (pure Python) and MIB
+parser (based on libsmi):
  http://code.google.com/p/pycopia/
