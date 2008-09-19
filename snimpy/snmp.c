@@ -41,7 +41,7 @@ static struct ErrorException SnmpErrorToException[] = {
 	{ SNMP_ERR_BADVALUE, "SNMPBadValue" },
 	{ SNMP_ERR_READONLY,  "SNMPReadonly" },
 	{ SNMP_ERR_GENERR, "SNMPGenerr" },
-	{ SNMP_ERR_NOACCESS, "SNMPNoaccess" },
+	{ SNMP_ERR_NOACCESS, "SNMPNoAccess" },
 	{ SNMP_ERR_WRONGTYPE, "SNMPWrongType" },
 	{ SNMP_ERR_WRONGLENGTH, "SNMPWrongLength" },
 	{ SNMP_ERR_WRONGENCODING, "SNMPWrongEncoding" },
@@ -279,7 +279,7 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	if (response->errstat != SNMP_ERR_NOERROR) {
 		for (e = SnmpErrorToException; e->name; e++) {
 			if (e->error == response->errstat) {
-				PyErr_SetNone(e->exception);
+				PyErr_SetString(e->exception, snmp_errstring(e->error));
 				goto operror;
 			}
 		}
@@ -293,13 +293,13 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	/* Let's handle the value */
 	switch (vars->type) {
 	case SNMP_NOSUCHOBJECT:
-		PyErr_SetNone(SnmpNoSuchObject);
+		PyErr_SetString(SnmpNoSuchObject, "No such object was found");
 		goto operror;
 	case SNMP_NOSUCHINSTANCE:
-		PyErr_SetNone(SnmpNoSuchInstance);
+		PyErr_SetString(SnmpNoSuchInstance, "No such instance exists");
 		goto operror;
 	case SNMP_ENDOFMIBVIEW:
-		PyErr_SetNone(SnmpEndOfMibView);
+		PyErr_SetString(SnmpEndOfMibView, "End of MIB was reached");
 		goto operror;
 	case ASN_INTEGER:
 		resultvalue = PyLong_FromLong(*vars->val.integer);

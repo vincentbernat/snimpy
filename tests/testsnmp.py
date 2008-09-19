@@ -58,7 +58,7 @@ class TestSnmp2(unittest.TestCase):
                            ('snimpyGauge', 4857544),
                            ('snimpyTimeticks', timedelta(3, 18)),
                            ('snimpyBits', ["third", "last"])]:
-            self.assertRaises(snmp.SNMPNoaccess, self.session.set,
+            self.assertRaises(snmp.SNMPNoAccess, self.session.set,
                               mib.get('SNIMPY-MIB', oid).oid + (0,),
                               basictypes.build('SNIMPY-MIB', oid, value))
 
