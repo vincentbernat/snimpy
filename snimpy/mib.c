@@ -343,8 +343,23 @@ table_getindex(EntityObject *self, void *closure)
 	}
 
 	child = smiGetFirstChildNode(self->node);
+	if (child && (child->indexkind == SMI_INDEX_AUGMENT)) {
+		child = smiGetRelatedNode(child);
+		if (!child) {
+			PyErr_Format(SmiException,
+			    "AUGMENT index for %s but unable to retrieve it",
+			    self->node->name);
+			return NULL;
+		}
+	}
 	if (!child || (child->nodekind != SMI_NODEKIND_ROW)) {
 		PyErr_Format(SmiException, "child %s of %s is not a row",
+		    child->name, self->node->name);
+		return NULL;
+	}
+	if (child->indexkind != SMI_INDEX_INDEX) {
+		PyErr_Format(SmiException,
+		    "child %s of %s has an unhandled kind of index",
 		    child->name, self->node->name);
 		return NULL;
 	}
