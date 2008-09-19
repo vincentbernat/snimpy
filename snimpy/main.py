@@ -37,6 +37,7 @@ import sys
 import os
 import atexit
 import code
+from datetime import timedelta
 try:
     import rlcompleter
     import readline
@@ -47,7 +48,7 @@ try:
 except ImportError:
     IPShellEmebed = None
 
-import mib, snmp
+import manager
 from config import conf
 from version import VERSION
 
@@ -61,25 +62,19 @@ def write_history_file():
 def interact():
     banner  = "\033[1mSnimpy\033[0m (%s) -- An interactive SNMP tool.\n" % VERSION
     banner += "  load        -> load an additional MIB\n"
-    banner += "  M           -> MIB store\n"
-    banner += "  S           -> SNMP session\n"
-    banner += "  get,getnext\n"
-    banner += "  walk,set    -> SNMP operation on default session"
+    banner += "  M           -> manager object"
 
     local = { "conf": conf,
-              "M": mib.ms,
-              "load": mib.ms.load,
-              "S": snmp.Session,
-              "get": snmp.get,
-              "getnext": snmp.getnext,
-              "walk": snmp.walk,
-              "set": snmp.set,
-              "OID": mib.OID,
-              "timedelta": mib.timedelta,
-              "snmp": snmp
+              "M": manager.Manager,
+              "load": manager.load,
+              "timedelta": timedelta,
               }
 
-    mib.ms.load(conf.mibs)
+    if len(sys.argv) <= 1:
+        manager.Manager._complete = True
+
+    for ms in conf.mibs:
+        manager.load(ms)
 
     if len(sys.argv) > 1:
         sys.argv = sys.argv[1:]
@@ -108,6 +103,3 @@ def interact():
             readline.parse_and_bind("tab: menu-complete")
         sys.ps1 = conf.prompt
         code.interact(banner=banner, local=local)
-
-if __name__ == "__main__":
-    interact()
