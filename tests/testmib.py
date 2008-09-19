@@ -183,4 +183,5 @@ class TestMibSnimpy(unittest.TestCase):
     def testFmt(self):
         """Check that we get FMT from types"""
         self.assertEqual(mib.get("SNIMPY-MIB", 'snimpySimplePhys').fmt, "1x:")
-        self.assertEqual(mib.get("SNIMPY-MIB", 'snimpyInteger').fmt, None)
+        self.assertEqual(mib.get("SNIMPY-MIB", 'snimpyInteger').fmt, "d-2")
+        

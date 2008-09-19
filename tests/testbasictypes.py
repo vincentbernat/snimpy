@@ -236,3 +236,35 @@ class TestBasicTypes(unittest.TestCase):
                           basictypes.build("SNIMPY-MIB",
                                            "snimpyBits",
                                            [1,7]).toOid)
+
+    def testDisplay(self):
+        """Test string transformation"""
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyInteger",
+                                          18).display(), "0.18")
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyInteger",
+                                          8).display(), "0.08")
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyInteger",
+                                          288).display(), "2.88")
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyInteger",
+                                          28801).display(), "288.01")
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyString",
+                                          "test").display(), "test")
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyString",
+                                          "tes\x05").display(), "0x74 65 73 05")
+        a = basictypes.build("SNIMPY-MIB",
+                             "snimpyString",
+                             "test")
+        self.assertEqual(a._display("255a"), "test")
+        self.assertEqual(a._display("1x:"), "74:65:73:74")
+        self.assertEqual(a._display("2a:"), "te:st")
+        self.assertEqual(a._display("3a:"), "tes:t")
+        self.assertEqual(a._display("4a"), "test")
+        self.assertEqual(a._display("2o+1a"), "072145+st")
+        a.set("\x03testtest...")
+        self.assertEqual(a._display("*2a:+255a"), "te:st:te+st...")

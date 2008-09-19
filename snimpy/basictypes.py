@@ -55,6 +55,9 @@ class Type:
     def toOid(self):
         raise NotImplementedError
 
+    def display(self):
+        return str(self)
+
     def __repr__(self):
         r = repr(self.value)
         if r.startswith("<"):
@@ -112,6 +115,75 @@ class String(Type):
 
     def toOid(self):
         return tuple([ord(a) for a in self.value])
+
+    def _display(self, fmt):
+        i = 0               # Position in self.value
+        j = 0               # Position in fmt
+        result = ""
+        while i < len(self.value):
+            if j < len(fmt):
+                # repeater
+                if fmt[j] == "*":
+                    repeat = ord(self.value[i])
+                    j += 1
+                    i += 1
+                else:
+                    repeat = 1
+                # length
+                length = ""
+                while fmt[j].isdigit():
+                    length += fmt[j]
+                    j += 1
+                length = int(length)
+                # format
+                format = fmt[j]
+                j += 1
+                # seperator
+                if j < len(fmt) and \
+                        fmt[j] != "*" and not fmt[j].isdigit():
+                    sep = fmt[j]
+                    j += 1
+                else:
+                    sep = ""
+                # terminator
+                if j < len(fmt) and \
+                        fmt[j] != "*" and not fmt[j].isdigit():
+                    term = fmt[j]
+                    j += 1
+                else:
+                    term = ""
+            # building
+            for r in range(repeat):
+                bytes = self.value[i:i+length]
+                i += length
+                if format in ['o', 'x', 'd']:
+                    if length > 8:
+                        raise ValueError(
+                            "don't know how to handle integers more than 4 bytes long")
+                    bytes = "\x00"*(4-length) + bytes
+                    number = struct.unpack("!l", bytes)[0]
+                    if format == "o":
+                        result += "%s" % oct(number)
+                    elif format == "x":
+                        result += "%s" % hex(number)[2:]
+                    else:       # format == "d":
+                        result += "%s" % str(number)
+                elif format == 'a':
+                    result += bytes
+                result += sep
+            if sep and term:
+                result = result[:-1]
+            result += term
+        if term or sep:
+            result = result[:-1]
+        return result
+        
+    def display(self):
+        if self.entity.fmt:
+            return self._display(fmt)
+        if "\\x" not in repr(self.value):
+            return self.value
+        return "0x" + " ".join([("0%s" % hex(ord(a))[2:])[-2:] for a in self.value])
 
     def __str__(self):
         return self.value
@@ -191,6 +263,35 @@ class Integer(Type):
 
     def __long__(self):
         return long(self.value)
+
+    def __str__(self):
+        return str(self.value)
+
+    def display(self):
+        if self.entity.fmt:
+            if self.entity.fmt[0] == "x":
+                return hex(self.value)
+            if self.entity.fmt[0] == "o":
+                return oct(self.value)
+            if self.entity.fmt[0] == "b":
+                if self.value == 0:
+                    return "0"
+                if self.value > 0:
+                    v = self.value
+                    r = ""
+                    while v > 0:
+                        r = str(v%2) + r
+                        v = v>>1
+                    return r
+            elif self.entity.fmt[0] == "d" and \
+                    len(self.entity.fmt) > 2 and \
+                    self.entity.fmt[1] == "-":
+                dec = int(self.entity.fmt[2:])
+                result = str(self.value)
+                if len(result) < dec + 1:
+                    result = "0"*(dec + 1 - len(result)) + result
+                return "%s.%s" % (result[:-2], result[-2:])
+        return str(self.value)
 
     def __getattr__(self, attr):
         # Ugly hack to be like an integer

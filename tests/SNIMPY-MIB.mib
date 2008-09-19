@@ -5,7 +5,7 @@ IMPORTS
     IpAddress, Integer32, Gauge32,
     TimeTicks, Counter64,
     Counter32, mib-2                  FROM SNMPv2-SMI
-    DisplayString,
+    DisplayString, TEXTUAL-CONVENTION,
     PhysAddress, TruthValue           FROM SNMPv2-TC
     IANAifType                        FROM IANAifType-MIB;
 
@@ -23,6 +23,13 @@ snimpy MODULE-IDENTITY
     REVISION      "200809160000Z"
     DESCRIPTION   "Last revision"
     ::= { mib-2 45121 }
+
+OddInteger ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d-2"
+    STATUS       current
+    DESCRIPTION
+	"Testing fmt"
+    SYNTAX       INTEGER
 
 snimpyScalars OBJECT IDENTIFIER ::= { snimpy 1 }
 snimpyTables  OBJECT IDENTIFIER ::= { snimpy 2 }
@@ -44,7 +51,7 @@ snimpyString OBJECT-TYPE
     ::= { snimpyScalars 2 }
 
 snimpyInteger OBJECT-TYPE
-    SYNTAX 	INTEGER (1..54754)
+    SYNTAX 	OddInteger
     MAX-ACCESS  read-only
     STATUS	current
     DESCRIPTION
