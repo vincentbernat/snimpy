@@ -6,16 +6,17 @@ Generic procedure but we restrict ourself to Nortel 55x0.
 """
 
 import sys
+import os
 
-load("~/.snmp/mibs/LLDP-MIB")
-load("~/.snmp/mibs/LLDP-EXT-DOT3-MIB")
-load("~/.snmp/mibs/LLDP-EXT-DOT1-MIB")
+load("SNMPv2-MIB")
+for l in ["LLDP", "LLDP-EXT-DOT3", "LLDP-EXT-DOT1"]:
+    load(os.path.expanduser("~/.snmp/mibs/%s-MIB" % l))
 
-s = S(host=sys.argv[1], community=sys.argv[2])
+s = M(host=sys.argv[1], community=sys.argv[2])
 
 try:
     type = s.sysDescr
-except snmp.SNMPGenericError:
+except snmp.SNMPGenerr:
     print "Cannot process %s: bad community?" % sys.argv[1]
     sys.exit(1)
 if not type.value.startswith("Ethernet Routing Switch 55") and \
@@ -26,7 +27,8 @@ if not type.value.startswith("Ethernet Routing Switch 55") and \
 print "Processing %s..." % sys.argv[1]
 try:
     for oid in s.lldpConfigManAddrPortsTxEnable:
-        if oid[:2] == (1,4):
+        
+        if oid[0] == "ipV4":
             s.lldpConfigManAddrPortsTxEnable[oid] = "\xff"*10
 except snmp.SNMPNoSuchObject:
     print "No LLDP for this switch"
@@ -45,13 +47,13 @@ for port in s.lldpPortConfigAdminStatus:
                                                        "powerViaMDI",
                                                        "linkAggregation",
                                                        "maxFrameSize"]
-    except snmp.SNMPPacketError:
+    except snmp.SNMPNoSuchObject:
         print "No Dot3"
         dot3 = False
 # Dot1
 try:
-    for (port,vlan) in s.lldpXdot1LocVlanNameTable:
-        s.lldpXdot1ConfigVlanNameTxEnable[port, vlan] = "true"
+    for port,vlan in s.lldpXdot1ConfigVlanNameTxEnable:
+        s.lldpXdot1ConfigVlanNameTxEnable[port, vlan] = True
 except snmp.SNMPNoSuchObject:
     print "No Dot1"
 print "Success!"

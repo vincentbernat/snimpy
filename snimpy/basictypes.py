@@ -459,6 +459,24 @@ class Bits(Type):
 
     def set(self, value):
         bits = []
+        tryalternate = False
+        if type(value) is str:
+            for i,x in enumerate(value):
+                if ord(x) == 0:
+                    continue
+                for j in range(8):
+                    if ord(x) & (1 << (7-j)):
+                        if j not in self.entity.enum:
+                            tryalternate = True
+                            break
+                        bits.append(j)
+                if tryalternate:
+                    break
+            self.value = bits
+            if not tryalternate:
+                return
+            else:
+                bits = []
         if type(value) not in [tuple, list]:
             value = [value]
         for v in value:
@@ -488,6 +506,8 @@ class Bits(Type):
         return (snmp.ASN_OCTET_STR, "".join([chr(x) for x in string]))
 
     def __eq__(self, other):
+        if type(other) is str:
+            other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
         return self.value == other.value
@@ -499,6 +519,8 @@ class Bits(Type):
         return ", ".join(result)
 
     def __and__(self, other):
+        if type(other) is str:
+            other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
         for o in other.value:
@@ -507,6 +529,8 @@ class Bits(Type):
         return True
 
     def __ior__(self, other):
+        if type(other) is str:
+            other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
         for o in other.value:
@@ -516,6 +540,8 @@ class Bits(Type):
         return self
 
     def __isub__(self, other):
+        if type(other) is str:
+            other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
         for o in other.value:

@@ -68,6 +68,7 @@ def interact():
               "M": manager.Manager,
               "load": manager.load,
               "timedelta": timedelta,
+              "snmp": manager.snmp
               }
 
     if len(sys.argv) <= 1:
