@@ -52,6 +52,9 @@ class Type:
     def pack(self):
         raise NotImplementedError
 
+    def toOid(self):
+        raise NotImplementedError
+
     def __repr__(self):
         r = repr(self.value)
         if r.startswith("<"):
@@ -76,6 +79,9 @@ class IpAddress(Type):
     def pack(self):
         return (snmp.ASN_IPADDRESS,
                 socket.inet_aton(".".join(["%d" % x for x in self.value])))
+
+    def toOid(self):
+        return tuple(self.value)
 
     def __str__(self):
         return ".".join([str(a) for a in self.value])
@@ -103,6 +109,9 @@ class String(Type):
 
     def pack(self):
         return (snmp.ASN_OCTET_STR, self.value)
+
+    def toOid(self):
+        return tuple([ord(a) for a in self.value])
 
     def __str__(self):
         return self.value
@@ -174,6 +183,9 @@ class Integer(Type):
             return (snmp.ASN_INTEGER, struct.pack("l", self.value))
         raise OverflowError("too small to be packed")
 
+    def toOid(self):
+        return (self.value,)
+
     def __int__(self):
         return int(self.value)
 
@@ -201,6 +213,9 @@ class Enum(Type):
     def pack(self):
         return (snmp.ASN_INTEGER, struct.pack("l", self.value))
 
+    def toOid(self):
+        return (self.value,)
+
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             try:
@@ -227,6 +242,9 @@ class Oid(Type):
             
     def pack(self):
         return (snmp.ASN_OBJECT_ID, "".join([struct.pack("l", x) for x in self.value]))
+
+    def toOid(self):
+        return self.value
                  
     def __cmp__(self, other):
         if not isinstance(other, Oid):
@@ -274,11 +292,17 @@ class Timeticks(Type):
         else:
             raise TypeError("dunno how to handle %r" % value)
 
+    def __int__(self):
+        return self.value.days*3600*24*100 + self.value.seconds*100 + \
+            self.value.microseconds/10000
+
+    def toOid(self):
+        return (int(self),)
+
     def pack(self):
         return (snmp.ASN_INTEGER,
                 struct.pack("l",
-                            self.value.days*3600*24*100 + self.value.seconds*100 +
-                            self.value.microseconds/10000))
+                            int(self)))
 
     def __str__(self):
         return str(self.value)

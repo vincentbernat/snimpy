@@ -201,3 +201,38 @@ class TestBasicTypes(unittest.TestCase):
                                           "snimpyBits",
                                           [1,7]).pack(),
                          (snmp.ASN_OCTET_STR, "\x41"))
+
+    def testToOid(self):
+        """Test conversion to OID"""
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyString",
+                                          "Hello").toOid(),
+                         (72,101,108,108,111))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyInteger",
+                                          18).toOid(),
+                         (18,))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyInteger",
+                                          1804).toOid(),
+                         (1804,))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyEnum",
+                                          "testing").toOid(),
+                         (3,))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyIpAddress",
+                                          "10.11.12.13").toOid(),
+                         (10,11,12,13))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyObjectId",
+                                          (1,2,3,4)).toOid(),
+                         (1,2,3,4))
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyTimeticks",
+                                          timedelta(3, 2)).toOid(),
+                         (3*3600*24*100 + 2*100,))
+        self.assertRaises(NotImplementedError,
+                          basictypes.build("SNIMPY-MIB",
+                                           "snimpyBits",
+                                           [1,7]).toOid)
