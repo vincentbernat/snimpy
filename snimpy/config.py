@@ -35,7 +35,7 @@ conf = Conf()
 if conf.userconf:
     try:
         conffile = file(os.path.expanduser(conf.userconf))
-    except OSError:
+    except (OSError, IOError):
         pass
     else:
         try:
