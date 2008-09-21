@@ -22,6 +22,7 @@
 Very high level interface to SNMP and MIB for Snimpy
 """
 
+from UserDict import DictMixin
 import snmp, mib, basictypes
 
 class Manager(object):
@@ -81,7 +82,7 @@ class Proxy:
         return "<%s for %s>" % (self.__class__.__name__,
                                 repr(self.proxy)[1:-1])
 
-class ProxyColumn(Proxy):
+class ProxyColumn(Proxy, DictMixin):
     """Proxy for column access"""
 
     def __init__(self, session, column):
@@ -112,7 +113,21 @@ class ProxyColumn(Proxy):
             value = self.proxy.type(self.proxy, value)
         self._op("set", index, value)
 
+    def keys(self):
+        return [k for k in self]
+
+    def has_key(self, object):
+        try:
+            self._op("get", object)
+        except:
+            return False
+        return True
+
     def __iter__(self):
+        for k, _ in self.iteritems():
+            yield k
+
+    def iteritems(self):
         oid = self.proxy.oid
         indexes = self.proxy.table.index
         while True:
@@ -141,9 +156,9 @@ class ProxyColumn(Proxy):
                     index = index[x.type.consume:]
             if len(target) == 1:
                 # Should work most of the time
-                yield target[0]
+                yield target[0], result
             else:
-                yield tuple(target)
+                yield tuple(target), result
 
 loaded = []
 def load(mibname):
