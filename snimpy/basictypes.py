@@ -213,6 +213,8 @@ class String(Type):
         if type(value) not in [tuple, list]:
             value = [value]
         for v in value:
+            if isinstance(v, Integer):
+                v = int(v)
             if type(v) is not int:
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
@@ -227,6 +229,8 @@ class String(Type):
         if type(value) not in [tuple, list]:
             value = [value]
         for v in value:
+            if isinstance(v, Integer):
+                v = int(v)
             if type(v) is not int:
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
@@ -241,6 +245,8 @@ class String(Type):
         if type(value) not in [tuple, list]:
             value = [value]
         for v in value:
+            if isinstance(v, Integer):
+                v = int(v)
             if type(v) is not int:
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
