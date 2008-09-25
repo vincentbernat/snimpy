@@ -110,7 +110,7 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 
 	snmp_sess_init(&session);
 	if ((chost = PyString_AsString(host)) == NULL)
-		goto initerror;
+		return -1;
 	switch (version) {
 	case 1:
 		session.version = SNMP_VERSION_1;
@@ -121,28 +121,26 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 	default:
 		PyErr_Format(PyExc_ValueError, "invalid SNMP version: %d",
 		    version);
-		goto initerror;
+		return -1;
 	}
 	if ((ccommunity = PyString_AsString(community)) == NULL)
-		goto initerror;
+		return -1;
 	session.community_len = PyString_Size(community);
 	session.community = (u_char*)malloc(strlen(ccommunity)+1);
 	session.peername = (char*)malloc(strlen(chost)+1);
 	if ((session.community == NULL) || (session.peername == NULL)) {
 		PyErr_NoMemory();
-		goto initerror;
+		return -1;
 	}
 	memcpy(session.community, ccommunity, strlen(ccommunity)+1);
 	memcpy(session.peername, chost, strlen(chost)+1);
 	if ((self->ss = snmp_open(&session)) == NULL) {
 		Snmp_raise_error(&session);
-		goto initerror;
+		free(session.community);
+		free(session.peername);
+		return -1;
 	}
 	return 0;
-
-initerror:
-	free(chost); free(ccommunity);
-	return -1;
 }
 
 static PyObject*
