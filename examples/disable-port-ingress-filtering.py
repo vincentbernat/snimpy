@@ -10,7 +10,7 @@ load("Q-BRIDGE-MIB")
 
 s = M(host=sys.argv[1], community=sys.argv[2])
 
-if "Ethernet Routing Switch 5510" not in s.sysDescr:
+if "Ethernet Routing Switch 55" not in s.sysDescr:
     print "Not a 5510"
     sys.exit(1)
 
