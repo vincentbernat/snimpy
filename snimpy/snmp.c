@@ -465,6 +465,7 @@ initsnmp(void)
 	PyObject *m, *exc, *c;
 	char *name;
 	struct ErrorException *e;
+	netsnmp_log_handler *logh;
 	
 
 	if (PyType_Ready(&SnmpType) < 0) return;
@@ -522,5 +523,12 @@ initsnmp(void)
 			return;
 	Py_INCREF(TypesModule);
 	
+	/* Try to load as less MIB as possible */
+	unsetenv("MIBS");
+	setenv("MIBDIRS", "/dev/null", 1);
+	/* Disable any logging */
+	shutdown_snmp_logging();
+        logh = netsnmp_register_loghandler(NETSNMP_LOGHANDLER_NONE, LOG_DEBUG);
+	/* Init SNMP */
 	init_snmp("snimpy");
 }
