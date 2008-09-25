@@ -47,13 +47,13 @@ for port in s.lldpPortConfigAdminStatus:
                                                        "powerViaMDI",
                                                        "linkAggregation",
                                                        "maxFrameSize"]
-    except snmp.SNMPNoSuchObject:
+    except snmp.SNMPException:
         print "No Dot3"
         dot3 = False
 # Dot1
 try:
     for port,vlan in s.lldpXdot1ConfigVlanNameTxEnable:
         s.lldpXdot1ConfigVlanNameTxEnable[port, vlan] = True
-except snmp.SNMPNoSuchObject:
+except snmp.SNMPException:
     print "No Dot1"
 print "Success!"
