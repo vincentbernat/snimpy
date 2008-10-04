@@ -21,6 +21,7 @@ if __name__ == "__main__":
           author_email="bernat@luffy.cx",
           packages=["snimpy"],
           scripts=["bin/snimpy"],
+          data_files = [('share/man/man1', 'man/scapy.1')],
           ext_modules = [
             Extension('snimpy.mib',
                       libraries = ['smi'],

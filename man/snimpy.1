@@ -1,0 +1,31 @@
+.TH SNIMPY 1 "Oct 4, 2008"
+.SH NAME
+snimpy \- interactive SNMP tool with Python
+.SH SYNOPSIS
+.B snimpy
+.RI [ options ]
+.SH DESCRIPTION
+This manual page documents briefly the
+.B snimpy
+command.
+.PP
+\fBsnimpy\fP is a Python-based tool providing a simple interface to build SNMP queries. This interface aims at being the most Pythonic possible: you grab scalars using attributes and columns are like dictionaries.
+.PP
+\fBsnimpy\fP can be used either interactively throught its console
+(derived from Python own console or from IPython if available) or by
+writing \fBsnimpy\fP scripts which are just Python scripts with some global
+variables available.
+.SH OPTIONS
+\fBsnimpy\fP does not take any option. If you launch it without any
+argument, you will get the interactive console. Otherwise, the first
+argument is the name of a script to be executed and the remaining
+arguments are the arguments for this script.
+
+.SH SEE ALSO
+
+.nf
+https://trac.luffy.cx/snimpy/
+.fi
+
+.SH AUTHOR
+Vincent Bernat <bernat@luffy.cx>
