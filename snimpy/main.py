@@ -46,7 +46,7 @@ except ImportError:
 try:
     from IPython.Shell import IPShellEmbed
 except ImportError:
-    IPShellEmebed = None
+    IPShellEmbed = None
 
 import manager
 from config import conf
