@@ -268,3 +268,37 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a._display("2o+1a"), "072145+st")
         a.set("\x03testtest...")
         self.assertEqual(a._display("*2a:+255a"), "te:st:te+st...")
+
+    def testRepr(self):
+        """Test representation"""
+        self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
+                                               "snimpyInteger",
+                                               18)), "<Integer: 0.18>")
+        self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
+                                               "snimpyObjectId",
+                                               (1, 3, 6, 1, 4, 1, 45, 3, 52, 1))),
+                              "<Oid: 1.3.6.1.4.1.45.3.52.1>")
+        self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
+                                               "snimpyIpAddress",
+                                               "124.24.14.3")),
+                              "<IpAddress: 124.24.14.3>")
+        self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
+                                               "snimpyString",
+                                               "45754dfgf")),
+                              "<String: 45754dfgf>")
+        self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
+                                               "snimpyEnum",
+                                               2)),
+                              "<Enum: down(2)>")
+        self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
+                                               "snimpyBoolean",
+                                               False)),
+                              "<Boolean: false(2)>")
+        self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
+                                               "snimpyCounter",
+                                               4547)),
+                              "<Integer: 4547>")
+        self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
+                                               "snimpyBits",
+                                               ["first", "second"])),
+                              "<Bits: first(0), second(1)>")

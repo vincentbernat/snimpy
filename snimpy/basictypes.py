@@ -71,6 +71,9 @@ class Type:
     def display(self):
         return str(self)
 
+    def __str__(self):
+        return str(self.value)
+
     def __repr__(self):
         try:
             return '<%s: %s>' % (self.__class__.__name__,
@@ -376,6 +379,9 @@ class Oid(Type):
 
     def toOid(self):
         return self.value
+
+    def __str__(self):
+        return ".".join([str(x) for x in self.value])
                  
     def __cmp__(self, other):
         if not isinstance(other, Oid):
