@@ -77,6 +77,8 @@ def interact():
     for ms in conf.mibs:
         manager.load(ms)
 
+    globals().update(local)
+
     if len(sys.argv) > 1:
         sys.argv = sys.argv[1:]
         execfile(sys.argv[0], local)
