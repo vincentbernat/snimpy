@@ -216,60 +216,76 @@ converterr:
 static PyObject*
 Snmp_op(SnmpObject *self, PyObject *args, int op)
 {
-	PyObject *roid, *poid, *resultvalue=NULL, *resultoid=NULL, *result, *tmp, *setobject;
-	struct snmp_pdu *pdu, *response=NULL;
+	PyObject *roid, *poid, *resultvalue=NULL, *resultoid=NULL,
+	    *result=NULL, *results=NULL, *tmp, *setobject;
+	struct snmp_pdu *pdu=NULL, *response=NULL;
 	struct variable_list *vars;
 	oid anOID[MAX_OID_LEN];
 	size_t anOID_len = MAX_OID_LEN;
-	int i, status, type;
+	int i = 0, j = 0, status, type;
 	struct ErrorException *e;
 	long long counter64;
 	u_char* buffer=NULL;
 	ssize_t bufsize;
 
-	if (op == SNMP_MSG_SET) {
-		if (!PyArg_ParseTuple(args, "OO", &roid, &setobject))
-			return NULL;
-	} else {
-		if (!PyArg_ParseTuple(args, "O", &roid))
-			return NULL;
-	}
-	if (!PyTuple_Check(roid)) {
+	if (PyTuple_Size(args) < 1) {
 		PyErr_SetString(PyExc_TypeError,
-		    "argument should be a tuple of integers");
+		    "not enough arguments");
 		return NULL;
 	}
-	anOID_len = PyTuple_Size(roid);
-	if (anOID_len > MAX_OID_LEN) {
-		PyErr_Format(PyExc_ValueError,
-		    "given OID is too large: %zd > %d",
-		    anOID_len, MAX_OID_LEN);
+	if ((op == SNMP_MSG_SET) && (PyTuple_Size(args)%2 != 0)) {
+		PyErr_SetString(PyExc_TypeError,
+		    "need an even number of arguments for SET operation");
 		return NULL;
-	}
-	for (i = 0; i < anOID_len; i++) {
-		if ((poid = PyTuple_GetItem(roid, i)) == NULL)
-			return NULL;
-		if (PyLong_Check(poid))
-			anOID[i] = (oid)PyLong_AsUnsignedLong(poid);
-		else if (PyInt_Check(poid))
-			anOID[i] = (oid)PyInt_AsLong(poid);
-		else {
-			PyErr_Format(PyExc_TypeError,
-			    "element %d is not an integer", i);
-			return NULL;
-		}
 	}
 	pdu = snmp_pdu_create(op);
-	if (op != SNMP_MSG_SET)
-		snmp_add_null_var(pdu, anOID, anOID_len);
-	else {
-		if ((buffer = Snmp_convert_object(setobject,
-			    &type, &bufsize)) == NULL)
+	while (j < PyTuple_Size(args)) {
+		if ((roid = PyTuple_GetItem(args, j)) == NULL)
 			goto operror;
-		snmp_pdu_add_variable(pdu, anOID, anOID_len,
-		    type, buffer, bufsize);
+		if (!PyTuple_Check(roid)) {
+			PyErr_Format(PyExc_TypeError,
+			    "argument %d should be a tuple of integers",
+			    j);
+			goto operror;
+		}
+		anOID_len = PyTuple_Size(roid);
+		if (anOID_len > MAX_OID_LEN) {
+			PyErr_Format(PyExc_ValueError,
+			    "OID #%d is too large: %zd > %d",
+			    j, anOID_len, MAX_OID_LEN);
+			goto operror;
+		}
+		for (i = 0; i < anOID_len; i++) {
+			if ((poid = PyTuple_GetItem(roid, i)) == NULL)
+				goto operror;
+			if (PyLong_Check(poid))
+				anOID[i] = (oid)PyLong_AsUnsignedLong(poid);
+			else if (PyInt_Check(poid))
+				anOID[i] = (oid)PyInt_AsLong(poid);
+			else {
+				PyErr_Format(PyExc_TypeError,
+				    "element %d of OID #%d is not an integer",
+				    i, j);
+				goto operror;
+			}
+		}
+		if (op != SNMP_MSG_SET) {
+			snmp_add_null_var(pdu, anOID, anOID_len);
+			j++;
+		} else {
+			if ((setobject = PyTuple_GetItem(args, j+1)) == NULL)
+				goto operror;
+			if ((buffer = Snmp_convert_object(setobject,
+				    &type, &bufsize)) == NULL)
+				goto operror;
+			snmp_pdu_add_variable(pdu, anOID, anOID_len,
+			    type, buffer, bufsize); /* There is a copy of all params */
+			j += 2;
+		}
 	}
 	status = snmp_synch_response(self->ss, pdu, &response);
+	free(buffer);
+	pdu = NULL;		/* Don't try to free it from now */
 	if (status != STAT_SUCCESS) {
 		Snmp_raise_error(self->ss);
 		goto operror;
@@ -282,6 +298,7 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 			}
 		}
 		PyErr_Format(SnmpException, "unknown error %ld", response->errstat);
+		goto operror;
 	}
 	if ((vars = response->variables) == NULL) {
 		PyErr_SetString(SnmpException, "answer is empty?");
@@ -289,97 +306,118 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	}
 
 	/* Let's handle the value */
-	switch (vars->type) {
-	case SNMP_NOSUCHOBJECT:
-		PyErr_SetString(SnmpNoSuchObject, "No such object was found");
+	j = 0;
+	if ((results = PyTuple_New(PyTuple_Size(args) /
+		    ((op == SNMP_MSG_SET)?2:1))) == NULL)
 		goto operror;
-	case SNMP_NOSUCHINSTANCE:
-		PyErr_SetString(SnmpNoSuchInstance, "No such instance exists");
-		goto operror;
-	case SNMP_ENDOFMIBVIEW:
-		PyErr_SetString(SnmpEndOfMibView, "End of MIB was reached");
-		goto operror;
-	case ASN_INTEGER:
-		resultvalue = PyLong_FromLong(*vars->val.integer);
-		break;
-	case ASN_UINTEGER:
-	case ASN_TIMETICKS:
-	case ASN_GAUGE:
-	case ASN_COUNTER:
-		resultvalue = PyLong_FromUnsignedLong((unsigned long)*vars->val.integer);
-		break;
-	case ASN_OCTET_STR:
-		resultvalue = PyString_FromStringAndSize((char*)vars->val.string, vars->val_len);
-		break;
-	case ASN_BIT_STR:
-		resultvalue = PyString_FromStringAndSize((char*)vars->val.bitstring, vars->val_len);
-		break;
-	case ASN_OBJECT_ID:
-		if ((resultvalue = PyTuple_New(vars->val_len/sizeof(oid))) == NULL)
+	do {
+		j++;
+		if (j > PyTuple_Size(results)) {
+			PyErr_SetString(SnmpException,
+			    "Received too many answers");
 			goto operror;
-		for (i = 0; i < vars->val_len/sizeof(oid); i++) {
-			if ((tmp = PyLong_FromLong(vars->val.objid[i])) == NULL)
-				goto operror;
-			PyTuple_SetItem(resultvalue, i, tmp);
 		}
-		break;
-	case ASN_IPADDRESS:
-		if (vars->val_len < 4) {
-			PyErr_Format(SnmpException, "IP address is too short (%zd < 4)",
+		switch (vars->type) {
+		case SNMP_NOSUCHOBJECT:
+			PyErr_SetString(SnmpNoSuchObject, "No such object was found");
+			goto operror;
+		case SNMP_NOSUCHINSTANCE:
+			PyErr_SetString(SnmpNoSuchInstance, "No such instance exists");
+			goto operror;
+		case SNMP_ENDOFMIBVIEW:
+			PyErr_SetString(SnmpEndOfMibView, "End of MIB was reached");
+			goto operror;
+		case ASN_INTEGER:
+			resultvalue = PyLong_FromLong(*vars->val.integer);
+			break;
+		case ASN_UINTEGER:
+		case ASN_TIMETICKS:
+		case ASN_GAUGE:
+		case ASN_COUNTER:
+			resultvalue = PyLong_FromUnsignedLong((unsigned long)*vars->val.integer);
+			break;
+		case ASN_OCTET_STR:
+			resultvalue = PyString_FromStringAndSize((char*)vars->val.string,
 			    vars->val_len);
+			break;
+		case ASN_BIT_STR:
+			resultvalue = PyString_FromStringAndSize((char*)vars->val.bitstring,
+			    vars->val_len);
+			break;
+		case ASN_OBJECT_ID:
+			if ((resultvalue = PyTuple_New(vars->val_len/sizeof(oid))) == NULL)
+				goto operror;
+			for (i = 0; i < vars->val_len/sizeof(oid); i++) {
+				if ((tmp = PyLong_FromLong(vars->val.objid[i])) == NULL)
+					goto operror;
+				PyTuple_SetItem(resultvalue, i, tmp);
+			}
+			break;
+		case ASN_IPADDRESS:
+			if (vars->val_len < 4) {
+				PyErr_Format(SnmpException,
+				    "IP address is too short (%zd < 4)",
+				    vars->val_len);
+				goto operror;
+			}
+			resultvalue = PyString_FromFormat("%d.%d.%d.%d",
+			    vars->val.string[0],
+			    vars->val.string[1],
+			    vars->val.string[2],
+			    vars->val.string[3]);
+			break;
+		case ASN_COUNTER64:
+#ifdef NETSNMP_WITH_OPAQUE_SPECIAL_TYPES
+		case ASN_OPAQUE_U64:
+		case ASN_OPAQUE_I64:
+		case ASN_OPAQUE_COUNTER64:
+#endif                          /* NETSNMP_WITH_OPAQUE_SPECIAL_TYPES */
+			counter64 = ((unsigned long long)
+			    (vars->val.counter64->high) << 32) +
+			    (unsigned long long)(vars->val.counter64->high);
+			resultvalue = PyLong_FromUnsignedLongLong(counter64);
+			break;
+#ifdef NETSNMP_WITH_OPAQUE_SPECIAL_TYPES
+		case ASN_OPAQUE_FLOAT:
+			resultvalue = PyFloat_FromDouble(*vars->val.floatVal);
+			break;
+		case ASN_OPAQUE_DOUBLE:
+			resultvalue = PyFloat_FromDouble(*vars->val.doubleVal);
+			break;
+#endif                          /* NETSNMP_WITH_OPAQUE_SPECIAL_TYPES */
+		default:
+			PyErr_Format(SnmpException, "unknown type returned (%d)",
+			    vars->type);
 			goto operror;
 		}
-		resultvalue = PyString_FromFormat("%d.%d.%d.%d",
-		    vars->val.string[0],
-		    vars->val.string[1],
-		    vars->val.string[2],
-		    vars->val.string[3]);
-		break;
-	case ASN_COUNTER64:
-#ifdef NETSNMP_WITH_OPAQUE_SPECIAL_TYPES
-	case ASN_OPAQUE_U64:
-	case ASN_OPAQUE_I64:
-	case ASN_OPAQUE_COUNTER64:
-#endif                          /* NETSNMP_WITH_OPAQUE_SPECIAL_TYPES */
-		counter64 = ((unsigned long long)(vars->val.counter64->high) << 32) +
-		    (unsigned long long)(vars->val.counter64->high);
-		resultvalue = PyLong_FromUnsignedLongLong(counter64);
-		break;
-#ifdef NETSNMP_WITH_OPAQUE_SPECIAL_TYPES
-	case ASN_OPAQUE_FLOAT:
-		resultvalue = PyFloat_FromDouble(*vars->val.floatVal);
-		break;
-	case ASN_OPAQUE_DOUBLE:
-		resultvalue = PyFloat_FromDouble(*vars->val.doubleVal);
-		break;
-#endif                          /* NETSNMP_WITH_OPAQUE_SPECIAL_TYPES */
-	default:
-		PyErr_Format(SnmpException, "unknown type returned (%d)",
-		    vars->type);
-		goto operror;
-	}
-	if (resultvalue == NULL) goto operror;
-
-	/* And now, the OID */
-	if ((resultoid = PyTuple_New(vars->name_length)) == NULL)
-		goto operror;
-	for (i = 0; i < vars->name_length; i++) {
-		if ((tmp = PyLong_FromLong(vars->name[i])) == NULL)
+		if (resultvalue == NULL) goto operror;
+		
+		/* And now, the OID */
+		if ((resultoid = PyTuple_New(vars->name_length)) == NULL)
 			goto operror;
-		PyTuple_SetItem(resultoid, i, tmp);
-	}
-	if ((result = PyTuple_Pack(2, resultoid, resultvalue)) == NULL)
-		goto operror;
-	Py_DECREF(resultoid);
-	Py_DECREF(resultvalue);
+		for (i = 0; i < vars->name_length; i++) {
+			if ((tmp = PyLong_FromLong(vars->name[i])) == NULL)
+				goto operror;
+			PyTuple_SetItem(resultoid, i, tmp);
+		}
+		if ((result = PyTuple_Pack(2, resultoid, resultvalue)) == NULL)
+			goto operror;
+		Py_CLEAR(resultoid);
+		Py_CLEAR(resultvalue);
+		if (PyTuple_SetItem(results, j-1, result) != 0)
+			goto operror;
+		result = NULL;	/* Stolen */
+	} while ((vars = vars->next_variable));
 	snmp_free_pdu(response);
-	free(buffer);
-	return result;
+	return results;
 	
 operror:
 	Py_XDECREF(resultvalue);
 	Py_XDECREF(resultoid);
-	free(buffer);
+	Py_XDECREF(results);
+	Py_XDECREF(result);
+	if (pdu)
+		snmp_free_pdu(pdu);
 	if (response)
 		snmp_free_pdu(response);
 	return NULL;

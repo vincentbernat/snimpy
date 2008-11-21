@@ -59,7 +59,7 @@ class Manager(object):
             return object.__getattribute__(self, attribute)
         m, a = self._locate(attribute)
         if isinstance(a, mib.Scalar):
-            oid, result = self._session.get(a.oid + (0,))
+            oid, result = self._session.get(a.oid + (0,))[0]
             return a.type(a, result)
         elif isinstance(a, mib.Column):
             return ProxyColumn(self._session, a)
@@ -72,7 +72,7 @@ class Manager(object):
         if not isinstance(value, basictypes.Type):
             value = a.type(a, value)
         if isinstance(a, mib.Scalar):
-            oid, result = self._session.set(a.oid + (0,), value)
+            self._session.set(a.oid + (0,), value)
             return
         raise AttributeError("%s is not writable" % attribute)
 
@@ -102,7 +102,7 @@ class ProxyColumn(Proxy, DictMixin):
             if not isinstance(ind, basictypes.Type):
                 ind = indextype[i].type(indextype[i], ind)
             oidindex.extend(ind.toOid())
-        oid, result = getattr(self.session, op)(self.proxy.oid + tuple(oidindex), *args)
+        oid, result = getattr(self.session, op)(self.proxy.oid + tuple(oidindex), *args)[0]
         return self.proxy.type(self.proxy, result)
 
     def __getitem__(self, index):
@@ -131,7 +131,7 @@ class ProxyColumn(Proxy, DictMixin):
         oid = self.proxy.oid
         indexes = self.proxy.table.index
         while True:
-            noid, result = self.session.getnext(oid)
+            noid, result = self.session.getnext(oid)[0]
             if noid <= oid:
                 raise StopIteration
             oid = noid
