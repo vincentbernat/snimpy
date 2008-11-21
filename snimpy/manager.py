@@ -68,6 +68,7 @@ class Manager(object):
     def __init__(self, host=None, community=None, version=None):
         if host is None:
             host = Manager._host
+        self._host = host
         if community is None:
             community = Manager._community
         if version is None:
@@ -106,6 +107,9 @@ class Manager(object):
             return
         raise AttributeError("%s is not writable" % attribute)
 
+    def __repr__(self):
+        return "<Manager for %s>" % self._host
+
     def __enter__(self):
         """In a context, we group all "set" into a single request"""
         self._osession = self._session
@@ -115,7 +119,8 @@ class Manager(object):
     def __exit__(self, type, value, traceback):
         """When we exit, we should execute all "set" requests"""
         try:
-            self._session.commit()
+            if type is None:
+                self._session.commit()
         finally:
             self._session = self._osession
             del self._osession
@@ -146,8 +151,10 @@ class ProxyColumn(Proxy, DictMixin):
             if not isinstance(ind, basictypes.Type):
                 ind = indextype[i].type(indextype[i], ind)
             oidindex.extend(ind.toOid())
-        oid, result = getattr(self.session, op)(self.proxy.oid + tuple(oidindex), *args)[0]
-        return self.proxy.type(self.proxy, result)
+        result = getattr(self.session, op)(self.proxy.oid + tuple(oidindex), *args)
+        if op != "set":
+            oid, result = result[0]
+            return self.proxy.type(self.proxy, result)
 
     def __getitem__(self, index):
         return self._op("get", index)
