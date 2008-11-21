@@ -25,6 +25,36 @@ Very high level interface to SNMP and MIB for Snimpy
 from UserDict import DictMixin
 import snmp, mib, basictypes
 
+class DelayedSetSession(object):
+    """SNMP session that is able to delay SET requests.
+
+    This is an adapter. The constructor takes the original (not
+    delayed) session.
+    """
+
+    def __init__(self, session):
+        object.__setattr__(self, "session", session)
+        object.__setattr__(self, "setters", [])
+
+    def __setattr__(self, attribute, value):
+        return setattr(object.__getattribute__(self, "session"), attribute)
+
+    def __getattribute__(self, attribute):
+        if attribute not in ["set", "commit"]:
+            return getattr(object.__getattribute__(self, "session"), attribute)
+        return object.__getattribute__(self, attribute)
+
+    def set(self, oid, value):
+        object.__getattribute__(self, "setters").append((oid, value))
+
+    def commit(self):
+        args = []
+        for oid, value in object.__getattribute__(self, "setters"):
+            args.append(oid)
+            args.append(value)
+        if args:
+            object.__getattribute__(self, "session").set(*args)
+
 class Manager(object):
 
     # default values
@@ -75,6 +105,20 @@ class Manager(object):
             self._session.set(a.oid + (0,), value)
             return
         raise AttributeError("%s is not writable" % attribute)
+
+    def __enter__(self):
+        """In a context, we group all "set" into a single request"""
+        self._osession = self._session
+        self._session = DelayedSetSession(self._session)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        """When we exit, we should execute all "set" requests"""
+        try:
+            self._session.commit()
+        finally:
+            self._session = self._osession
+            del self._osession
 
 class Proxy:
 

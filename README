@@ -97,6 +97,20 @@ For a column, you get a dictionary-like interface:
   for index in m.ifDescr: print repr(m.ifDescr[i])
   m.ifAdminStatus[3] = "down"
 
+If you want to group several write into a single request, you can do
+it with "with" keyword of Python 2.5+:
+
+ with M("localhost", "private") as m:
+    m.sysName = "toto"
+    m.ifAdminStatus[20] = "down"
+
+Or:
+
+ m = M("localhost", "private")
+ with m:
+    m.sysName = "toto"
+    m.ifAdminStatus[20] = "down"
+
 That's all!
 
 Why another tool?
