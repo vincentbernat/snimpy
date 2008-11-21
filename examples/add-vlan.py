@@ -4,6 +4,8 @@
 On Nortel switches, create a new VLAN and tag it on "TagAll" ports.
 """
 
+from __future__ import with_statement
+
 import os
 import sys
 
@@ -18,10 +20,10 @@ s = M(host=sys.argv[1], community=sys.argv[2])
 # Create the VLAN
 if vlanNumber not in s.rcVlanId:
     print "VLAN %d will be created with name %s on %s" % (vlanNumber, vlanName, sys.argv[1])
-    s.rcVlanRowStatus[vlanNumber] = "createAndWait"
-    s.rcVlanName[vlanNumber] = vlanName
-    s.rcVlanType[vlanNumber] = "byPort"
-    s.rcVlanRowStatus[vlanNumber] = "active"
+    with s:
+        s.rcVlanRowStatus[vlanNumber] = "createAndGo"
+        s.rcVlanName[vlanNumber] = vlanName
+        s.rcVlanType[vlanNumber] = "byPort"
 else:
     print "VLAN %d already exists on %s" % (vlanNumber, sys.argv[1])
     # Just set the name
