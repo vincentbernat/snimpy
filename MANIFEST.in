@@ -1,2 +1,3 @@
 recursive-include examples *.py
 recursive-include tests *.py SNIMPY-MIB.mib
+include man/snimpy.1
