@@ -187,7 +187,7 @@ class String(Type):
                         result += "%s" % hex(number)[2:]
                     else:       # format == "d":
                         result += "%s" % str(number)
-                elif format == 'a':
+                else: # should be a, but can be something else like t
                     result += bytes
                 result += sep
             if sep and term:
@@ -199,7 +199,7 @@ class String(Type):
         
     def display(self):
         if self.entity.fmt:
-            return self._display(fmt)
+            return self._display(self.entity.fmt)
         if "\\x" not in repr(self.value):
             return self.value
         return "0x" + " ".join([("0%s" % hex(ord(a))[2:])[-2:] for a in self.value])
