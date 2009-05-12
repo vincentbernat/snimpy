@@ -16,7 +16,7 @@ s = M(host=sys.argv[1], community=sys.argv[2])
 
 try:
     type = s.sysDescr
-except snmp.SNMPGenerr:
+except snmp.SNMPException:
     print "Cannot process %s: bad community?" % sys.argv[1]
     sys.exit(1)
 if not type.value.startswith("Ethernet Routing Switch 55") and \
