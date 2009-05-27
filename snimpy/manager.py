@@ -34,27 +34,19 @@ class DelayedSetSession(object):
     """
 
     def __init__(self, session):
-        object.__setattr__(self, "session", session)
-        object.__setattr__(self, "setters", [])
+        self.session = session
+        self.setters = []
 
-    def __setattr__(self, attribute, value):
-        return setattr(object.__getattribute__(self, "session"), attribute)
-
-    def __getattribute__(self, attribute):
-        if attribute not in ["set", "commit"]:
-            return getattr(object.__getattribute__(self, "session"), attribute)
-        return object.__getattribute__(self, attribute)
-
-    def set(self, oid, value):
-        object.__getattribute__(self, "setters").append((oid, value))
+    def get(self, *args):
+        return self.session.get(*args)
+    def getnext(self, *args):
+        return self.session.getnext(*args)
+    def set(self, *args):
+        self.setters.extend(args)
 
     def commit(self):
-        args = []
-        for oid, value in object.__getattribute__(self, "setters"):
-            args.append(oid)
-            args.append(value)
-        if args:
-            object.__getattribute__(self, "session").set(*args)
+        if self.setters:
+            self.session.set(*self.setters)
 
 class CachedSession(object):
     """SNMP session using a cache.
@@ -68,42 +60,32 @@ class CachedSession(object):
         self.timeout = timeout
         self.count = 0
 
-    def __getattribute__(self, attribute):
-        if attribute not in ["getorgetnext", "get", "getnext", "flush"]:
-            return getattr(object.__getattribute__(self, "session"), attribute)
-        return object.__getattribute__(self, attribute)
+    def set(self, *args):
+        return self.session.set(*args)
 
-    def getorgetnext(self, op, oid):
-        cache = object.__getattribute__(self, "cache")
-        session = object.__getattribute__(self, "session")
-        timeout = object.__getattribute__(self, "timeout")
-        count = object.__getattribute__(self, "count")
-        self.count = count+1
-        if (op, oid) in cache:
-            t, v = cache[op, oid]
-            if time() - t < timeout:
+    def getorgetnext(self, op, *args):
+        self.count += 1
+        if (op, args) in self.cache:
+            t, v = self.cache[op, args]
+            if time() - t < self.timeout:
                 return v
-        value = getattr(session, op)(oid)
-        cache[op, oid] = [time(), value]
-        object.__getattribute__(self, "flush")()
+        value = getattr(self.session, op)(*args)
+        self.cache[op, args] = [time(), value]
+        self.flush()
         return value
 
-    def get(self, oid):
-        return object.__getattribute__(self, "getorgetnext")("get", oid)
-
-    def getnext(self, oid):
-        return object.__getattribute__(self, "getorgetnext")("getnext", oid)
+    def get(self, *args):
+        return self.getorgetnext("get", *args)
+    def getnext(self, *args):
+        return self.getorgetnext("getnext", *args)
 
     def flush(self):
-        count = object.__getattribute__(self, "count")
-        if count < 1000:
+        if self.count < 1000:
             return
-        timeout = object.__getattribute__(self, "timeout")
-        cache = object.__getattribute__(self, "cache")
-        keys = cache.keys()
+        keys = self.cache.keys()
         for k in keys:
-            if time() - cache[k][0] > timeout:
-                del cache[k]
+            if time() - self.cache[k][0] > self.timeout:
+                del self.cache[k]
         self.count = 0
 
 class Manager(object):
