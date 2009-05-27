@@ -425,13 +425,13 @@ class Timeticks(Type):
     def set(self, value):
         if type(value) is tuple:
             value = value[0]
-        if type(value) is int:
+        if type(value) is int or type(value) is long:
             # Value in centiseconds
             self.value = timedelta(0, value/100.)
         elif isinstance(value, timedelta):
             self.value = value
         else:
-            raise TypeError("dunno how to handle %r" % value)
+            raise TypeError("dunno how to handle %r (%s)" % (value, type(value)))
 
     def __int__(self):
         return self.value.days*3600*24*100 + self.value.seconds*100 + \
