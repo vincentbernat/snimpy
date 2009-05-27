@@ -63,10 +63,10 @@ class CachedSession(object):
     """
 
     def __init__(self, session, timeout=5):
-        object.__setattr__(self, "session", session)
-        object.__setattr__(self, "cache", {})
-        object.__setattr__(self, "timeout", timeout)
-        object.__setattr__(self, "count", 0)
+        self.session = session
+        self.cache = {}
+        self.timeout = timeout
+        self.count = 0
 
     def __getattribute__(self, attribute):
         if attribute not in ["getorgetnext", "get", "getnext", "flush"]:
@@ -78,7 +78,7 @@ class CachedSession(object):
         session = object.__getattribute__(self, "session")
         timeout = object.__getattribute__(self, "timeout")
         count = object.__getattribute__(self, "count")
-        object.__setattr__(self, "count", count+1)
+        self.count = count+1
         if (op, oid) in cache:
             t, v = cache[op, oid]
             if time() - t < timeout:
@@ -104,7 +104,7 @@ class CachedSession(object):
         for k in keys:
             if time() - cache[k][0] > timeout:
                 del cache[k]
-        object.__setattr__(self, "count", 0)
+        self.count = 0
 
 class Manager(object):
 
