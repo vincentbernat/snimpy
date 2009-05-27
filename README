@@ -111,6 +111,22 @@ Or:
     m.sysName = "toto"
     m.ifAdminStatus[20] = "down"
 
+There is also a caching mechanism which is disabled by default:
+
+ import time
+ m = M("localhost", cache=True)
+ print m.sysUpTime
+ time.sleep(1)
+ print m.sysUpTime
+ time.sleep(1)
+ print m.sysUpTime
+ time.sleep(10)
+ print m.sysUpTime
+
+You can also use the number of seconds the cache should be hold.
+
+ m = M("localhost", cache=20)
+
 That's all!
 
 Why another tool?

@@ -22,6 +22,7 @@
 Very high level interface to SNMP and MIB for Snimpy
 """
 
+from time import time
 from UserDict import DictMixin
 import snmp, mib, basictypes
 
@@ -55,6 +56,41 @@ class DelayedSetSession(object):
         if args:
             object.__getattribute__(self, "session").set(*args)
 
+class CachedSession(object):
+    """SNMP session using a cache.
+
+    This is an adapter. The constructor takes the original session.
+    """
+
+    def __init__(self, session, timeout=5):
+        object.__setattr__(self, "session", session)
+        object.__setattr__(self, "cache", {})
+        object.__setattr__(self, "timeout", timeout)
+
+    def __getattribute__(self, attribute):
+        if attribute not in ["get", "flush"]:
+            return getattr(object.__getattribute__(self, "session"), attribute)
+        return object.__getattribute__(self, attribute)
+
+    def get(self, oid):
+        cache = object.__getattribute__(self, "cache")
+        session = object.__getattribute__(self, "session")
+        timeout = object.__getattribute__(self, "timeout")
+        if oid in cache:
+            t, v = cache[oid]
+            if time() - t < timeout:
+                return v
+            # Too old, we will refetch the value
+            del cache[oid]
+        value = session.get(oid)
+        cache[oid] = [time(), value]
+        return value
+
+    def flush(self):
+        # There is no way to call flush, but we may find something handy for this.
+        cache = object.__getattribute__(self, "cache")
+        cache.clear()
+
 class Manager(object):
 
     # default values
@@ -65,7 +101,7 @@ class Manager(object):
     # do we want this object to be populated with all nodes?
     _complete = False
 
-    def __init__(self, host=None, community=None, version=None):
+    def __init__(self, host=None, community=None, version=None, cache=False):
         if host is None:
             host = Manager._host
         self._host = host
@@ -74,6 +110,11 @@ class Manager(object):
         if version is None:
             version = Manager._version
         self._session = snmp.Session(host, community, version)
+        if cache:
+            if cache is True:
+                self._session = CachedSession(self._session)
+            else:
+                self._session = CachedSession(self._session, cache)
 
     def _locate(self, attribute):
         for m in loaded:
