@@ -68,23 +68,29 @@ class CachedSession(object):
         object.__setattr__(self, "timeout", timeout)
 
     def __getattribute__(self, attribute):
-        if attribute not in ["get", "flush"]:
+        if attribute not in ["getorgetnext", "get", "getnext", "flush"]:
             return getattr(object.__getattribute__(self, "session"), attribute)
         return object.__getattribute__(self, attribute)
 
-    def get(self, oid):
+    def getorgetnext(self, op, oid):
         cache = object.__getattribute__(self, "cache")
         session = object.__getattribute__(self, "session")
         timeout = object.__getattribute__(self, "timeout")
-        if oid in cache:
-            t, v = cache[oid]
+        if (op, oid) in cache:
+            t, v = cache[op, oid]
             if time() - t < timeout:
                 return v
             # Too old, we will refetch the value
-            del cache[oid]
-        value = session.get(oid)
-        cache[oid] = [time(), value]
+            del cache[op, oid]
+        value = getattr(session, op)(oid)
+        cache[op, oid] = [time(), value]
         return value
+
+    def get(self, oid):
+        return object.__getattribute__(self, "getorgetnext")("get", oid)
+
+    def getnext(self, oid):
+        return object.__getattribute__(self, "getorgetnext")("getnext", oid)
 
     def flush(self):
         # There is no way to call flush, but we may find something handy for this.
