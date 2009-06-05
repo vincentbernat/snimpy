@@ -244,4 +244,63 @@ snimpyComplexState OBJECT-TYPE
 	"State for our both IP"
     ::= { snimpyComplexEntry 3 }
 
+-- A table with complex indexes
+
+snimpyIndexTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpyIndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table with complex indexes"
+    ::= { snimpyTables 3 }
+
+snimpyIndexEntry OBJECT-TYPE
+    SYNTAX      SnimpyIndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our indexed table"
+    INDEX   { snimpyIndexVarLen, snimpyIndexFixedLen, IMPLIED snimpyIndexImplied }
+    ::= { snimpyIndexTable 1 }
+
+SnimpyIndexEntry ::=
+    SEQUENCE {
+        snimpyIndexVarLen	DisplayString,
+	snimpyIndexFixedLen	DisplayString,
+        snimpyIndexImplied      DisplayString,
+        snimpyIndexInt          Integer32
+    }
+
+snimpyIndexVarLen OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (1..10))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Variable length index"
+    ::= { snimpyIndexEntry 1 }
+
+snimpyIndexFixedLen OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (10))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Fixed length index"
+    ::= { snimpyIndexEntry 2 }
+
+snimpyIndexImplied OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (1..30))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Variable length index, implied"
+    ::= { snimpyIndexEntry 3 }
+
+snimpyIndexInt OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpyIndexEntry 4 }
+
 END

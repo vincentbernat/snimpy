@@ -61,6 +61,7 @@ static PyObject* entity_getfmt(EntityObject *, void *);
 static PyObject* entity_getenum(EntityObject *, void *);
 static PyObject* table_getcolumns(EntityObject *, void *);
 static PyObject* table_getindex(EntityObject *, void *);
+static PyObject* table_isimplied(EntityObject *, void *);
 static PyObject* column_gettable(EntityObject *, void *);
 static PyGetSetDef entity_getseters[] = {
 	{"type",
@@ -81,6 +82,9 @@ static PyGetSetDef table_getseters[] = {
 	{"columns",
 	 (getter)table_getcolumns, NULL,
 	 "table columns", NULL},
+	{"implied",
+	 (getter)table_isimplied, NULL,
+	 "is the last index implied?", NULL},
 	{"index",
 	 (getter)table_getindex, NULL,
 	 "table index(es)", NULL},
@@ -329,19 +333,10 @@ table_getcolumns(EntityObject *self, void *closure)
 	return lcolumns;
 }
 
-static PyObject*
-table_getindex(EntityObject *self, void *closure)
+static SmiNode*
+table_getrow(EntityObject *self, void *closure)
 {
-	SmiElement *element;
-	SmiNode *nelement, *child;
-	PyObject *lindex;
-	EntityObject *index;
-
-	if (self->node == NULL) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-
+	SmiNode *child;
 	child = smiGetFirstChildNode(self->node);
 	if (child && (child->indexkind == SMI_INDEX_AUGMENT)) {
 		child = smiGetRelatedNode(child);
@@ -363,6 +358,42 @@ table_getindex(EntityObject *self, void *closure)
 		    child->name, self->node->name);
 		return NULL;
 	}
+	return child;
+}
+
+static PyObject*
+table_isimplied(EntityObject *self, void *closure)
+{
+	SmiNode *child;
+	if (self->node == NULL) {
+		Py_INCREF(Py_False);
+		return Py_False;
+	}
+	if ((child = table_getrow(self, closure)) == NULL)
+		return NULL;
+	if (child->implied) {
+		Py_INCREF(Py_True);
+		return Py_True;
+	}
+	Py_INCREF(Py_False);
+	return Py_False;
+}
+
+static PyObject*
+table_getindex(EntityObject *self, void *closure)
+{
+	SmiElement *element;
+	SmiNode *nelement, *child;
+	PyObject *lindex;
+	EntityObject *index;
+
+	if (self->node == NULL) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	if ((child = table_getrow(self, closure)) == NULL)
+		return NULL;
+
 	element = smiGetFirstElement(child);
 	if ((lindex= PyList_New(0)) == NULL)
 		return NULL;

@@ -12,7 +12,8 @@ class TestMibSnimpy(unittest.TestCase):
                       "snimpyTables"]
         self.nodes.sort()
         self.tables = ["snimpyComplexTable",
-                       "snimpySimpleTable"]
+                       "snimpySimpleTable",
+                       "snimpyIndexTable"]
         self.tables.sort()
         self.columns = ["snimpyComplexFirstIP",
                         "snimpyComplexSecondIP",
@@ -20,7 +21,12 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyComplexState",
                         "snimpySimpleDescr",
                         "snimpySimplePhys",
-                        "snimpySimpleType"]
+                        "snimpySimpleType",
+                        "snimpyIndexVarLen",
+                        "snimpyIndexFixedLen",
+                        "snimpyIndexImplied",
+                        "snimpyIndexInt",
+                        ]
         self.columns.sort()
         self.scalars = ["snimpyIpAddress",
                         "snimpyString",
@@ -153,6 +159,12 @@ class TestMibSnimpy(unittest.TestCase):
         self.assertEqual([str(i) for i in mib.get("SNIMPY-MIB", "snimpyComplexTable").index],
                          ["snimpyComplexFirstIP", "snimpyComplexSecondIP"])
 
+    def testImplied(self):
+        """Check that we can get implied attribute for a given table"""
+        self.assertEqual(mib.get("SNIMPY-MIB", 'snimpySimpleTable').implied, False)
+        self.assertEqual(mib.get("SNIMPY-MIB", 'snimpyComplexTable').implied, False)
+        self.assertEqual(mib.get("SNIMPY-MIB", 'snimpyIndexTable').implied, True)
+
     def testOid(self):
         """Test that objects are rooted at the correct OID"""
         oids = { "snimpy": (1,3,6,1,2,1,45121),
@@ -184,4 +196,3 @@ class TestMibSnimpy(unittest.TestCase):
         """Check that we get FMT from types"""
         self.assertEqual(mib.get("SNIMPY-MIB", 'snimpySimplePhys').fmt, "1x:")
         self.assertEqual(mib.get("SNIMPY-MIB", 'snimpyInteger').fmt, "d-2")
-        
