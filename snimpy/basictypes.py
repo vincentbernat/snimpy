@@ -48,7 +48,7 @@ class Type:
                                                             self.__class))
         self.entity = entity
         if isinstance(value, Type):
-            self.set(self.value)
+            self.set(value.value)
         else:
             self.set(value)
 
