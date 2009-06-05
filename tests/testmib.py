@@ -139,6 +139,27 @@ class TestMibSnimpy(unittest.TestCase):
         for t in tt:
             self.assertEqual(mib.get('SNIMPY-MIB', t).type, tt[t])
 
+    def testRanges(self):
+        tt = { "snimpyIpAddress": 4,
+               "snimpyString": (0,255),
+               "snimpyInteger": [(6,18),(20,23),(27,1336)],
+               "snimpyEnum": None,
+               "snimpyObjectId": None,
+               "snimpyBoolean": None,
+               "snimpyCounter": (0,4294967295L),
+               "snimpyGauge": (0,4294967295L),
+               "snimpyTimeticks": (0,4294967295L),
+               "snimpyCounter64": (0,18446744073709551615L),
+               "snimpyBits": None,
+               "snimpySimpleIndex": (1,30),
+               "snimpyComplexFirstIP": 4,
+               "snimpyComplexSecondIP": 4,
+               "snimpyComplexState": None
+               }
+        for t in tt:
+            print t
+            self.assertEqual(mib.get('SNIMPY-MIB', t).ranges, tt[t])
+
     def testEnums(self):
         """Test that we got the enum values correctly"""
         self.assertEqual(mib.get('SNIMPY-MIB', "snimpyInteger").enum, None)

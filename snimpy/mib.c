@@ -58,6 +58,7 @@ typedef struct {
 static PyObject* entity_gettype(EntityObject *, void *);
 static PyObject* entity_getoid(EntityObject *, void *);
 static PyObject* entity_getfmt(EntityObject *, void *);
+static PyObject* entity_getranges(EntityObject *, void *);
 static PyObject* entity_getenum(EntityObject *, void *);
 static PyObject* table_getcolumns(EntityObject *, void *);
 static PyObject* table_getindex(EntityObject *, void *);
@@ -73,6 +74,9 @@ static PyGetSetDef entity_getseters[] = {
 	{"fmt",
 	 (getter)entity_getfmt, NULL,
 	 "entity fmt", NULL},
+	{"ranges",
+	 (getter)entity_getranges, NULL,
+	 "entity type ranges", NULL},
 	{"enum",
 	 (getter)entity_getenum, NULL,
 	 "entity enum values", NULL},
@@ -516,6 +520,89 @@ entity_getfmt(EntityObject *self, void *closure)
 	}
 
 	return PyString_FromString(type->format);
+}
+
+static PyObject*
+entity_getranges(EntityObject *self, void *closure)
+{
+	SmiType *type;
+	SmiRange *range;
+	SmiValue *value;
+	PyObject *cur, *min, *max, *list, *couple;
+	int result;
+
+	if ((self->node == NULL) ||
+	    ((type = smiGetNodeType(self->node)) == NULL) ||
+	    ((range = smiGetFirstRange(type)) == NULL)) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	if ((list = PyList_New(0)) == NULL)
+		return NULL;
+	while (range) {
+		min = max = cur = NULL;
+		value = &range->minValue;
+		do {
+			switch (value->basetype) {
+			case SMI_BASETYPE_INTEGER32:
+				cur = PyInt_FromLong(value->value.integer32);
+				break;
+			case SMI_BASETYPE_UNSIGNED32:
+				cur = PyInt_FromLong(value->value.unsigned32);
+				break;
+			case SMI_BASETYPE_INTEGER64:
+				cur = PyLong_FromLong(value->value.integer64);
+				break;
+			case SMI_BASETYPE_UNSIGNED64:
+				cur = PyLong_FromUnsignedLong(value->value.unsigned64);
+				break;
+			default:
+				cur = NULL;
+				break;
+			}
+			if (value == &range->minValue)
+				min = cur;
+			else
+				max = cur;
+			value++;
+		} while (value == &range->maxValue);
+		if (!min || !max) {
+			Py_XDECREF(min);
+			Py_XDECREF(max);
+			continue;
+		}
+		if ((PyObject_Cmp(min, max, &result) == -1) || (result != 0)) {
+			couple = PyTuple_Pack(2, min, max);
+			Py_DECREF(min);
+			Py_DECREF(max);
+			if (!couple) return NULL;
+		} else {
+			couple = min;
+			Py_DECREF(max);
+		}
+		if (PyList_Append(list, couple) == -1) {
+			Py_DECREF(couple);
+			return NULL;
+		}
+		Py_DECREF(couple);
+		range = smiGetNextRange(range);
+	}
+
+	if (PyList_Size(list) <= 0) {
+		Py_DECREF(list);
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	if (PyList_Size(list) == 1) {
+		if ((couple = PyList_GetItem(list, 0)) == NULL) {
+			Py_DECREF(list);
+			return NULL;
+		}
+		Py_INCREF(couple);
+		Py_DECREF(list);
+		return couple;
+	}	
+	return list;
 }
 
 static PyObject*
