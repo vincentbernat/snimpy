@@ -266,6 +266,7 @@ snimpyIndexEntry OBJECT-TYPE
 SnimpyIndexEntry ::=
     SEQUENCE {
         snimpyIndexVarLen	DisplayString,
+	snimpyIndexIntIndex	Integer32,
 	snimpyIndexFixedLen	DisplayString,
         snimpyIndexImplied      DisplayString,
         snimpyIndexInt          Integer32
@@ -279,13 +280,21 @@ snimpyIndexVarLen OBJECT-TYPE
             "Variable length index"
     ::= { snimpyIndexEntry 1 }
 
+snimpyIndexIntIndex OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Integer index"
+    ::= { snimpyIndexEntry 2 }
+
 snimpyIndexFixedLen OBJECT-TYPE
-    SYNTAX      DisplayString (SIZE (10))
+    SYNTAX      DisplayString (SIZE (6))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
             "Fixed length index"
-    ::= { snimpyIndexEntry 2 }
+    ::= { snimpyIndexEntry 3 }
 
 snimpyIndexImplied OBJECT-TYPE
     SYNTAX      DisplayString (SIZE (1..30))
@@ -293,7 +302,7 @@ snimpyIndexImplied OBJECT-TYPE
     STATUS      current
     DESCRIPTION
             "Variable length index, implied"
-    ::= { snimpyIndexEntry 3 }
+    ::= { snimpyIndexEntry 4 }
 
 snimpyIndexInt OBJECT-TYPE
     SYNTAX      Integer32
@@ -301,6 +310,6 @@ snimpyIndexInt OBJECT-TYPE
     STATUS      current
     DESCRIPTION
             "Blah blah"
-    ::= { snimpyIndexEntry 4 }
+    ::= { snimpyIndexEntry 5 }
 
 END

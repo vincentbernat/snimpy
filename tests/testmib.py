@@ -23,6 +23,7 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpySimplePhys",
                         "snimpySimpleType",
                         "snimpyIndexVarLen",
+                        "snimpyIndexIntIndex",
                         "snimpyIndexFixedLen",
                         "snimpyIndexImplied",
                         "snimpyIndexInt",

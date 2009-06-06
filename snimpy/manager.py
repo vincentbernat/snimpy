@@ -186,8 +186,10 @@ class ProxyColumn(Proxy, DictMixin):
                                                               indextype))
         oidindex = []
         for i, ind in enumerate(index):
-            if not isinstance(ind, basictypes.Type):
-                ind = indextype[i].type(indextype[i], ind)
+            ind = indextype[i].type(indextype[i], ind) # Cast to the
+                                                       # correct type
+                                                       # since we need
+                                                       # "toOid()"
             oidindex.extend(ind.toOid())
         result = getattr(self.session, op)(self.proxy.oid + tuple(oidindex), *args)
         if op != "set":
@@ -232,17 +234,9 @@ class ProxyColumn(Proxy, DictMixin):
             index = oid[len(self.proxy.oid):]
             target = []
             for x in indexes:
-                if not hasattr(x.type, "toOid"):
-                    raise ValueError("%s cannot be used as index" % str(x))
-                if x.type.consume == 0:
-                    target.append(x.type(x, tuple(index)))
-                    break
-                else:
-                    if len(index) < x.type.consume:
-                        raise ValueError("not enough OID left")
-                    target.append(x.type(x,
-                                         tuple(index[:x.type.consume])))
-                    index = index[x.type.consume:]
+                l, o = x.type.fromOid(x, tuple(index))
+                target.append(x.type(x, o))
+                index = index[l:]
             if len(target) == 1:
                 # Should work most of the time
                 yield target[0], result

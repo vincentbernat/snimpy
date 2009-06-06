@@ -61,10 +61,27 @@ class Type:
     def toOid(self):
         """Convert to an OID.
 
-        If this function is implemented, you should also ensure that
-        constructor accepts a tuple to build the type (tuple being OID
-        index). In this case, the consume class attribute should be
-        set to the length of the index, 0 being "as long as possible".
+        If this function is implemented, then class function fromOid
+        should also be implemented as the "invert" function of this one.
+
+        This function only works if the entity is used as an index!
+        Otherwise, it should raises NotImplementedError.
+
+        @return: OID that can be used as index
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def fromOid(cls, entity, oid):
+        """Create instance from an OID.
+
+        This is the sister function of toOid.
+
+        @param oid: OID to use to create an instance
+        @param entity: MIB entity we want to instantiate
+        @return: a couple C{(l, v)} with C{l} the number of suboid
+           needed to create the instance and v the instance created from
+           the OID
         """
         raise NotImplementedError
 
@@ -84,8 +101,6 @@ class Type:
 class IpAddress(Type):
     """Class for IP address"""
 
-    consume = 4                 # Consume 4 suboid if built from OID
-
     def set(self, value):
         if type(value) in [list, tuple]:
             value = ".".join([str(a) for a in value])
@@ -101,6 +116,12 @@ class IpAddress(Type):
 
     def toOid(self):
         return tuple(self.value)
+
+    @classmethod
+    def fromOid(cls, entity, oid):
+        if len(oid) < 4:
+            raise ValueError("%r is too short for an IP address" % (oid,))
+        return (4, cls(entity, oid[:4]))
 
     def __str__(self):
         return ".".join([str(a) for a in self.value])
@@ -124,16 +145,64 @@ class String(Type):
     """Class for any string"""
 
     def set(self, value):
-        if type(value) is tuple:
-            self.value = "".join([chr(x) for x in value])
-        else:
-            self.value = str(value)
+        self.value = str(value)
 
     def pack(self):
         return (snmp.ASN_OCTET_STR, self.value)
 
+    @classmethod
+    def _fixedOrImplied(cls, entity):
+        """Determine if the given entity is a fixed-len string or an
+        implied var-len string.
+
+        @param entity: entity to check
+        @return: C{fixed} if it is fixed-len, C{implied} if implied var-len, C{False} otherwise
+        """
+        if not(entity.ranges) or type(entity.ranges) is not tuple:
+            # Fixed length
+            return "fixed"
+
+        # We have a variable-len string. We need to know if it is impled.
+        try:
+            table = entity.table
+        except:
+            raise NotImplementedError("%r is not an index of a table" % entity)
+        indexes = [str(a) for a in table.index]
+        if str(entity) not in indexes:
+            raise NotImplementedError("%r is not an index of a table" % entity)
+        if str(entity) != indexes[-1] or not table.implied:
+            # This index is not implied
+            return False
+        return "implied"
+
     def toOid(self):
-        return tuple([ord(a) for a in self.value])
+        # To convert properly to OID, we need to know if it is a
+        # fixed-len string, an implied string or a variable-len
+        # string.
+        if self._fixedOrImplied(self.entity):
+            return tuple(ord(a) for a in self.value)
+        return tuple([len(self.value)] + [ord(a) for a in self.value])
+
+    @classmethod
+    def fromOid(cls, entity, oid):
+        type = cls._fixedOrImplied(entity)
+        if type == "implied":
+            # Eat everything
+            return (len(oid), cls(entity,"".join([chr(x) for x in oid])))
+        if type == "fixed":
+            l = entity.ranges
+            if len(oid) < l:
+                raise ValueError(
+                    "%r is too short for wanted fixed string (need at least %d)" % (oid, l))
+            return (l, cls(entity,"".join([chr(x) for x in oid[:l]])))
+        # This is var-len
+        if not oid:
+            raise ValueError("empty OID while waiting for var-len string")
+        l = oid[0]
+        if len(oid) < l + 1:
+            raise ValueError(
+                "%r is too short for variable-len string (need at least %d)" % (oid, l))
+        return (l+1, cls(entity,"".join([chr(x) for x in oid[1:(l+1)]])))
 
     def _display(self, fmt):
         i = 0               # Position in self.value
@@ -262,11 +331,7 @@ class String(Type):
 class Integer(Type):
     """Class for any integer"""
 
-    consume = 1
-
     def set(self, value):
-        if type(value) is tuple:
-            value = value[0]
         self.value = long(value)
 
     def pack(self):
@@ -286,6 +351,12 @@ class Integer(Type):
 
     def toOid(self):
         return (self.value,)
+
+    @classmethod
+    def fromOid(cls, entity, oid):
+        if len(oid) < 1:
+            raise ValueError("%r is too short for an integer" % (oid,))
+        return (1, cls(entity, oid[0]))
 
     def __int__(self):
         return int(self.value)
@@ -329,11 +400,7 @@ class Integer(Type):
 class Enum(Type):
     """Class for enumeration"""
 
-    consume = 1
-
     def set(self, value):
-        if type(value) is tuple:
-            value = value[0]
         if value in self.entity.enum:
             self.value = value
             return
@@ -349,6 +416,12 @@ class Enum(Type):
 
     def toOid(self):
         return (self.value,)
+
+    @classmethod
+    def fromOid(cls, entity, oid):
+        if len(oid) < 1:
+            raise ValueError("%r is too short for an enumeration" % (oid,))
+        return (1, cls(entity, oid[0]))
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -379,6 +452,27 @@ class Oid(Type):
 
     def toOid(self):
         return self.value
+
+    @classmethod
+    def fromOid(cls, entity, oid):
+        try:
+            table = entity.table
+        except:
+            raise NotImplementedError("%r is not an index of a table" % entity)
+        indexes = [str(a) for a in table.index]
+        if str(entity) not in indexes:
+            raise NotImplementedError("%r is not an index of a table" % entity)
+        if str(entity) != indexes[-1] or not table.implied:
+            # This index is not implied. We need the len
+            if len(oid) < 1:
+                raise ValueError("%r is too short for a not implied index" % entity)
+            l = oid[0]
+            if len(oid) < l + 1:
+                raise ValueError("%r has an incorrect size (needs at least %d)" % (oid, l))
+            return (l+1, cls(entity, oid[1:(l+1)]))
+        else:
+            # Eat everything
+            return (len(oid), cls(entity, oid))
 
     def __str__(self):
         return ".".join([str(x) for x in self.value])
@@ -420,11 +514,7 @@ class Boolean(Enum):
 class Timeticks(Type):
     """Class for timeticks"""
 
-    consume = 1
-
     def set(self, value):
-        if type(value) is tuple:
-            value = value[0]
         if type(value) is int or type(value) is long:
             # Value in centiseconds
             self.value = timedelta(0, value/100.)
@@ -439,6 +529,12 @@ class Timeticks(Type):
 
     def toOid(self):
         return (int(self),)
+
+    @classmethod
+    def fromOid(cls, entity, oid):
+        if len(oid) < 1:
+            raise ValueError("%r is too short for a timetick" % (oid,))
+        return (1, cls(entity, oid[0]))
 
     def pack(self):
         return (snmp.ASN_INTEGER,

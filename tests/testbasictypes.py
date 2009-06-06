@@ -202,40 +202,48 @@ class TestBasicTypes(unittest.TestCase):
                                           [1,7]).pack(),
                          (snmp.ASN_OCTET_STR, "\x41"))
 
-    def testToOid(self):
-        """Test conversion to OID"""
-        self.assertEqual(basictypes.build("SNIMPY-MIB",
-                                          "snimpyString",
-                                          "Hello").toOid(),
-                         (72,101,108,108,111))
-        self.assertEqual(basictypes.build("SNIMPY-MIB",
-                                          "snimpyInteger",
-                                          18).toOid(),
-                         (18,))
-        self.assertEqual(basictypes.build("SNIMPY-MIB",
-                                          "snimpyInteger",
-                                          1804).toOid(),
-                         (1804,))
-        self.assertEqual(basictypes.build("SNIMPY-MIB",
-                                          "snimpyEnum",
-                                          "testing").toOid(),
-                         (3,))
-        self.assertEqual(basictypes.build("SNIMPY-MIB",
-                                          "snimpyIpAddress",
-                                          "10.11.12.13").toOid(),
-                         (10,11,12,13))
-        self.assertEqual(basictypes.build("SNIMPY-MIB",
-                                          "snimpyObjectId",
-                                          (1,2,3,4)).toOid(),
-                         (1,2,3,4))
-        self.assertEqual(basictypes.build("SNIMPY-MIB",
-                                          "snimpyTimeticks",
-                                          timedelta(3, 2)).toOid(),
-                         (3*3600*24*100 + 2*100,))
-        self.assertRaises(NotImplementedError,
-                          basictypes.build("SNIMPY-MIB",
-                                           "snimpyBits",
-                                           [1,7]).toOid)
+    def testOid(self):
+        """Test conversion to/from OID."""
+        tt = { ("snimpySimpleIndex", 47): (47,),
+               ("snimpyComplexFirstIP", "10.14.15.4"): (10, 14, 15, 4),
+               ("snimpyComplexSecondIP", (14,15,16,17)): (14, 15, 16, 17),
+               ("snimpyIndexVarLen", "hello1"): tuple([len("hello1")] + [ord(a) for a in "hello1"]),
+               ("snimpyIndexFixedLen", "hello2"): tuple(ord(a) for a in "hello2"),
+               ("snimpyIndexImplied", "hello3"): tuple(ord(a) for a in "hello3"),
+               }
+        for t,v in tt:
+            oid = basictypes.build("SNIMPY-MIB",
+                                   t,
+                                   v).toOid()
+            self.assertEqual(oid,
+                             tt[t,v])
+            # Test double conversion
+            self.assertEqual(mib.get("SNIMPY-MIB", t).type.fromOid(
+                    mib.get("SNIMPY-MIB", t), oid),
+                             (len(tt[t,v]), v))
+
+    def testOidGreedy(self):
+        """Test greediness of fromOid."""
+        tt = {
+            "snimpyIndexVarLen": ((5, 104, 101, 108, 108, 111, 111, 111, 111), (6, "hello")),
+            "snimpyIndexFixedLen": ((104, 101, 108, 108, 111, 49, 49, 111), (6, "hello1")),
+            "snimpyIndexImplied": ((104, 101, 108, 108, 111, 50), (6, "hello2")),
+            "snimpyComplexFirstIP": ((15, 15, 16, 100, 23, 74, 87), (4, "15.15.16.100")),
+            "snimpySimpleIndex": ((17, 19, 20), (1, 17)),
+            }
+        for t in tt:
+            self.assertEqual(mib.get("SNIMPY-MIB", t).type.fromOid(
+                    mib.get("SNIMPY-MIB", t), tt[t][0]),
+                             tt[t][1])
+        # Test if too short
+        tt = {"snimpyComplexFirstIP": (17, 19, 20),
+              "snimpyIndexFixedLen": (104, 101, 108),
+              "snimpyIndexVarLen": (6, 102, 103, 104, 105),
+              }
+        for t in tt:
+            self.assertRaises(ValueError,
+                              mib.get("SNIMPY-MIB", t).type.fromOid,
+                              mib.get("SNIMPY-MIB", t), tt[t])
 
     def testDisplay(self):
         """Test string transformation"""
