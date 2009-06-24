@@ -565,7 +565,7 @@ initsnmp(void)
 	unsetenv("MIBS");
 	setenv("MIBDIRS", "/dev/null", 1);
 	/* Disable any logging */
-	shutdown_snmp_logging();
+	snmp_disable_log();
         logh = netsnmp_register_loghandler(NETSNMP_LOGHANDLER_NONE, LOG_DEBUG);
 	/* Init SNMP */
 	init_snmp("snimpy");
