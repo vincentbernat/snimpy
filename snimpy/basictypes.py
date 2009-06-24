@@ -397,7 +397,7 @@ class Integer(Type):
         # Ugly hack to be like an integer
         return getattr(self.value, attr)
 
-class Enum(Type):
+class Enum(Integer):
     """Class for enumeration"""
 
     def set(self, value):
@@ -408,14 +408,14 @@ class Enum(Type):
             if (v == value):
                 self.value = k
                 return
-        raise ValueError("%r is not a valid value for %s" % (value,
-                                                             self.entity))
+        try:
+            self.value = long(value)
+        except:
+            raise ValueError("%r is not a valid value for %s" % (value,
+                                                                 self.entity))
 
     def pack(self):
         return (snmp.ASN_INTEGER, struct.pack("l", self.value))
-
-    def toOid(self):
-        return (self.value,)
 
     @classmethod
     def fromOid(cls, entity, oid):
@@ -432,7 +432,13 @@ class Enum(Type):
         return self.value == other.value
 
     def __str__(self):
-        return "%s(%d)" % (self.entity.enum[self.value], self.value)
+        if self.value in self.entity.enum:
+            return "%s(%d)" % (self.entity.enum[self.value], self.value)
+        else:
+            return "%d" % self.value
+
+    def display(self):
+        return str(self)
 
 class Oid(Type):
     """Class for OID"""

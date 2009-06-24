@@ -70,8 +70,9 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a, 2)
         self.assertEqual(str(a), "down(2)")
         self.assertRaises(ValueError, a.set, "unknown")
-        self.assertRaises(ValueError, a.set, 54)
         self.assertEqual(str(a), "down(2)")
+        a.set(54)
+        self.assertEqual(a, 54)
 
     def testOid(self):
         """Test OID basic type"""
