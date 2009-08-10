@@ -431,6 +431,9 @@ class Enum(Integer):
                 raise NotImplementedError
         return self.value == other.value
 
+    def __ne__(self, other):
+        return not(self.__eq__(other))
+
     def __str__(self):
         if self.value in self.entity.enum:
             return "%s(%d)" % (self.entity.enum[self.value], self.value)
@@ -563,6 +566,8 @@ class Timeticks(Type):
 
     def __eq__(self, other):
         return self.__cmp__(other) == 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
     def __lt__(self, other):
         return self.__cmp__(other) < 0
     def __gt__(self, other):

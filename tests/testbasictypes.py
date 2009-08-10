@@ -67,6 +67,7 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a, "up")
         a.set("down")
         self.assertEqual(a, "down")
+        self.assert_(a != "up")
         self.assertEqual(a, 2)
         self.assertEqual(str(a), "down(2)")
         self.assertRaises(ValueError, a.set, "unknown")
@@ -114,6 +115,7 @@ class TestBasicTypes(unittest.TestCase):
         a.set(timedelta(1, 3))
         self.assertEqual(str(a), '1 day, 0:00:03')
         self.assertEqual(a, (3+3600*24)*100)
+        self.assert_(a != (3+3600*24)*100 + 1)
         self.assert_(a < timedelta(1,4))
         self.assert_(a > timedelta(1,1))
         self.assert_(a > 654)
@@ -127,6 +129,8 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a, (1,2))
         self.assertEqual(a, ["second", "third"])
         self.assertEqual(a, ["second", 2])
+        self.assert_(a != ["second", 3])
+        self.assert_(a != ["second", 2, 3])
         a |= "last"
         a |= ["last", "second"]
         self.assertEqual(a, ["second", "last", "third"])
