@@ -41,7 +41,9 @@ elif sid.startswith("1.3.6.1.4.1.1872.") or sid.startswith("1.3.6.1.4.1.26543.")
         s.agNewCfgNTPSecServer = ntp[1]
     else:
         s.agNewCfgNTPSecServer = "0.0.0.0"
-    s.agApplyConfig = "apply"
+    s.agNewCfgNTPService = "enabled"
+    if s.agApplyPending == "applyNeeded":
+        s.agApplyConfig = "apply"
 else:
     print "%s is unknown (%s)" % (sys.argv[1], s.sysDescr)
     sys.exit(1)
