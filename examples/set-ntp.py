@@ -25,6 +25,7 @@ if sid.startswith("1.3.6.1.4.1.45.3."):
         s.s5AgSntpSecondaryServerAddress = ntp[1]
     else:
         s.s5AgSntpSecondaryServerAddress = "0.0.0.0"
+    s.s5AgSntpState = "unicast"
     s.s5AgSntpManualSyncRequest = "requestSync"
 elif sid.startswith("1.3.6.1.4.1.1872.") or sid.startswith("1.3.6.1.4.1.26543."):
     print "%s is Alteon" % sys.argv[1]
