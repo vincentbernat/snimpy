@@ -9,10 +9,13 @@ import sys
 
 load("SNMPv2-MIB")
 
-s = M(host=sys.argv[1], community=sys.argv[2])
-ntp = sys.argv[3:]
-sid = str(s.sysObjectID)
-
+try:
+    s = M(host=sys.argv[1], community=sys.argv[2])
+    ntp = sys.argv[3:]
+    sid = str(s.sysObjectID)
+except snmp.SNMPException, e:
+    print "%s: %s" % (sys.argv[1], str(e))
+    sys.exit(1)
 
 if sid.startswith("1.3.6.1.4.1.45.3."):
     # Nortel
@@ -40,4 +43,5 @@ elif sid.startswith("1.3.6.1.4.1.1872.") or sid.startswith("1.3.6.1.4.1.26543.")
         s.agNewCfgNTPSecServer = "0.0.0.0"
     s.agApplyConfig = "apply"
 else:
-    print "%s is unknown" % sys.argv[1]
+    print "%s is unknown (%s)" % (sys.argv[1], s.sysDescr)
+    sys.exit(1)
