@@ -1,0 +1,28 @@
+SNIMPY-INVALID-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    inexistentNode FROM INEXISTENT-SNIMPY-MIB ;
+
+invalidSnimpy MODULE-IDENTITY
+    LAST-UPDATED "200809160000Z"
+    ORGANIZATION
+           "snimpy
+            http://trac.luffy.cx/snimpy/"
+    CONTACT-INFO
+           "Lorem ipsum, etc, etc."
+    DESCRIPTION
+           "This is a test MIB module for snimpy."
+
+    REVISION      "200809160000Z"
+    DESCRIPTION   "Last revision"
+    ::= { mib-2 45122 }
+
+invalidSnimpyNode OBJECT-TYPE
+    SYNTAX 	INTEGER
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An integer"
+    ::= { inexistentNode 1 }
+
+END

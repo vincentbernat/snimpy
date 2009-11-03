@@ -207,6 +207,16 @@ class TestMibSnimpy(unittest.TestCase):
         """Check that we get an exception when loading an inexistant module"""
         self.assertRaises(mib.SMIException, mib.load, "idontexist.gfdgfdg")
 
+    def testLoadInvalidModule(self):
+        """Check that an obviously invalid module cannot be loaded"""
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "SNIMPY-INVALID-MIB.mib")
+        self.assertRaises(mib.SMIException, mib.load, path)
+        # This would be better to have those but...
+        #self.assertRaises(mib.SMIException, mib.getNodes, "SNIMPY-INVALID-MIB")
+        #self.assertRaises(mib.SMIException, mib.get,
+        #                  "SNIMPY-INVALID-MIB", "invalidSnimpyNode")
+
     def testAccesInexistantModule(self):
         """Check that we get an exception when querying inexistant module"""
         self.assertRaises(mib.SMIException, mib.getNodes, "idontexist.kjgf");

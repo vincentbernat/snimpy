@@ -705,14 +705,20 @@ mib_load(PyObject *self, PyObject *args)
 {
 	const char *module;
 	char *modulename;
+	SmiModule *m;
 
 	if (!PyArg_ParseTuple(args, "s", &module))
 		return NULL;
-	if ((modulename = smiLoadModule(module)) == NULL) {
+	if (((modulename = smiLoadModule(module)) == NULL) ||
+	    ((m = smiGetModule(modulename)) == NULL)) {
 		PyErr_Format(SmiException, "unable to load %s", module);
 		return NULL;
 	}
-	return PyString_FromString(modulename);
+	if ((m->conformance) && (m->conformance > 1))
+		return PyString_FromString(modulename);
+	PyErr_Format(SmiException, "%s contains major SMI errors (check with smilint)",
+		     module);
+	return NULL;
 }
 
 static PyObject*
