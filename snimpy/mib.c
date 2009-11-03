@@ -700,25 +700,37 @@ mib_reset(PyObject *self)
 	return Py_None;
 }
 
+/* Check if a module exists and is conform. It should be used instead
+   of smiGetModule */
+static SmiModule*
+mib_get_module(const char *modulename)
+{
+	SmiModule *m;
+	if (((m = smiGetModule(modulename)) == NULL) ||
+	    ((m->conformance) && (m->conformance <= 1)))
+		return NULL;
+	return m;
+}
+
 static PyObject*
 mib_load(PyObject *self, PyObject *args)
 {
 	const char *module;
 	char *modulename;
-	SmiModule *m;
 
 	if (!PyArg_ParseTuple(args, "s", &module))
 		return NULL;
-	if (((modulename = smiLoadModule(module)) == NULL) ||
-	    ((m = smiGetModule(modulename)) == NULL)) {
+	if ((modulename = smiLoadModule(module)) == NULL) {
 		PyErr_Format(SmiException, "unable to load %s", module);
 		return NULL;
 	}
-	if ((m->conformance) && (m->conformance > 1))
-		return PyString_FromString(modulename);
-	PyErr_Format(SmiException, "%s contains major SMI errors (check with smilint)",
-		     module);
-	return NULL;
+	if (!mib_get_module(modulename)) {
+		PyErr_Format(SmiException,
+			     "%s contains major SMI errors (check with smilint)",
+			     module);
+		return NULL;
+	}
+	return PyString_FromString(modulename);
 }
 
 static PyObject*
@@ -731,7 +743,7 @@ mib_get_kind(PyObject *self, PyObject *args, int kind, PyObject *ObjectType)
 	PyObject *lnode;
 	if (!PyArg_ParseTuple(args, "s", &mib))
 		return NULL;
-	if ((module = smiGetModule(mib)) == NULL) {
+	if ((module = mib_get_module(mib)) == NULL) {
 		PyErr_Format(SmiException, "no module named %s", mib);
 		return NULL;
 	}
@@ -793,7 +805,7 @@ mib_get(PyObject* self, PyObject *args)
 
 	if (!PyArg_ParseTuple(args, "ss", &mib, &name))
 		return NULL;
-	if ((module = smiGetModule(mib)) == NULL) {
+	if ((module = mib_get_module(mib)) == NULL) {
 		PyErr_Format(SmiException, "no module named %s", mib);
 		return NULL;
 	}
