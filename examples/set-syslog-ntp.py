@@ -42,12 +42,9 @@ if sid.startswith("1.3.6.1.4.1.45.3."):
         s.bnLogMsgRemoteSyslogAddress = targets[0]
         s.bnLogMsgRemoteSyslogSaveTargets = "msgTypeInformational"
         s.bnLogMsgRemoteSyslogEnabled = True
-elif sid.startswith("1.3.6.1.4.1.1872.") or sid.startswith("1.3.6.1.4.1.26543."):
+elif sid.startswith("1.3.6.1.4.1.1872."):
     print "%s is Alteon" % host
-    if sid.startswith("1.3.6.1.4.1.1872."):
-        load(os.path.expanduser("~/.snmp/mibs/Alteon/ALTEON-ROOT-MIB"))
-    else:
-        load(os.path.expanduser("~/.snmp/mibs/AlteonNew/ALTEON-ROOT-MIB"))
+    load(os.path.expanduser("~/.snmp/mibs/ALTEON-ROOT-MIB"))
     if operation == "ntp":
         s.agNewCfgNTPServer = targets[0]
         if len(targets) > 1:
