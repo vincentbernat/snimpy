@@ -397,6 +397,23 @@ class Integer(Type):
         # Ugly hack to be like an integer
         return getattr(self.value, attr)
 
+class Unsigned32(Integer):
+    def pack(self):
+        if self.value >= (1L << 32):
+            raise OverflowError("too large to be packed")
+        if self.value < 0:
+            raise OverflowError("too small to be packed")
+        return (snmp.ASN_UNSIGNED, struct.pack("L", self.value))
+
+class Unsigned64(Integer):
+    def pack(self):
+        if self.value >= (1L << 64):
+            raise OverflowError("too large to be packed")
+        if self.value < 0:
+            raise OverflowError("too small to be packed")
+        return (snmp.ASN_COUNTER64, struct.pack("LL",
+            self.value/(1L << 32), self.value%(1L << 32)))
+
 class Enum(Integer):
     """Class for enumeration"""
 
