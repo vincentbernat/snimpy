@@ -310,7 +310,7 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
                                                "snimpyCounter",
                                                4547)),
-                              "<Integer: 4547>")
+                              "<Unsigned32: 4547>")
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
                                                "snimpyBits",
                                                ["first", "second"])),
