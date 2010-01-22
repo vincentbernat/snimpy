@@ -260,13 +260,15 @@ snimpyIndexEntry OBJECT-TYPE
     STATUS      current
     DESCRIPTION
             "Entry for our indexed table"
-    INDEX   { snimpyIndexVarLen, snimpyIndexFixedLen, IMPLIED snimpyIndexImplied }
+    INDEX   { snimpyIndexVarLen, snimpyIndexOidVarLen,
+    	      snimpyIndexFixedLen, IMPLIED snimpyIndexImplied }
     ::= { snimpyIndexTable 1 }
 
 SnimpyIndexEntry ::=
     SEQUENCE {
         snimpyIndexVarLen	DisplayString,
 	snimpyIndexIntIndex	Integer32,
+	snimpyIndexOidVarLen	OBJECT IDENTIFIER,
 	snimpyIndexFixedLen	DisplayString,
         snimpyIndexImplied      DisplayString,
         snimpyIndexInt          Integer32
@@ -288,13 +290,21 @@ snimpyIndexIntIndex OBJECT-TYPE
             "Integer index"
     ::= { snimpyIndexEntry 2 }
 
+snimpyIndexOidVarLen OBJECT-TYPE
+    SYNTAX	OBJECT IDENTIFIER
+    MAX-ACCESS	not-accessible
+    STATUS	current
+    DESCRIPTION
+	"OID as index"
+    ::= { snimpyIndexEntry 3 }
+
 snimpyIndexFixedLen OBJECT-TYPE
     SYNTAX      DisplayString (SIZE (6))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
             "Fixed length index"
-    ::= { snimpyIndexEntry 3 }
+    ::= { snimpyIndexEntry 4 }
 
 snimpyIndexImplied OBJECT-TYPE
     SYNTAX      DisplayString (SIZE (1..30))
@@ -302,7 +312,7 @@ snimpyIndexImplied OBJECT-TYPE
     STATUS      current
     DESCRIPTION
             "Variable length index, implied"
-    ::= { snimpyIndexEntry 4 }
+    ::= { snimpyIndexEntry 5 }
 
 snimpyIndexInt OBJECT-TYPE
     SYNTAX      Integer32
@@ -310,6 +320,6 @@ snimpyIndexInt OBJECT-TYPE
     STATUS      current
     DESCRIPTION
             "Blah blah"
-    ::= { snimpyIndexEntry 5 }
+    ::= { snimpyIndexEntry 6 }
 
 END

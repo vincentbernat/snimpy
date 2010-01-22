@@ -212,6 +212,7 @@ class TestBasicTypes(unittest.TestCase):
         tt = { ("snimpySimpleIndex", 47): (47,),
                ("snimpyComplexFirstIP", "10.14.15.4"): (10, 14, 15, 4),
                ("snimpyComplexSecondIP", (14,15,16,17)): (14, 15, 16, 17),
+               ("snimpyIndexOidVarLen", (47, 48, 49)): (3, 47, 48, 49),
                ("snimpyIndexVarLen", "hello1"): tuple([len("hello1")] + [ord(a) for a in "hello1"]),
                ("snimpyIndexFixedLen", "hello2"): tuple(ord(a) for a in "hello2"),
                ("snimpyIndexImplied", "hello3"): tuple(ord(a) for a in "hello3"),
@@ -235,6 +236,8 @@ class TestBasicTypes(unittest.TestCase):
             "snimpyIndexImplied": ((104, 101, 108, 108, 111, 50), (6, "hello2")),
             "snimpyComplexFirstIP": ((15, 15, 16, 100, 23, 74, 87), (4, "15.15.16.100")),
             "snimpySimpleIndex": ((17, 19, 20), (1, 17)),
+            "snimpyIndexOidVarLen": ((3, 247, 145, 475568L, 475, 263),
+                                     (4, (247, 145, 475568))),
             }
         for t in tt:
             self.assertEqual(mib.get("SNIMPY-MIB", t).type.fromOid(
@@ -244,6 +247,7 @@ class TestBasicTypes(unittest.TestCase):
         tt = {"snimpyComplexFirstIP": (17, 19, 20),
               "snimpyIndexFixedLen": (104, 101, 108),
               "snimpyIndexVarLen": (6, 102, 103, 104, 105),
+              "snimpyIndexOidVarLen": (3, 247, 145),
               }
         for t in tt:
             self.assertRaises(ValueError,

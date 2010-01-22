@@ -97,7 +97,7 @@ class Type:
         @return: C{fixed} if it is fixed-len, C{implied} if implied var-len,
            C{False} otherwise
         """
-        if not(entity.ranges) or type(entity.ranges) is not tuple:
+        if entity.ranges and type(entity.ranges) is not tuple:
             # Fixed length
             return "fixed"
 
@@ -481,7 +481,9 @@ class Oid(Type):
         return (snmp.ASN_OBJECT_ID, "".join([struct.pack("l", x) for x in self.value]))
 
     def toOid(self):
-        return self.value
+        if self._fixedOrImplied(self.entity):
+            return self.value
+        return tuple([len(self.value)] + list(self.value))
 
     @classmethod
     def fromOid(cls, entity, oid):

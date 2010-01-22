@@ -24,6 +24,7 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpySimpleType",
                         "snimpyIndexVarLen",
                         "snimpyIndexIntIndex",
+                        "snimpyIndexOidVarLen",
                         "snimpyIndexFixedLen",
                         "snimpyIndexImplied",
                         "snimpyIndexInt",
