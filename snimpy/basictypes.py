@@ -85,6 +85,35 @@ class Type:
         """
         raise NotImplementedError
 
+    @classmethod
+    def _fixedOrImplied(cls, entity):
+        """Determine if the given entity is fixed-len or implied.
+
+        This function is an helper that is used for String and
+        Oid. When converting a variable-length type to an OID, we need
+        to prefix it by its len or not depending of what the MIB say.
+
+        @param entity: entity to check
+        @return: C{fixed} if it is fixed-len, C{implied} if implied var-len,
+           C{False} otherwise
+        """
+        if not(entity.ranges) or type(entity.ranges) is not tuple:
+            # Fixed length
+            return "fixed"
+
+        # We have a variable-len string/oid. We need to know if it is implied.
+        try:
+            table = entity.table
+        except:
+            raise NotImplementedError("%r is not an index of a table" % entity)
+        indexes = [str(a) for a in table.index]
+        if str(entity) not in indexes:
+            raise NotImplementedError("%r is not an index of a table" % entity)
+        if str(entity) != indexes[-1] or not table.implied:
+            # This index is not implied
+            return False
+        return "implied"
+
     def display(self):
         return str(self)
 
@@ -149,31 +178,6 @@ class String(Type):
 
     def pack(self):
         return (snmp.ASN_OCTET_STR, self.value)
-
-    @classmethod
-    def _fixedOrImplied(cls, entity):
-        """Determine if the given entity is a fixed-len string or an
-        implied var-len string.
-
-        @param entity: entity to check
-        @return: C{fixed} if it is fixed-len, C{implied} if implied var-len, C{False} otherwise
-        """
-        if not(entity.ranges) or type(entity.ranges) is not tuple:
-            # Fixed length
-            return "fixed"
-
-        # We have a variable-len string. We need to know if it is impled.
-        try:
-            table = entity.table
-        except:
-            raise NotImplementedError("%r is not an index of a table" % entity)
-        indexes = [str(a) for a in table.index]
-        if str(entity) not in indexes:
-            raise NotImplementedError("%r is not an index of a table" % entity)
-        if str(entity) != indexes[-1] or not table.implied:
-            # This index is not implied
-            return False
-        return "implied"
 
     def toOid(self):
         # To convert properly to OID, we need to know if it is a
