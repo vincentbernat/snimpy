@@ -487,14 +487,10 @@ class Oid(Type):
 
     @classmethod
     def fromOid(cls, entity, oid):
-        try:
-            table = entity.table
-        except:
-            raise NotImplementedError("%r is not an index of a table" % entity)
-        indexes = [str(a) for a in table.index]
-        if str(entity) not in indexes:
-            raise NotImplementedError("%r is not an index of a table" % entity)
-        if str(entity) != indexes[-1] or not table.implied:
+        if cls._fixedOrImplied(entity) == "fixed":
+            # A fixed OID? We don't like this. Provide a real example.
+            raise ValueError("%r seems to be a fixed-len OID index. Odd." % entity)
+        if not cls._fixedOrImplied(entity):
             # This index is not implied. We need the len
             if len(oid) < 1:
                 raise ValueError("%r is too short for a not implied index" % entity)
