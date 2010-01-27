@@ -40,7 +40,7 @@ class Type:
         @param entity: L{mib.Entity} instance
         @param value: value to set
         """
-        self.value = 0          # To avoid some recursive loop
+        self._value = 0          # To avoid some recursive loop
         if not isinstance(entity, mib.Entity):
             raise TypeError("%r not a mib.Entity instance" % entity)
         if entity.type != self.__class__:
@@ -48,11 +48,11 @@ class Type:
                                                             self.__class))
         self.entity = entity
         if isinstance(value, Type):
-            self.set(value.value)
+            self._set(value._value)
         else:
-            self.set(value)
+            self._set(value)
 
-    def set(self, value):
+    def _set(self, value):
         raise NotImplementedError
 
     def pack(self):
@@ -118,7 +118,7 @@ class Type:
         return str(self)
 
     def __str__(self):
-        return str(self.value)
+        return str(self._value)
 
     def __repr__(self):
         try:
@@ -130,21 +130,21 @@ class Type:
 class IpAddress(Type):
     """Class for IP address"""
 
-    def set(self, value):
+    def _set(self, value):
         if type(value) in [list, tuple]:
             value = ".".join([str(a) for a in value])
         try:
             value = socket.inet_ntoa(socket.inet_aton(value))
         except:
             raise ValueError("%r is not a valid IP" % value)
-        self.value = [int(a) for a in value.split(".")]
+        self._value = [int(a) for a in value.split(".")]
 
     def pack(self):
         return (snmp.ASN_IPADDRESS,
-                socket.inet_aton(".".join(["%d" % x for x in self.value])))
+                socket.inet_aton(".".join(["%d" % x for x in self._value])))
 
     def toOid(self):
-        return tuple(self.value)
+        return tuple(self._value)
 
     @classmethod
     def fromOid(cls, entity, oid):
@@ -153,7 +153,7 @@ class IpAddress(Type):
         return (4, cls(entity, oid[:4]))
 
     def __str__(self):
-        return ".".join([str(a) for a in self.value])
+        return ".".join([str(a) for a in self._value])
 
     def __cmp__(self, other):
         if not isinstance(other, IpAddress):
@@ -161,31 +161,31 @@ class IpAddress(Type):
                 other = IpAddress(self.entity, other)
             except:
                 raise NotImplementedError
-        if self.value == other.value:
+        if self._value == other._value:
             return 0
-        if self.value < other.value:
+        if self._value < other._value:
             return -1
         return 1
 
     def __getitem__(self, nb):
-        return self.value[nb]
+        return self._value[nb]
 
 class String(Type):
     """Class for any string"""
 
-    def set(self, value):
-        self.value = str(value)
+    def _set(self, value):
+        self._value = str(value)
 
     def pack(self):
-        return (snmp.ASN_OCTET_STR, self.value)
+        return (snmp.ASN_OCTET_STR, self._value)
 
     def toOid(self):
         # To convert properly to OID, we need to know if it is a
         # fixed-len string, an implied string or a variable-len
         # string.
         if self._fixedOrImplied(self.entity):
-            return tuple(ord(a) for a in self.value)
-        return tuple([len(self.value)] + [ord(a) for a in self.value])
+            return tuple(ord(a) for a in self._value)
+        return tuple([len(self._value)] + [ord(a) for a in self._value])
 
     @classmethod
     def fromOid(cls, entity, oid):
@@ -209,14 +209,14 @@ class String(Type):
         return (l+1, cls(entity,"".join([chr(x) for x in oid[1:(l+1)]])))
 
     def _display(self, fmt):
-        i = 0               # Position in self.value
+        i = 0               # Position in self._value
         j = 0               # Position in fmt
         result = ""
-        while i < len(self.value):
+        while i < len(self._value):
             if j < len(fmt):
                 # repeater
                 if fmt[j] == "*":
-                    repeat = ord(self.value[i])
+                    repeat = ord(self._value[i])
                     j += 1
                     i += 1
                 else:
@@ -246,7 +246,7 @@ class String(Type):
                     term = ""
             # building
             for r in range(repeat):
-                bytes = self.value[i:i+length]
+                bytes = self._value[i:i+length]
                 i += length
                 if format in ['o', 'x', 'd']:
                     if length > 8:
@@ -273,19 +273,19 @@ class String(Type):
     def display(self):
         if self.entity.fmt:
             return self._display(self.entity.fmt)
-        if "\\x" not in repr(self.value):
-            return self.value
-        return "0x" + " ".join([("0%s" % hex(ord(a))[2:])[-2:] for a in self.value])
+        if "\\x" not in repr(self._value):
+            return self._value
+        return "0x" + " ".join([("0%s" % hex(ord(a))[2:])[-2:] for a in self._value])
 
     def __str__(self):
-        return self.value
+        return self._value
 
     def __getattr__(self, attr):
         # Ugly hack to be like an string
         return getattr(str(self), attr)
 
     def __ior__(self, value):
-        nvalue = [ord(u) for u in self.value]
+        nvalue = [ord(u) for u in self._value]
         if type(value) not in [tuple, list]:
             value = [value]
         for v in value:
@@ -295,13 +295,13 @@ class String(Type):
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
             if len(nvalue) < v/8 + 1:
-                nvalue.extend([0] * (v/8 + 1 - len(self.value)))
+                nvalue.extend([0] * (v/8 + 1 - len(self._value)))
             nvalue[v/8] |= 1 << (7-v%8)
-        self.value = "".join([chr(i) for i in nvalue])
+        self._value = "".join([chr(i) for i in nvalue])
         return self
 
     def __isub__(self, value):
-        nvalue = [ord(u) for u in self.value]
+        nvalue = [ord(u) for u in self._value]
         if type(value) not in [tuple, list]:
             value = [value]
         for v in value:
@@ -313,11 +313,11 @@ class String(Type):
             if len(nvalue) < v/8 + 1:
                 continue
             nvalue[v/8] &= ~(1 << (7-v%8))
-        self.value = "".join([chr(i) for i in nvalue])
+        self._value = "".join([chr(i) for i in nvalue])
         return self
 
     def __and__(self, value):
-        nvalue = [ord(u) for u in self.value]
+        nvalue = [ord(u) for u in self._value]
         if type(value) not in [tuple, list]:
             value = [value]
         for v in value:
@@ -335,26 +335,26 @@ class String(Type):
 class Integer(Type):
     """Class for any integer"""
 
-    def set(self, value):
-        self.value = long(value)
+    def _set(self, value):
+        self._value = long(value)
 
     def pack(self):
-        if self.value >= (1L << 64):
+        if self._value >= (1L << 64):
             raise OverflowError("too large to be packed")
-        if self.value >= (1L << 32):
+        if self._value >= (1L << 32):
             # Pack in a 64 bit counter
             return (snmp.ASN_OCTET_STR,
                     struct.pack("LL",
-                                self.value/(1L << 32),
-                                self.value%(1L << 32)))
-        if self.value >= 0:
-            return (snmp.ASN_INTEGER, struct.pack("L", self.value))
-        if self.value >= -(1L << 31):
-            return (snmp.ASN_INTEGER, struct.pack("l", self.value))
+                                self._value/(1L << 32),
+                                self._value%(1L << 32)))
+        if self._value >= 0:
+            return (snmp.ASN_INTEGER, struct.pack("L", self._value))
+        if self._value >= -(1L << 31):
+            return (snmp.ASN_INTEGER, struct.pack("l", self._value))
         raise OverflowError("too small to be packed")
 
     def toOid(self):
-        return (self.value,)
+        return (self._value,)
 
     @classmethod
     def fromOid(cls, entity, oid):
@@ -363,25 +363,25 @@ class Integer(Type):
         return (1, cls(entity, oid[0]))
 
     def __int__(self):
-        return int(self.value)
+        return int(self._value)
 
     def __long__(self):
-        return long(self.value)
+        return long(self._value)
 
     def __str__(self):
-        return str(self.value)
+        return str(self._value)
 
     def display(self):
         if self.entity.fmt:
             if self.entity.fmt[0] == "x":
-                return hex(self.value)
+                return hex(self._value)
             if self.entity.fmt[0] == "o":
-                return oct(self.value)
+                return oct(self._value)
             if self.entity.fmt[0] == "b":
-                if self.value == 0:
+                if self._value == 0:
                     return "0"
-                if self.value > 0:
-                    v = self.value
+                if self._value > 0:
+                    v = self._value
                     r = ""
                     while v > 0:
                         r = str(v%2) + r
@@ -391,52 +391,52 @@ class Integer(Type):
                     len(self.entity.fmt) > 2 and \
                     self.entity.fmt[1] == "-":
                 dec = int(self.entity.fmt[2:])
-                result = str(self.value)
+                result = str(self._value)
                 if len(result) < dec + 1:
                     result = "0"*(dec + 1 - len(result)) + result
                 return "%s.%s" % (result[:-2], result[-2:])
-        return str(self.value)
+        return str(self._value)
 
     def __getattr__(self, attr):
         # Ugly hack to be like an integer
-        return getattr(self.value, attr)
+        return getattr(self._value, attr)
 
 class Unsigned32(Integer):
     def pack(self):
-        if self.value >= (1L << 32):
+        if self._value >= (1L << 32):
             raise OverflowError("too large to be packed")
-        if self.value < 0:
+        if self._value < 0:
             raise OverflowError("too small to be packed")
-        return (snmp.ASN_UNSIGNED, struct.pack("L", self.value))
+        return (snmp.ASN_UNSIGNED, struct.pack("L", self._value))
 
 class Unsigned64(Integer):
     def pack(self):
-        if self.value >= (1L << 64):
+        if self._value >= (1L << 64):
             raise OverflowError("too large to be packed")
-        if self.value < 0:
+        if self._value < 0:
             raise OverflowError("too small to be packed")
         return (snmp.ASN_COUNTER64, struct.pack("LL",
-            self.value/(1L << 32), self.value%(1L << 32)))
+            self._value/(1L << 32), self._value%(1L << 32)))
 
 class Enum(Integer):
     """Class for enumeration"""
 
-    def set(self, value):
+    def _set(self, value):
         if value in self.entity.enum:
-            self.value = value
+            self._value = value
             return
         for (k, v) in self.entity.enum.iteritems():
             if (v == value):
-                self.value = k
+                self._value = k
                 return
         try:
-            self.value = long(value)
+            self._value = long(value)
         except:
             raise ValueError("%r is not a valid value for %s" % (value,
                                                                  self.entity))
 
     def pack(self):
-        return (snmp.ASN_INTEGER, struct.pack("l", self.value))
+        return (snmp.ASN_INTEGER, struct.pack("l", self._value))
 
     @classmethod
     def fromOid(cls, entity, oid):
@@ -450,16 +450,16 @@ class Enum(Integer):
                 other = self.__class__(self.entity, other)
             except:
                 raise NotImplementedError
-        return self.value == other.value
+        return self._value == other._value
 
     def __ne__(self, other):
         return not(self.__eq__(other))
 
     def __str__(self):
-        if self.value in self.entity.enum:
-            return "%s(%d)" % (self.entity.enum[self.value], self.value)
+        if self._value in self.entity.enum:
+            return "%s(%d)" % (self.entity.enum[self._value], self._value)
         else:
-            return "%d" % self.value
+            return "%d" % self._value
 
     def display(self):
         return str(self)
@@ -467,23 +467,23 @@ class Enum(Integer):
 class Oid(Type):
     """Class for OID"""
 
-    def set(self, value):
+    def _set(self, value):
         if type(value) in [list, tuple]:
-            self.value = tuple([int(v) for v in value])
+            self._value = tuple([int(v) for v in value])
         elif type(value) is str:
-            self.value = tuple([int(i) for i in value.split(".") if i])
+            self._value = tuple([int(i) for i in value.split(".") if i])
         elif isinstance(value, mib.Entity):
-            self.value = tuple(value.oid)
+            self._value = tuple(value.oid)
         else:
             raise TypeError("don't know how to convert %r to OID" % value)
             
     def pack(self):
-        return (snmp.ASN_OBJECT_ID, "".join([struct.pack("l", x) for x in self.value]))
+        return (snmp.ASN_OBJECT_ID, "".join([struct.pack("l", x) for x in self._value]))
 
     def toOid(self):
         if self._fixedOrImplied(self.entity):
-            return self.value
-        return tuple([len(self.value)] + list(self.value))
+            return self._value
+        return tuple([len(self._value)] + list(self._value))
 
     @classmethod
     def fromOid(cls, entity, oid):
@@ -503,14 +503,14 @@ class Oid(Type):
             return (len(oid), cls(entity, oid))
 
     def __str__(self):
-        return ".".join([str(x) for x in self.value])
+        return ".".join([str(x) for x in self._value])
                  
     def __cmp__(self, other):
         if not isinstance(other, Oid):
             other = Oid(self.entity, other)
-        if tuple(self.value) == tuple(other.value):
+        if tuple(self._value) == tuple(other._value):
             return 0
-        if self.value > other.value:
+        if self._value > other._value:
             return 1
         return -1
 
@@ -518,42 +518,42 @@ class Oid(Type):
         """Test if item is a sub-oid of this OID"""
         if not isinstance(item, Oid):
             item = Oid(self.entity, item)
-        return tuple(item.value[:len(self.value)]) == \
-            tuple(self.value[:len(self.value)])
+        return tuple(item._value[:len(self._value)]) == \
+            tuple(self._value[:len(self._value)])
 
 
 class Boolean(Enum):
     """Class for boolean"""
 
-    def set(self, value):
+    def _set(self, value):
         if type(value) is bool:
             if value:
-                Enum.set(self, "true")
+                Enum._set(self, "true")
             else:
-                Enum.set(self, "false")
+                Enum._set(self, "false")
         else:
-            Enum.set(self, value)
+            Enum._set(self, value)
 
     def __getattr__(self, attr):
-        if self.value == 1:
+        if self._value == 1:
             return getattr(True, attr)
         return getattr(False, attr)
 
 class Timeticks(Type):
     """Class for timeticks"""
 
-    def set(self, value):
+    def _set(self, value):
         if type(value) is int or type(value) is long:
             # Value in centiseconds
-            self.value = timedelta(0, value/100.)
+            self._value = timedelta(0, value/100.)
         elif isinstance(value, timedelta):
-            self.value = value
+            self._value = value
         else:
             raise TypeError("dunno how to handle %r (%s)" % (value, type(value)))
 
     def __int__(self):
-        return self.value.days*3600*24*100 + self.value.seconds*100 + \
-            self.value.microseconds/10000
+        return self._value.days*3600*24*100 + self._value.seconds*100 + \
+            self._value.microseconds/10000
 
     def toOid(self):
         return (int(self),)
@@ -570,16 +570,16 @@ class Timeticks(Type):
                             int(self)))
 
     def __str__(self):
-        return str(self.value)
+        return str(self._value)
 
     def __cmp__(self, other):
         if type(other) is int:
             other = timedelta(0, other/100.)
         elif not isinstance(other, timedelta):
             raise NotImplementedError("only compare to int or timedelta")
-        if self.value == other:
+        if self._value == other:
             return 0
-        if self.value < other:
+        if self._value < other:
             return -1
         return 1
 
@@ -595,7 +595,7 @@ class Timeticks(Type):
 class Bits(Type):
     """Class for bits"""
 
-    def set(self, value):
+    def _set(self, value):
         bits = []
         tryalternate = False
         if type(value) is str:
@@ -610,7 +610,7 @@ class Bits(Type):
                         bits.append(j)
                 if tryalternate:
                     break
-            self.value = bits
+            self._value = bits
             if not tryalternate:
                 return
             else:
@@ -633,11 +633,11 @@ class Bits(Type):
             if not found:
                 raise ValueError("%r is not a valid bit value" % v)
         bits.sort()
-        self.value = bits
+        self._value = bits
 
     def pack(self):
         string = []
-        for b in self.value:
+        for b in self._value:
             if len(string) < b/16 + 1:
                 string.extend([0]*(b/16 - len(string)+1))
             string[b/16] |= 1 << (7 - b%16)
@@ -648,11 +648,11 @@ class Bits(Type):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
-        return self.value == other.value
+        return self._value == other._value
 
     def __str__(self):
         result = []
-        for b in self.value:
+        for b in self._value:
             result.append("%s(%d)" % (self.entity.enum[b], b))
         return ", ".join(result)
 
@@ -661,8 +661,8 @@ class Bits(Type):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
-        for o in other.value:
-            if o not in self.value:
+        for o in other._value:
+            if o not in self._value:
                 return False
         return True
 
@@ -671,10 +671,10 @@ class Bits(Type):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
-        for o in other.value:
-            if o not in self.value:
-                self.value.append(o)
-        self.value.sort()
+        for o in other._value:
+            if o not in self._value:
+                self._value.append(o)
+        self._value.sort()
         return self
 
     def __isub__(self, other):
@@ -682,9 +682,9 @@ class Bits(Type):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
-        for o in other.value:
-            if o in self.value:
-                self.value.remove(o)
+        for o in other._value:
+            if o in self._value:
+                self._value.remove(o)
         return self
 
 def build(mibname, entity, value):
