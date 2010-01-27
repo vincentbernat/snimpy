@@ -54,6 +54,7 @@ class TestBasicTypes(unittest.TestCase):
                           basictypes.build,
                           "SNIMPY-MIB", "snimpyIpAddress", "999.5.6.4")
         a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", "10.0.4.5")
+        self.assert_(isinstance(a, basictypes.IpAddress))
         self.assertEqual(a, "10.0.4.5")
         self.assertEqual(a, "10.00.4.05")
         self.assertEqual(a, [10,0,4,5])
@@ -66,6 +67,7 @@ class TestBasicTypes(unittest.TestCase):
     def testEnum(self):
         """Test enum basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyEnum", 1)
+        self.assert_(isinstance(a, basictypes.Enum))
         self.assertEqual(a, 1)
         self.assertEqual(a, "up")
         a = basictypes.build("SNIMPY-MIB", "snimpyEnum", "down")
@@ -84,6 +86,7 @@ class TestBasicTypes(unittest.TestCase):
         """Test OID basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyObjectId",
                              mib.get("SNIMPY-MIB", "snimpyInteger"))
+        self.assert_(isinstance(a, basictypes.Oid))
         self.assertEqual(a, mib.get("SNIMPY-MIB", "snimpyInteger"))
         self.assertEqual(a, mib.get("SNIMPY-MIB", "snimpyInteger").oid)
         # Suboid
@@ -101,6 +104,7 @@ class TestBasicTypes(unittest.TestCase):
     def testBoolean(self):
         """Test boolean basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyBoolean", True)
+        self.assert_(isinstance(a, basictypes.Boolean))
         self.assertEqual(a, True)
         self.assert_(a)
         self.assert_(not(not(a)))
@@ -114,6 +118,7 @@ class TestBasicTypes(unittest.TestCase):
     def testTimeticks(self):
         """Test timeticks basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyTimeticks", 676544)
+        self.assert_(isinstance(a, basictypes.Timeticks))
         # We can compare to int but otherwise, this is a timedelta
         self.assertEqual(a, 676544)
         self.assertEqual(str(a), '1:52:45.440000')
@@ -132,6 +137,7 @@ class TestBasicTypes(unittest.TestCase):
     def testBits(self):
         """Test bit basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyBits", [1, 2])
+        self.assert_(isinstance(a, basictypes.Bits))
         self.assertEqual(a, [2,1])
         self.assertEqual(a, (1,2))
         self.assertEqual(a, ["second", "third"])
@@ -329,3 +335,12 @@ class TestBasicTypes(unittest.TestCase):
                                                "snimpyBits",
                                                ["first", "second"])),
                               "<Bits: first(0), second(1)>")
+
+    def testIsInstance(self):
+        """Test isinstance results"""
+        self.assert_(isinstance(basictypes.build("SNIMPY-MIB",
+                                                 "snimpyInteger",
+                                                 18), int))
+        self.assert_(isinstance(basictypes.build("SNIMPY-MIB",
+                                                 "snimpyString",
+                                                 "4521dgf")), str)
