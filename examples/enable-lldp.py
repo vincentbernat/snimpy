@@ -19,9 +19,9 @@ try:
 except snmp.SNMPException:
     print "Cannot process %s: bad community?" % sys.argv[1]
     sys.exit(1)
-if not type.value.startswith("Ethernet Routing Switch 55") and \
-        not type.value.startswith("Ethernet Switch 425"):
-    print "Not a 55x0: %s" % type.value
+if not type.startswith("Ethernet Routing Switch 55") and \
+        not type.startswith("Ethernet Switch 425"):
+    print "Not a 55x0: %s" % type
     sys.exit(1)
 
 print "Processing %s..." % sys.argv[1]
