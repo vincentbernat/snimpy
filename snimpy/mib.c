@@ -548,13 +548,13 @@ entity_getranges(EntityObject *self, void *closure)
 				cur = PyInt_FromLong(value->value.integer32);
 				break;
 			case SMI_BASETYPE_UNSIGNED32:
-				cur = PyInt_FromLong(value->value.unsigned32);
+				cur = PyLong_FromUnsignedLong(value->value.unsigned32);
 				break;
 			case SMI_BASETYPE_INTEGER64:
-				cur = PyLong_FromLong(value->value.integer64);
+				cur = PyLong_FromLongLong(value->value.integer64);
 				break;
 			case SMI_BASETYPE_UNSIGNED64:
-				cur = PyLong_FromUnsignedLong(value->value.unsigned64);
+				cur = PyLong_FromUnsignedLongLong(value->value.unsigned64);
 				break;
 			default:
 				cur = NULL;
