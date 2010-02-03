@@ -1,5 +1,6 @@
 import unittest
 import os
+import re
 from datetime import timedelta
 from snimpy import mib, basictypes, snmp
 
@@ -345,3 +346,12 @@ class TestBasicTypes(unittest.TestCase):
         self.assert_(isinstance(basictypes.build("SNIMPY-MIB",
                                                  "snimpyString",
                                                  "4521dgf"), str))
+
+    def testLikeAString(self):
+        """Test String is like str"""
+        a = basictypes.build("SNIMPY-MIB",
+                             "snimpyString",
+                             "4521dgf")
+        self.assert_(a.startswith("4521"))
+        self.assertEqual(a.upper(), "4521DGF")
+        self.assert_(re.match("[0-9]+[defg]+", a))
