@@ -522,14 +522,11 @@ class Boolean(Enum):
         else:
             return Enum._internal(entity, value)
 
-    # Hack to look like a boolean
-    def __getattribute__(self, attr):
-        try:
-            return Enum.__getattribute__(self, attr)
-        except AttributeError:
-            if self._value == 1:
-                return getattr(True, attr)
-            return getattr(False, attr)
+    def __nonzero__(self):
+        if self._value == 1:
+            return True
+        else:
+            return False
 
 class Timeticks(Type):
     """Class for timeticks"""
