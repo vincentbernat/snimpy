@@ -20,4 +20,4 @@ for x in routes:
     if dsttype != "ipv4" or nhtype != "ipv4":
         print "Non-IPv4 route"
         continue
-    print "%15s/%-2d via %-15s" % (inet_ntoa(str(dst)), prefix, inet_ntoa(str(nh)))
+    print "%15s/%-2d via %-15s" % (inet_ntoa(dst), prefix, inet_ntoa(nh))

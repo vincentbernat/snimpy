@@ -36,5 +36,5 @@ tagged = [port for port in s.rcVlanPortPerformTagging
 if len(tagged) != 2 and len(tagged) != 3:
     print "%s does not have exactly two or three tagged ports (%r)" % (sys.argv[1], tagged)
     sys.exit(1)
-print "VLAN %d will be tagged on ports %s" % (vlanNumber, str(tagged))
+print "VLAN %d will be tagged on ports %s" % (vlanNumber, tagged)
 s.rcVlanStaticMembers[vlanNumber] |= tagged

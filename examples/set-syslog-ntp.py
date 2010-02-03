@@ -20,7 +20,7 @@ try:
     s = M(host=host, community=sys.argv[3])
     sid = str(s.sysObjectID)
 except snmp.SNMPException, e:
-    print "%s: %s" % (host, str(e))
+    print "%s: %s" % (host, e)
     sys.exit(1)
 
 if sid.startswith("1.3.6.1.4.1.45.3."):
