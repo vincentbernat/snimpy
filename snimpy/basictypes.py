@@ -301,8 +301,7 @@ class String(Type, str):
             if len(nvalue) < v/8 + 1:
                 nvalue.extend([0] * (v/8 + 1 - len(self._value)))
             nvalue[v/8] |= 1 << (7-v%8)
-        self._value = "".join([chr(i) for i in nvalue])
-        return self
+        return self.__class__(self.entity, "".join([chr(i) for i in nvalue]))
 
     def __isub__(self, value):
         nvalue = [ord(u) for u in self._value]
@@ -315,7 +314,7 @@ class String(Type, str):
             if len(nvalue) < v/8 + 1:
                 continue
             nvalue[v/8] &= ~(1 << (7-v%8))
-        self._value = "".join([chr(i) for i in nvalue])
+        return self.__class__(self.entity, "".join([chr(i) for i in nvalue]))
         return self
 
     def __and__(self, value):
