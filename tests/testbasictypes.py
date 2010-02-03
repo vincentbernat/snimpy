@@ -178,6 +178,7 @@ class TestBasicTypes(unittest.TestCase):
         a -= [23, 22]
         self.assert_(a & [2, 10])
         self.assert_(not(a & 23))
+        print repr(a), "\x37\x20\x00", a == "\x37\x20\x00", "\x37\x20\x00" == a
         self.assertEqual(a, "\x37\x20\x00")
         a |= 31
         self.assertEqual(a, "\x37\x20\x00\x01")
@@ -340,7 +341,7 @@ class TestBasicTypes(unittest.TestCase):
         """Test isinstance results"""
         self.assert_(isinstance(basictypes.build("SNIMPY-MIB",
                                                  "snimpyInteger",
-                                                 18), int))
+                                                 18), long))
         self.assert_(isinstance(basictypes.build("SNIMPY-MIB",
                                                  "snimpyString",
-                                                 "4521dgf")), str)
+                                                 "4521dgf"), str))

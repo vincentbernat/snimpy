@@ -29,30 +29,41 @@ from datetime import timedelta
 
 import mib, snmp
 
-class Type:
+class Type(object):
     """Base class for all types"""
 
     consume = 0                 # Consume all suboid if built from OID
 
-    def __init__(self, entity, value):
+    def __new__(cls, entity, value):
         """Create a new typed value
 
         @param entity: L{mib.Entity} instance
         @param value: value to set
+        @return: an instance of the new typed value
         """
-        self._value = 0          # To avoid some recursive loop
         if not isinstance(entity, mib.Entity):
             raise TypeError("%r not a mib.Entity instance" % entity)
-        if entity.type != self.__class__:
+        if entity.type != cls:
             raise ValueError("MIB node is %r. We are %r" % (entity.type,
-                                                            self.__class))
-        self.entity = entity
-        if isinstance(value, Type):
-            self._set(value._value)
-        else:
-            self._set(value)
+                                                            cls))
 
-    def _set(self, value):
+        if not isinstance(value, Type):
+            value = cls._internal(entity, value)
+        else:
+            value = cls._internal(entity, value._value)
+        if issubclass(cls, str):
+            self = str.__new__(cls, value)
+        elif issubclass(cls, long):
+            self = long.__new__(cls, value)
+        else:
+            self = object.__new__(cls)
+        self._value = value
+        self.entity = entity
+        return self
+
+    @classmethod
+    def _internal(cls, entity, value):
+        """Get internal value for a given value."""
         raise NotImplementedError
 
     def pack(self):
@@ -130,14 +141,15 @@ class Type:
 class IpAddress(Type):
     """Class for IP address"""
 
-    def _set(self, value):
-        if type(value) in [list, tuple]:
+    @classmethod
+    def _internal(cls, entity, value):
+        if isinstance(value, list) or isinstance(value, tuple):
             value = ".".join([str(a) for a in value])
         try:
             value = socket.inet_ntoa(socket.inet_aton(value))
         except:
             raise ValueError("%r is not a valid IP" % value)
-        self._value = [int(a) for a in value.split(".")]
+        return [int(a) for a in value.split(".")]
 
     def pack(self):
         return (snmp.ASN_IPADDRESS,
@@ -170,11 +182,12 @@ class IpAddress(Type):
     def __getitem__(self, nb):
         return self._value[nb]
 
-class String(Type):
+class String(Type, str):
     """Class for any string"""
 
-    def _set(self, value):
-        self._value = str(value)
+    @classmethod
+    def _internal(cls, entity, value):
+        return str(value)
 
     def pack(self):
         return (snmp.ASN_OCTET_STR, self._value)
@@ -277,21 +290,12 @@ class String(Type):
             return self._value
         return "0x" + " ".join([("0%s" % hex(ord(a))[2:])[-2:] for a in self._value])
 
-    def __str__(self):
-        return self._value
-
-    def __getattr__(self, attr):
-        # Ugly hack to be like an string
-        return getattr(str(self), attr)
-
     def __ior__(self, value):
         nvalue = [ord(u) for u in self._value]
-        if type(value) not in [tuple, list]:
+        if not isinstance(value, tuple) and not isinstance(value, list):
             value = [value]
         for v in value:
-            if isinstance(v, Integer):
-                v = int(v)
-            if type(v) is not int:
+            if not isinstance(v, int) and not isinstance(v, long):
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
             if len(nvalue) < v/8 + 1:
@@ -302,12 +306,10 @@ class String(Type):
 
     def __isub__(self, value):
         nvalue = [ord(u) for u in self._value]
-        if type(value) not in [tuple, list]:
+        if not isinstance(value, tuple) and not isinstance(value, list):
             value = [value]
         for v in value:
-            if isinstance(v, Integer):
-                v = int(v)
-            if type(v) is not int:
+            if not isinstance(v, int) and not isinstance(v, long):
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
             if len(nvalue) < v/8 + 1:
@@ -318,12 +320,10 @@ class String(Type):
 
     def __and__(self, value):
         nvalue = [ord(u) for u in self._value]
-        if type(value) not in [tuple, list]:
+        if not isinstance(value, tuple) and not isinstance(value, list):
             value = [value]
         for v in value:
-            if isinstance(v, Integer):
-                v = int(v)
-            if type(v) is not int:
+            if not isinstance(v, int) and not isinstance(v, long):
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
             if len(nvalue) < v/8 + 1:
@@ -332,11 +332,12 @@ class String(Type):
                 return False
         return True
 
-class Integer(Type):
+class Integer(Type, long):
     """Class for any integer"""
 
-    def _set(self, value):
-        self._value = long(value)
+    @classmethod
+    def _internal(cls, entity, value):
+        return long(value)
 
     def pack(self):
         if self._value >= (1L << 64):
@@ -361,15 +362,6 @@ class Integer(Type):
         if len(oid) < 1:
             raise ValueError("%r is too short for an integer" % (oid,))
         return (1, cls(entity, oid[0]))
-
-    def __int__(self):
-        return int(self._value)
-
-    def __long__(self):
-        return long(self._value)
-
-    def __str__(self):
-        return str(self._value)
 
     def display(self):
         if self.entity.fmt:
@@ -397,10 +389,6 @@ class Integer(Type):
                 return "%s.%s" % (result[:-2], result[-2:])
         return str(self._value)
 
-    def __getattr__(self, attr):
-        # Ugly hack to be like an integer
-        return getattr(self._value, attr)
-
 class Unsigned32(Integer):
     def pack(self):
         if self._value >= (1L << 32):
@@ -421,19 +409,18 @@ class Unsigned64(Integer):
 class Enum(Integer):
     """Class for enumeration"""
 
-    def _set(self, value):
-        if value in self.entity.enum:
-            self._value = value
-            return
-        for (k, v) in self.entity.enum.iteritems():
+    @classmethod
+    def _internal(cls, entity, value):
+        if value in entity.enum:
+            return value
+        for (k, v) in entity.enum.iteritems():
             if (v == value):
-                self._value = k
-                return
+                return k
         try:
-            self._value = long(value)
+            return long(value)
         except:
             raise ValueError("%r is not a valid value for %s" % (value,
-                                                                 self.entity))
+                                                                 entity))
 
     def pack(self):
         return (snmp.ASN_INTEGER, struct.pack("l", self._value))
@@ -467,13 +454,14 @@ class Enum(Integer):
 class Oid(Type):
     """Class for OID"""
 
-    def _set(self, value):
-        if type(value) in [list, tuple]:
-            self._value = tuple([int(v) for v in value])
-        elif type(value) is str:
-            self._value = tuple([int(i) for i in value.split(".") if i])
+    @classmethod
+    def _internal(cls, entity, value):
+        if isinstance(value, list) or isinstance(value, tuple):
+            return tuple([int(v) for v in value])
+        elif isinstance(value, str):
+            return tuple([int(i) for i in value.split(".") if i])
         elif isinstance(value, mib.Entity):
-            self._value = tuple(value.oid)
+            return tuple(value.oid)
         else:
             raise TypeError("don't know how to convert %r to OID" % value)
             
@@ -525,29 +513,35 @@ class Oid(Type):
 class Boolean(Enum):
     """Class for boolean"""
 
-    def _set(self, value):
+    @classmethod
+    def _internal(cls, entity, value):
         if type(value) is bool:
             if value:
-                Enum._set(self, "true")
+                return Enum._internal(entity, "true")
             else:
-                Enum._set(self, "false")
+                return Enum._internal(entity, "false")
         else:
-            Enum._set(self, value)
+            return Enum._internal(entity, value)
 
-    def __getattr__(self, attr):
-        if self._value == 1:
-            return getattr(True, attr)
-        return getattr(False, attr)
+    # Hack to look like a boolean
+    def __getattribute__(self, attr):
+        try:
+            return Enum.__getattribute__(self, attr)
+        except AttributeError:
+            if self._value == 1:
+                return getattr(True, attr)
+            return getattr(False, attr)
 
 class Timeticks(Type):
     """Class for timeticks"""
 
-    def _set(self, value):
-        if type(value) is int or type(value) is long:
+    @classmethod
+    def _internal(cls, entity, value):
+        if isinstance(value, int) or isinstance(value, long):
             # Value in centiseconds
-            self._value = timedelta(0, value/100.)
+            return timedelta(0, value/100.)
         elif isinstance(value, timedelta):
-            self._value = value
+            return value
         else:
             raise TypeError("dunno how to handle %r (%s)" % (value, type(value)))
 
@@ -573,7 +567,7 @@ class Timeticks(Type):
         return str(self._value)
 
     def __cmp__(self, other):
-        if type(other) is int:
+        if isinstance(other, int) or isinstance(other, long):
             other = timedelta(0, other/100.)
         elif not isinstance(other, timedelta):
             raise NotImplementedError("only compare to int or timedelta")
@@ -595,36 +589,36 @@ class Timeticks(Type):
 class Bits(Type):
     """Class for bits"""
 
-    def _set(self, value):
+    @classmethod
+    def _internal(cls, entity, value):
         bits = []
         tryalternate = False
-        if type(value) is str:
+        if isinstance(value, str):
             for i,x in enumerate(value):
                 if ord(x) == 0:
                     continue
                 for j in range(8):
                     if ord(x) & (1 << (7-j)):
-                        if j not in self.entity.enum:
+                        if j not in entity.enum:
                             tryalternate = True
                             break
                         bits.append(j)
                 if tryalternate:
                     break
-            self._value = bits
             if not tryalternate:
-                return
+                return bits
             else:
                 bits = []
-        if type(value) not in [tuple, list]:
+        elif not isinstance(value, tuple) and not isinstance(value, list):
             value = [value]
         for v in value:
             found = False
-            if v in self.entity.enum:
+            if v in entity.enum:
                 if v not in bits:
                     bits.append(v)
                     found = True
             else:
-                for (k, t) in self.entity.enum.iteritems():
+                for (k, t) in entity.enum.iteritems():
                     if (t == v):
                         if k not in bits:
                             bits.append(k)
@@ -633,7 +627,7 @@ class Bits(Type):
             if not found:
                 raise ValueError("%r is not a valid bit value" % v)
         bits.sort()
-        self._value = bits
+        return bits
 
     def pack(self):
         string = []
@@ -644,7 +638,7 @@ class Bits(Type):
         return (snmp.ASN_OCTET_STR, "".join([chr(x) for x in string]))
 
     def __eq__(self, other):
-        if type(other) is str:
+        if isinstance(other, str):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
@@ -657,7 +651,7 @@ class Bits(Type):
         return ", ".join(result)
 
     def __and__(self, other):
-        if type(other) is str:
+        if isinstance(other, str):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
@@ -667,7 +661,7 @@ class Bits(Type):
         return True
 
     def __ior__(self, other):
-        if type(other) is str:
+        if isinstance(other, str):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
@@ -678,7 +672,7 @@ class Bits(Type):
         return self
 
     def __isub__(self, other):
-        if type(other) is str:
+        if isinstance(other, str):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
