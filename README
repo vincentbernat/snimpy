@@ -165,3 +165,42 @@ If you want a more complete interface to SNMP, you can have a look at
 pycopia. It contains a great SNMP library (pure Python) and MIB
 parser (based on libsmi):
  http://code.google.com/p/pycopia/
+
+About "major SMI errors"
+------------------------
+
+If you get an exception like "RAPID-CITY contains major SMI errors
+(check with smilint -s -l1)", this means that there are some grave
+errors in this MIB which may lead to segfaults if the MIB is used as
+is. Usually, this means that some identifier are unknown. Use "smilint
+-s -l1 YOUR-MIB" to see what the problem is and try to solve all
+problems reported by lines beginning by "[1]".
+
+For example :
+$ smilint -s -l1 rapid_city.mib
+rapid_city.mib:30: [1] failed to locate MIB module `IGMP-MIB'
+rapid_city.mib:32: [1] failed to locate MIB module `DVMRP-MIB'
+rapid_city.mib:34: [1] failed to locate MIB module `IGMP-MIB'
+rapid_city.mib:27842: [1] unknown object identifier label `igmpInterfaceIfIndex'
+rapid_city.mib:27843: [1] unknown object identifier label `igmpInterfaceQuerier'
+rapid_city.mib:27876: [1] unknown object identifier label `dvmrpInterfaceIfIndex'
+rapid_city.mib:27877: [1] unknown object identifier label `dvmrpInterfaceOperState'
+rapid_city.mib:27894: [1] unknown object identifier label `dvmrpNeighborIfIndex'
+rapid_city.mib:27895: [1] unknown object identifier label `dvmrpNeighborAddress'
+rapid_city.mib:32858: [1] unknown object identifier label `igmpCacheAddress'
+rapid_city.mib:32858: [1] unknown object identifier label `igmpCacheIfIndex'
+
+To solve the problem here, load IGMP-MIB and DVMRP-MIB before loading
+rapid_city.mib. IGMP-MIB should be pretty easy to find. For DVMRP-MIB, try Google. You should find this RFC :
+ http://tools.ietf.org/id/draft-thaler-dvmrp-mib-09.txt
+
+Download it and use "smistrip" to get the MIB. You can check that the
+problem is solved with this command :
+
+$ smilint -p ../cisco/IGMP-MIB.my -p ./DVMRP-MIB -s -l1 rapid_city.mib
+
+You will get a lot of errors in IGMP-MIB and DVMRP-MIB but no line
+with "[1]": everything should be fine. To load "rapid_city.mib", you need to do this:
+ > load("../cisco/IGMP-MIB.my")
+ > load("./DVMRP-MIB")
+ > load("rapid_city.mib")

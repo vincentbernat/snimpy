@@ -726,7 +726,7 @@ mib_load(PyObject *self, PyObject *args)
 	}
 	if (!mib_get_module(modulename)) {
 		PyErr_Format(SmiException,
-			     "%s contains major SMI errors (check with smilint)",
+			     "%s contains major SMI errors (check with smilint -s -l1)",
 			     module);
 		return NULL;
 	}
