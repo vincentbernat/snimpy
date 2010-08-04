@@ -38,15 +38,6 @@ import os
 import atexit
 import code
 from datetime import timedelta
-try:
-    import rlcompleter
-    import readline
-except ImportError:
-    readline = None
-try:
-    from IPython.Shell import IPShellEmbed
-except ImportError:
-    IPShellEmbed = None
 
 import manager
 from config import conf
@@ -83,6 +74,16 @@ def interact():
         sys.argv = sys.argv[1:]
         execfile(sys.argv[0], local)
         return
+
+    try:
+        import rlcompleter
+        import readline
+    except ImportError:
+        readline = None
+    try:
+        from IPython.Shell import IPShellEmbed
+    except ImportError:
+        IPShellEmbed = None
 
     if IPShellEmbed and conf.ipython:
         argv = ["-prompt_in1", "Snimpy [\\#]> ",
