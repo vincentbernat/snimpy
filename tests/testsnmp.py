@@ -5,6 +5,38 @@ from snimpy import basictypes, snmp, mib
 
 """Those tests need a local SNMP agent. They are not deterministic"""
 
+class TestSnmpRetriesTimeout(unittest.TestCase):
+
+    def setUp(self):
+        self.session = snmp.Session(host="localhost",
+                                    community="public",
+                                    version=2)
+    def testGetRetries(self):
+        """Get default retries value"""
+        self.assertEqual(self.session.retries, 5)
+
+    def testGetTimeout(self):
+        """Get default timeout value"""
+        self.assertEqual(self.session.timeout, 1000000)
+
+    def testSetRetries(self):
+        """Try to set a new retry value"""
+        self.session.retries = 2
+        self.assertEqual(self.session.retries, 2)
+        self.session.retries = 0
+        self.assertEqual(self.session.retries, 0)
+
+    def testSetTimeout(self):
+        """Try to set a new timeout value"""
+        self.session.timeout = 500000
+        self.assertEqual(self.session.timeout, 500000)
+
+    def testErrors(self):
+        """Try invalid values for timeout and retries"""
+        self.assertRaises(ValueError, setattr, self.session, "timeout", 0)
+        self.assertRaises(ValueError, setattr, self.session, "timeout", -30)
+        self.assertRaises(ValueError, setattr, self.session, "retries", -5)
+
 class TestSnmp2(unittest.TestCase):
     version = 2
 

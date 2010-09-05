@@ -441,6 +441,72 @@ Snmp_set(PyObject *self, PyObject *args)
 	return Snmp_op((SnmpObject*)self, args, SNMP_MSG_SET);
 }
 
+static PyObject*
+Snmp_gettimeout(SnmpObject *self, void *closure)
+{
+	return PyInt_FromLong(self->ss->timeout);
+}
+
+static int
+Snmp_settimeout(SnmpObject *self, PyObject *value, void *closure)
+{
+	long timeout;
+
+	if (value == NULL) {
+		PyErr_SetString(PyExc_TypeError,
+				"cannot delete timeout");
+		return -1;
+	}
+	if (!PyLong_Check(value) && !PyInt_Check(value)) {
+		PyErr_SetString(PyExc_TypeError,
+				"timeout is a positive integer");
+		return -1;
+	}
+
+	timeout = PyLong_AsLong(value);
+	if (PyErr_Occurred()) return -1;
+	if (timeout <= 0) {
+		PyErr_SetString(PyExc_ValueError,
+				"timeout is a positive integer");
+		return -1;
+	}
+	self->ss->timeout = timeout;
+	return 0;
+}
+
+static PyObject*
+Snmp_getretries(SnmpObject *self, void *closure)
+{
+	return PyInt_FromLong(self->ss->retries);
+}
+
+static int
+Snmp_setretries(SnmpObject *self, PyObject *value, void *closure)
+{
+	int retries;
+
+	if (value == NULL) {
+		PyErr_SetString(PyExc_TypeError,
+				"cannot delete retries");
+		return -1;
+	}
+	if (!PyInt_Check(value)) {
+		PyErr_SetString(PyExc_TypeError,
+				"retries is a non-negative integer");
+		return -1;
+	}
+
+	retries = PyInt_AsLong(value);
+	if (PyErr_Occurred()) return -1;
+	if (retries < 0) {
+		PyErr_SetString(PyExc_ValueError,
+				"retries is a non-negative integer");
+		return -1;
+	}
+	self->ss->retries = retries;
+	return 0;
+}
+
 static PyMethodDef Snmp_methods[] = {
 	{"get", Snmp_get,
 	 METH_VARARGS, "Retrieve an OID value using GET"},
@@ -449,6 +515,16 @@ static PyMethodDef Snmp_methods[] = {
 	{"set", Snmp_set,
 	 METH_VARARGS, "Set an OID value using SET"},
 	{NULL}  /* Sentinel */
+};
+
+static PyGetSetDef Snmp_getseters[] = {
+	{"timeout",
+	 (getter)Snmp_gettimeout, (setter)Snmp_settimeout,
+	 "timeout", NULL},
+	{"retries",
+	 (getter)Snmp_getretries, (setter)Snmp_setretries,
+	 "retries", NULL},
+	{NULL}			/* Sentinel */
 };
 
 static PyTypeObject SnmpType = {
@@ -483,7 +559,7 @@ static PyTypeObject SnmpType = {
 	0,			   /* tp_iternext */
 	Snmp_methods,		   /* tp_methods */
 	0,			   /* tp_members */
-	0,                         /* tp_getset */
+	Snmp_getseters,		   /* tp_getset */
 	0,                         /* tp_base */
 	0,                         /* tp_dict */
 	0,                         /* tp_descr_get */
