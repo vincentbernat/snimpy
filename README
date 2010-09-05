@@ -127,6 +127,12 @@ You can also use the number of seconds the cache should be hold.
 
  m = M("localhost", cache=20)
 
+You can also set a custom timeout and a custom retries value. For
+example, to wait 2.5 seconds before timeout occurs and retry 10 times,
+you can use:
+
+ m = M("localhost", timeout=2.5, retry=10)
+
 That's all!
 
 Why another tool?

@@ -98,7 +98,8 @@ class Manager(object):
     # do we want this object to be populated with all nodes?
     _complete = False
 
-    def __init__(self, host=None, community=None, version=None, cache=False):
+    def __init__(self, host=None, community=None, version=None, cache=False,
+                 timeout=None, retries=None):
         if host is None:
             host = Manager._host
         self._host = host
@@ -107,6 +108,10 @@ class Manager(object):
         if version is None:
             version = Manager._version
         self._session = snmp.Session(host, community, version)
+        if timeout is not None:
+            self._session.timeout = int(timeout*1000000)
+        if retries is not None:
+            self._session.retries = retries
         if cache:
             if cache is True:
                 self._session = CachedSession(self._session)
