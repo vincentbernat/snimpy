@@ -15,7 +15,7 @@ if __name__ == "__main__":
             'Topic :: System :: Networking',
             'Topic :: Utilities',
             ],
-          url='https://trac.luffy.cx/snimpy/',
+          url='https://github.com/vincentbernat/snimpy',
           description="interactive SNMP tool",
           author="Vincent Bernat",
           author_email="bernat@luffy.cx",
