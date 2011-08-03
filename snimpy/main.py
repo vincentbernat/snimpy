@@ -81,18 +81,31 @@ def interact():
     except ImportError:
         readline = None
     try:
-        from IPython.Shell import IPShellEmbed
+        try:
+            # ipython >= 0.11
+            from IPython.frontend.terminal.embed import InteractiveShellEmbed
+            from IPython.config.loader import Config
+            cfg = Config()
+            cfg.InteractiveShellEmbed.prompt_in1="Snimpy [\\#]> "
+            cfg.InteractiveShellEmbed.prompt_out="Snimpy [\\#]: "
+            if conf.ipythonprofile:
+              cfg.InteractiveShellEmbed.profile=conf.ipythonprofile
+            shell = InteractiveShellEmbed(config=cfg, banner1=banner, user_ns=local)
+            shell.InteractiveTB.tb_offset += 1 # Not interested by traceback in this module
+        except ImportError:
+            # ipython < 0.11
+            from IPython.Shell import IPShellEmbed
+            argv = ["-prompt_in1", "Snimpy [\\#]> ",
+                    "-prompt_out", "Snimpy [\\#]: "]
+            if conf.ipythonprofile:
+                argv += ["-profile", conf.ipythonprofile]
+            shell = IPShellEmbed(argv=argv,
+                                 banner=banner, user_ns=local)
+            shell.IP.InteractiveTB.tb_offset += 1 # Not interested by traceback in this module
     except ImportError:
-        IPShellEmbed = None
+        shell = None
 
-    if IPShellEmbed and conf.ipython:
-        argv = ["-prompt_in1", "Snimpy [\\#]> ",
-                "-prompt_out", "Snimpy [\\#]: "]
-        if conf.ipythonprofile:
-            argv += ["-profile", conf.ipythonprofile]
-        shell = IPShellEmbed(argv=argv,
-                             banner=banner, user_ns=local)
-        shell.IP.InteractiveTB.tb_offset += 1 # Not interested by traceback in this module
+    if shell and conf.ipython:
         shell()
     else:
         if readline:
