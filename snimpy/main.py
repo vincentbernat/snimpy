@@ -43,13 +43,6 @@ import manager
 from config import conf
 from version import VERSION
 
-def write_history_file():
-    if readline and conf.histfile:
-        try:
-            readline.write_history_file(os.path.expanduser(conf.histfile))
-        except IOError,e:
-            pass
-
 def interact():
     banner  = "\033[1mSnimpy\033[0m (%s) -- An interactive SNMP tool.\n" % VERSION
     banner += "  load        -> load an additional MIB\n"
@@ -114,7 +107,8 @@ def interact():
                     readline.read_history_file(os.path.expanduser(conf.histfile))
                 except IOError:
                     pass
-                atexit.register(write_history_file)
+                atexit.register(lambda: readline.write_history_file(
+                        os.path.expanduser(conf.histfile)))
 
             readline.set_completer(rlcompleter.Completer(local).complete)
             readline.parse_and_bind("tab: menu-complete")
