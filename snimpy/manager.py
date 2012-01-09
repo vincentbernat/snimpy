@@ -98,8 +98,14 @@ class Manager(object):
     # do we want this object to be populated with all nodes?
     _complete = False
 
-    def __init__(self, host=None, community=None, version=None, cache=False,
-                 timeout=None, retries=None):
+    def __init__(self,
+                 host=None, community=None, version=None,
+                 cache=False,
+                 timeout=None, retries=None,
+                 # SNMPv3
+                 seclevel=snmp.SNMP_SEC_LEVEL_NOAUTH, secname=None,
+                 authprotocol="SHA", authpassword=None,
+                 privprotocol="AES", privpassword=None):
         if host is None:
             host = Manager._host
         self._host = host
@@ -107,7 +113,10 @@ class Manager(object):
             community = Manager._community
         if version is None:
             version = Manager._version
-        self._session = snmp.Session(host, community, version)
+        self._session = snmp.Session(host, community, version,
+                                     seclevel, secname,
+                                     authprotocol, authpassword,
+                                     privprotocol, privpassword)
         if timeout is not None:
             self._session.timeout = int(timeout*1000000)
         if retries is not None:

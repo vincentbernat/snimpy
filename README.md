@@ -37,8 +37,6 @@ snmpset. You cannot query arbitrary OID and you can only walk tables,
 not any node. Moreover, if remote host sends bogus value, snimpy will
 just stop with an exception (this is also a feature).
 
-At least, snimpy does not support SNMPv3 yet.
-
 Snimpy is aimed at being the more Pythonic possible. You should forget
 that you are doing SNMP requests. Snimpy will rely on MIB to hide SNMP
 details. Here are some "features" of snmimpy:
@@ -97,6 +95,10 @@ load("/usr/share/mibs/ietf/IF-MIB")
 m = M(host="localhost", community="private", version=2)
 m = M("localhost", "private", 2)
 m = M(community="private")
+m = M(version=3,
+      seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV, secname="readonly",
+      authprotocol="MD5", authpassword="authpass",
+      privprotocol="AES", privpassword="privpass")
 ```
 
 A manager instance contains all the scalars and the columns that are

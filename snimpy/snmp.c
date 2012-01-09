@@ -97,20 +97,32 @@ Snmp_raise_error(struct snmp_session *session)
 static int
 Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 {
-	PyObject *host=NULL, *community=NULL;
-	char *chost=NULL, *ccommunity=NULL;
+	PyObject *host=NULL, *community=NULL,
+		*secname=NULL, *seclevel=NULL,
+		*authprotocol=NULL, *authpassword=NULL,
+		*privprotocol=NULL, *privpassword=NULL;
+	char *chost=NULL;
 	int version = 2;
 	struct snmp_session session;
 
-	static char *kwlist[] = {"host", "community", "version", NULL};
+	static char *kwlist[] = {"host", "community", "version",
+				 "seclevel", "secname",
+				 "authprotocol", "authpassword",
+				 "privprotocol", "privpassword",
+				 NULL};
 		
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|i", kwlist, 
-		&host, &community, &version))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OiOOOOOO", kwlist, 
+					 &host, &community, &version,
+					 &seclevel, &secname,
+					 &authprotocol, &authpassword,
+					 &privprotocol, &privpassword))
 		return -1; 
 
 	snmp_sess_init(&session);
 	if ((chost = PyString_AsString(host)) == NULL)
 		return -1;
+
+	/* SNMP version */
 	switch (version) {
 	case 1:
 		session.version = SNMP_VERSION_1;
@@ -118,61 +130,152 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 	case 2:
 		session.version = SNMP_VERSION_2c;
 		break;
+	case 3:
+		session.version = SNMP_VERSION_3;
+		break;
 	default:
 		PyErr_Format(PyExc_ValueError, "invalid SNMP version: %d",
 		    version);
 		return -1;
 	}
-	if ((ccommunity = PyString_AsString(community)) == NULL)
-		return -1;
-	session.community_len = PyString_Size(community);
-	session.community = (u_char*)malloc(strlen(ccommunity)+1);
-	session.peername = (char*)malloc(strlen(chost)+1);
-	if ((session.community == NULL) || (session.peername == NULL)) {
-		PyErr_NoMemory();
-		return -1;
+
+	/* Fill out session */
+	if (community != NULL && community != Py_None) {
+		char *ccommunity = NULL;
+		if ((ccommunity = PyString_AsString(community)) == NULL)
+			goto initerror;
+		session.community_len = PyString_Size(community);
+		session.community = (u_char *)strdup(ccommunity);
+		if (!session.community) goto initoutofmem;
 	}
-	memcpy(session.community, ccommunity, strlen(ccommunity)+1);
-	memcpy(session.peername, chost, strlen(chost)+1);
+	if (seclevel != NULL && seclevel != Py_None) {
+		int cseclevel;
+		cseclevel = PyInt_AsLong(seclevel);
+		if (PyErr_Occurred()) goto initerror;
+		session.securityLevel = cseclevel;
+	}
+	if (secname != NULL && secname != Py_None) {
+		char *csecname = NULL;
+		if ((csecname = PyString_AsString(secname)) == NULL)
+			goto initerror;
+		session.securityNameLen = PyString_Size(secname);
+		session.securityName = strdup(csecname);
+		if (!session.securityName) goto initoutofmem;
+	}
+	if (authprotocol != NULL && authprotocol != Py_None) {
+		char *cauthprotocol = NULL;
+		if ((cauthprotocol = PyString_AsString(authprotocol)) == NULL)
+			goto initerror;
+		if (!strcasecmp(cauthprotocol, "MD5")) {
+			session.securityAuthProto = usmHMACMD5AuthProtocol;
+			session.securityAuthProtoLen = USM_AUTH_PROTO_MD5_LEN;
+		} else if (!strcasecmp(cauthprotocol, "SHA")) {
+			session.securityAuthProto = usmHMACSHA1AuthProtocol;
+			session.securityAuthProtoLen = USM_AUTH_PROTO_SHA_LEN;
+		} else {
+			PyErr_Format(PyExc_ValueError,
+				     "invalid authentication protocol: %s",
+				     cauthprotocol);
+			goto initerror;
+		}
+	}
+	if (authpassword != NULL && authpassword != Py_None) {
+		char *cauthpassword = NULL;
+		if ((cauthpassword = PyString_AsString(authpassword)) == NULL)
+			goto initerror;
+		session.securityAuthKeyLen = USM_AUTH_KU_LEN;
+		if (session.securityAuthProto == NULL) {
+			PyErr_SetString(PyExc_ValueError,
+					"can't set an auth password without an auth protocol");
+			goto initerror;
+		}
+		if (generate_Ku(session.securityAuthProto,
+				session.securityAuthProtoLen,
+				(u_char *) cauthpassword,
+				PyString_Size(authpassword),
+				session.securityAuthKey,
+				&session.securityAuthKeyLen) != SNMPERR_SUCCESS) {
+			PyErr_SetString(PyExc_ValueError,
+					"unable to compute the master key from auth password");
+			goto initerror;
+		}
+	}
+	if (privprotocol != NULL && privprotocol != Py_None) {
+		char *cprivprotocol = NULL;
+		if ((cprivprotocol = PyString_AsString(privprotocol)) == NULL)
+			goto initerror;
+		if (!strcasecmp(cprivprotocol, "DES")) {
+			session.securityPrivProto = usmDESPrivProtocol;
+			session.securityPrivProtoLen = USM_PRIV_PROTO_DES_LEN;
+		} else if (!strcasecmp(cprivprotocol, "AES") ||
+			   !strcasecmp(cprivprotocol, "AES128")) {
+			session.securityPrivProto = usmAESPrivProtocol;
+			session.securityPrivProtoLen = USM_PRIV_PROTO_AES_LEN;
+		} else {
+			PyErr_Format(PyExc_ValueError,
+				     "invalid privacy protocol: %s",
+				     cprivprotocol);
+			goto initerror;
+		}
+	}
+	if (privpassword != NULL && privpassword != Py_None) {
+		char *cprivpassword = NULL;
+		if ((cprivpassword = PyString_AsString(privpassword)) == NULL)
+			goto initerror;
+		session.securityPrivKeyLen = USM_PRIV_KU_LEN;
+		if (session.securityPrivProto == NULL ||
+		    session.securityAuthProto == NULL) {
+			PyErr_SetString(PyExc_ValueError,
+					"can't set a privacy password without a auth+privacy protocol");
+			goto initerror;
+		}
+		if (generate_Ku(session.securityAuthProto,
+				session.securityAuthProtoLen,
+				(u_char *) cprivpassword,
+				PyString_Size(privpassword),
+				session.securityPrivKey,
+				&session.securityPrivKeyLen) != SNMPERR_SUCCESS) {
+			PyErr_SetString(PyExc_ValueError,
+					"unable to compute the master key from privacy password");
+			goto initerror;
+		}
+	}
+
+	session.peername = strdup(chost);
+	if (!session.peername) goto initoutofmem;
+
+	/* Open session */
 	if ((self->ss = snmp_open(&session)) == NULL) {
 		Snmp_raise_error(&session);
-		free(session.community);
-		free(session.peername);
-		return -1;
+		goto initerror;
 	}
 	return 0;
+ initoutofmem:
+	PyErr_NoMemory();
+ initerror:
+	if (session.community) free(session.community);
+	if (session.peername) free(session.peername);
+	if (session.securityName) free(session.securityName);
+	return -1;
 }
 
 static PyObject*
 Snmp_repr(SnmpObject *self)
 {
-	PyObject *peer, *community, *rpeer, *rcommunity, *result;
+	PyObject *peer, *rpeer, *result;
 	if ((peer = PyString_FromString(self->ss->peername)) == NULL)
 		return NULL;
-	if ((community = PyString_FromString((char*)self->ss->community)) == NULL) {
-		Py_DECREF(peer);
-		return NULL;
-	}
 	if ((rpeer = PyObject_Repr(peer)) == NULL) {
 		Py_DECREF(peer);
-		Py_DECREF(community);
 		return NULL;
 	}
-	if ((rcommunity = PyObject_Repr(community)) == NULL) {
-		Py_DECREF(peer);
-		Py_DECREF(community);
-		Py_DECREF(rpeer);
-		return NULL;
-	}
-	result = PyString_FromFormat("%s(host=%s, community=%s, version=%d)",
+	result = PyString_FromFormat("%s(host=%s, version=%d)",
 	    self->ob_type->tp_name,
 	    PyString_AsString(rpeer),
-	    PyString_AsString(rcommunity),
-	    (self->ss->version == SNMP_VERSION_1)?1:2);
+	    (self->ss->version == SNMP_VERSION_1)?1:
+				     ((self->ss->version == SNMP_VERSION_2c)?2:3));
 	Py_DECREF(rpeer);
 	Py_DECREF(peer);
-	Py_DECREF(rcommunity);
-	Py_DECREF(community);
 	return result;
 }
 
@@ -579,8 +682,6 @@ initsnmp(void)
 	PyObject *m, *exc, *c;
 	char *name;
 	struct ErrorException *e;
-	netsnmp_log_handler *logh;
-	
 
 	if (PyType_Ready(&SnmpType) < 0) return;
 
@@ -630,6 +731,9 @@ initsnmp(void)
 	ADDCONSTANT(ASN_NULL);
 	ADDCONSTANT(ASN_OBJECT_ID);	
 	ADDCONSTANT(ASN_IPADDRESS);
+	ADDCONSTANT(SNMP_SEC_LEVEL_NOAUTH);
+	ADDCONSTANT(SNMP_SEC_LEVEL_AUTHNOPRIV);
+	ADDCONSTANT(SNMP_SEC_LEVEL_AUTHPRIV);
 	
 	Py_INCREF(&SnmpType);
 	PyModule_AddObject(m, "Session", (PyObject *)&SnmpType);
@@ -644,7 +748,7 @@ initsnmp(void)
 	setenv("MIBDIRS", "/dev/null", 1);
 	/* Disable any logging */
 	snmp_disable_log();
-        logh = netsnmp_register_loghandler(NETSNMP_LOGHANDLER_NONE, LOG_DEBUG);
+        netsnmp_register_loghandler(NETSNMP_LOGHANDLER_NONE, LOG_DEBUG);
 	/* Init SNMP */
 	init_snmp("snimpy");
 }

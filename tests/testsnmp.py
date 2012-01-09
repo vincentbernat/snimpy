@@ -114,3 +114,95 @@ class TestSnmp2(unittest.TestCase):
 # Do the same tests with SNMPv1
 class TestSnmp1(TestSnmp2):
     version = 1
+
+# Do various session tests
+class TestSnmpSession(unittest.TestCase):
+
+    def testSnmpV1(self):
+        """Check initialization of SNMPv1 session"""
+        snmp.Session(host="localhost",
+                     community="public",
+                     version=1)
+
+    def testSnmpV2(self):
+        """Check initialization of SNMPv2 session"""
+        snmp.Session(host="localhost",
+                     community="public",
+                     version=2)
+
+    def testSnmpV3(self):
+        """Check initialization of SNMPv3 session"""
+        snmp.Session(host="localhost",
+                     version=3,
+                     seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
+                     secname="readonly",
+                     authprotocol="MD5", authpassword="authpass",
+                     privprotocol="AES", privpassword="privpass")
+
+    def testSnmpV3TooShortPassword(self):
+        """Try to use a password too short with SNMPv3"""
+        self.assertRaises(ValueError,
+                          snmp.Session,
+                          host="localhost",
+                          version=3,
+                          seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
+                          secname="readonly",
+                          authprotocol="MD5", authpassword="au",
+                          privprotocol="AES", privpassword="privpass")
+        self.assertRaises(ValueError,
+                          snmp.Session,
+                          host="localhost",
+                          version=3,
+                          seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
+                          secname="readonly",
+                          authprotocol="MD5", authpassword="authpass",
+                          privprotocol="AES", privpassword="pr")
+
+    def testSnmpV3Protocols(self):
+        """Check accepted auth and privacy protocols"""
+        for auth in ["MD5", "SHA"]:
+            for priv in ["AES", "AES128", "DES"]:
+                snmp.Session(host="localhost",
+                             version=3,
+                             seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
+                             secname="readonly",
+                             authprotocol=auth, authpassword="authpass",
+                             privprotocol=priv, privpassword="privpass")
+        self.assertRaises(ValueError,
+                          snmp.Session,
+                          host="localhost",
+                          version=3,
+                          seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
+                          secname="readonly",
+                          authprotocol="NOEXIST", authpassword="authpass",
+                          privprotocol="AES", privpassword="privpass")
+        self.assertRaises(ValueError,
+                          snmp.Session,
+                          host="localhost",
+                          version=3,
+                          seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
+                          secname="readonly",
+                          authprotocol="MD5", authpassword="authpass",
+                          privprotocol="NOEXIST", privpassword="privpass")
+
+    def testSnmpV3SecLevels(self):
+        """Check accepted security levels"""
+        auth = "MD5"
+        priv = "DES"
+        snmp.Session(host="localhost",
+                     version=3,
+                     secname="readonly",
+                     authprotocol=auth, authpassword="authpass",
+                     privprotocol=priv, privpassword="privpass")
+        snmp.Session(host="localhost",
+                     version=3,
+                     seclevel=snmp.SNMP_SEC_LEVEL_NOAUTH,
+                     secname="readonly",
+                     authprotocol=auth, authpassword="authpass",
+                     privprotocol=priv, privpassword="privpass")
+        snmp.Session(host="localhost",
+                     version=3,
+                     seclevel=snmp.SNMP_SEC_LEVEL_AUTHNOPRIV,
+                     secname="readonly",
+                     authprotocol=auth, authpassword="authpass",
+                     privprotocol=priv, privpassword="privpass")
