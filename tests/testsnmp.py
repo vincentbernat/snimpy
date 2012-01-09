@@ -75,7 +75,8 @@ class TestSnmp2(unittest.TestCase):
 
     def testInexistant(self):
         """Get an inexistant value"""
-        self.assertRaises(snmp.SNMPNoSuchObject, self.session.get,
+        self.assertRaises(self.version == 1 and snmp.SNMPNoSuchName or snmp.SNMPNoSuchObject,
+                          self.session.get,
                           (1,2,3))
 
     def testVariousSet(self):
@@ -90,7 +91,8 @@ class TestSnmp2(unittest.TestCase):
                            ('snimpyGauge', 4857544),
                            ('snimpyTimeticks', timedelta(3, 18)),
                            ('snimpyBits', ["third", "last"])]:
-            self.assertRaises(snmp.SNMPNoAccess, self.session.set,
+            self.assertRaises(self.version == 1 and snmp.SNMPNoSuchName or snmp.SNMPNoAccess,
+                              self.session.set,
                               mib.get('SNIMPY-MIB', oid).oid + (0,),
                               basictypes.build('SNIMPY-MIB', oid, value))
 
@@ -110,5 +112,5 @@ class TestSnmp2(unittest.TestCase):
         self.assertEqual(b, "softwareLoopback")
 
 # Do the same tests with SNMPv1
-class TestSnmp1(unittest.TestCase):
+class TestSnmp1(TestSnmp2):
     version = 1
