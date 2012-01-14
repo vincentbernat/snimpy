@@ -390,7 +390,9 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 			j += 2;
 		}
 	}
+	Py_BEGIN_ALLOW_THREADS
 	status = snmp_sess_synch_response(self->ss, pdu, &response);
+	Py_END_ALLOW_THREADS
 	free(buffer);
 	pdu = NULL;		/* Don't try to free it from now */
 	if (status != STAT_SUCCESS) {
