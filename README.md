@@ -166,6 +166,14 @@ m = M("localhost", timeout=2.5, retry=10)
 
 That's all!
 
+Threads
+-------
+
+snimpy should be thread-safe. There are two ground rules:
+
+ 1. You must load MIB before invoking additional threads.
+ 2. You must not share a session between several threads.
+
 Why another tool?
 -----------------
 

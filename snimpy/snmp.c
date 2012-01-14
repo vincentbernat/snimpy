@@ -62,14 +62,14 @@ static PyObject *TypesModule;
 
 typedef struct {
 	PyObject_HEAD
-	struct snmp_session *ss;
+	void *ss;
 } SnmpObject;
 
 static void
 Snmp_dealloc(SnmpObject* self)
 {
 	if (self->ss)
-		snmp_close(self->ss);
+		snmp_sess_close(self->ss);
 	self->ob_type->tp_free((PyObject*)self);
 }
 
@@ -85,11 +85,14 @@ Snmp_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 }
 
 static void
-Snmp_raise_error(struct snmp_session *session)
+Snmp_raise_error(void *session, int open)
 {
 	int liberr, snmperr;
 	char *err;
-	snmp_error(session, &liberr, &snmperr, &err);
+	if (!open)
+		snmp_sess_error(session, &liberr, &snmperr, &err);
+	else
+		snmp_error((struct snmp_session *)session, &liberr, &snmperr, &err);
 	PyErr_Format(SnmpException, "%s", err);
 	free(err);
 }
@@ -245,8 +248,8 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 	if (!session.peername) goto initoutofmem;
 
 	/* Open session */
-	if ((self->ss = snmp_open(&session)) == NULL) {
-		Snmp_raise_error(&session);
+	if ((self->ss = snmp_sess_open(&session)) == NULL) {
+		Snmp_raise_error(&session, 1);
 		goto initerror;
 	}
 	return 0;
@@ -263,7 +266,8 @@ static PyObject*
 Snmp_repr(SnmpObject *self)
 {
 	PyObject *peer, *rpeer, *result;
-	if ((peer = PyString_FromString(self->ss->peername)) == NULL)
+	struct snmp_session *sptr = snmp_sess_session(self->ss);
+	if ((peer = PyString_FromString(sptr->peername)) == NULL)
 		return NULL;
 	if ((rpeer = PyObject_Repr(peer)) == NULL) {
 		Py_DECREF(peer);
@@ -272,8 +276,8 @@ Snmp_repr(SnmpObject *self)
 	result = PyString_FromFormat("%s(host=%s, version=%d)",
 	    self->ob_type->tp_name,
 	    PyString_AsString(rpeer),
-	    (self->ss->version == SNMP_VERSION_1)?1:
-				     ((self->ss->version == SNMP_VERSION_2c)?2:3));
+	    (sptr->version == SNMP_VERSION_1)?1:
+				     ((sptr->version == SNMP_VERSION_2c)?2:3));
 	Py_DECREF(rpeer);
 	Py_DECREF(peer);
 	return result;
@@ -386,11 +390,11 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 			j += 2;
 		}
 	}
-	status = snmp_synch_response(self->ss, pdu, &response);
+	status = snmp_sess_synch_response(self->ss, pdu, &response);
 	free(buffer);
 	pdu = NULL;		/* Don't try to free it from now */
 	if (status != STAT_SUCCESS) {
-		Snmp_raise_error(self->ss);
+		Snmp_raise_error(self->ss, 0);
 		goto operror;
 	}
 	if (response->errstat != SNMP_ERR_NOERROR) {
@@ -547,13 +551,15 @@ Snmp_set(PyObject *self, PyObject *args)
 static PyObject*
 Snmp_gettimeout(SnmpObject *self, void *closure)
 {
-	return PyInt_FromLong(self->ss->timeout);
+	struct snmp_session *sptr = snmp_sess_session(self->ss);
+	return PyInt_FromLong(sptr->timeout);
 }
 
 static int
 Snmp_settimeout(SnmpObject *self, PyObject *value, void *closure)
 {
 	long timeout;
+	struct snmp_session *sptr = snmp_sess_session(self->ss);
 
 	if (value == NULL) {
 		PyErr_SetString(PyExc_TypeError,
@@ -573,20 +579,22 @@ Snmp_settimeout(SnmpObject *self, PyObject *value, void *closure)
 				"timeout is a positive integer");
 		return -1;
 	}
-	self->ss->timeout = timeout;
+	sptr->timeout = timeout;
 	return 0;
 }
 
 static PyObject*
 Snmp_getretries(SnmpObject *self, void *closure)
 {
-	return PyInt_FromLong(self->ss->retries);
+	struct snmp_session *sptr = snmp_sess_session(self->ss);
+	return PyInt_FromLong(sptr->retries);
 }
 
 static int
 Snmp_setretries(SnmpObject *self, PyObject *value, void *closure)
 {
 	int retries;
+	struct snmp_session *sptr = snmp_sess_session(self->ss);
 
 	if (value == NULL) {
 		PyErr_SetString(PyExc_TypeError,
@@ -606,7 +614,7 @@ Snmp_setretries(SnmpObject *self, PyObject *value, void *closure)
 				"retries is a non-negative integer");
 		return -1;
 	}
-	self->ss->retries = retries;
+	sptr->retries = retries;
 	return 0;
 }
 
