@@ -48,6 +48,31 @@ class DelayedSetSession(object):
         if self.setters:
             self.session.set(*self.setters)
 
+class NoneSession(object):
+    """SNMP session that will return None on unsucessful GET requests.
+
+    In a normal session, a GET request returning `No such instance`
+    error will trigger an exception. This session will catch such an
+    error and return None instead.
+    """
+
+    def __init__(self, session):
+        self.session = session
+        self.set = self.session.set
+        self.getnext = self.session.getnext
+
+    def get(self, *args):
+        try:
+            return self.session.get(*args)
+        except (snmp.SNMPNoSuchName,
+                snmp.SNMPNoSuchObject,
+                snmp.SNMPNoSuchInstance):
+            if len(args) > 1:
+                # We can't handle this case yet because we don't know
+                # which value is unavailable.
+                raise
+            return ((args[0], None),)
+
 class CachedSession(object):
     """SNMP session using a cache.
 
@@ -100,7 +125,7 @@ class Manager(object):
 
     def __init__(self,
                  host=None, community=None, version=None,
-                 cache=False,
+                 cache=False, none=False,
                  timeout=None, retries=None,
                  # SNMPv3
                  seclevel=snmp.SNMP_SEC_LEVEL_NOAUTH, secname=None,
@@ -126,6 +151,8 @@ class Manager(object):
                 self._session = CachedSession(self._session)
             else:
                 self._session = CachedSession(self._session, cache)
+        if none:
+            self._session = NoneSession(self._session)
 
     def _locate(self, attribute):
         for m in loaded:
@@ -143,7 +170,9 @@ class Manager(object):
         m, a = self._locate(attribute)
         if isinstance(a, mib.Scalar):
             oid, result = self._session.get(a.oid + (0,))[0]
-            return a.type(a, result)
+            if result is not None:
+                return a.type(a, result)
+            return None
         elif isinstance(a, mib.Column):
             return ProxyColumn(self._session, a)
         raise NotImplementedError
@@ -208,7 +237,9 @@ class ProxyColumn(Proxy, DictMixin):
         result = getattr(self.session, op)(self.proxy.oid + tuple(oidindex), *args)
         if op != "set":
             oid, result = result[0]
-            return self.proxy.type(self.proxy, result)
+            if result is not None:
+                return self.proxy.type(self.proxy, result)
+            return None
 
     def __getitem__(self, index):
         return self._op("get", index)

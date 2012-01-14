@@ -164,6 +164,16 @@ you can use:
 m = M("localhost", timeout=2.5, retry=10)
 ```
 
+snimpy will stop on any error with an exception. This allows you to
+not check the result at each step. Your script can't go awry. If this
+behaviour does not suit you, it is possible to suppress exceptions
+when querying inexistant objects. Instead of an exception, you'll get
+`None`.
+
+```python
+m = M("localhost", none=True)
+```
+
 That's all!
 
 Threads
