@@ -105,7 +105,7 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 		*authprotocol=NULL, *authpassword=NULL,
 		*privprotocol=NULL, *privpassword=NULL;
 	char *chost=NULL;
-	int version = 2;
+	int version = SNMP_DEFAULT_VERSION;
 	struct snmp_session session;
 
 	static char *kwlist[] = {"host", "community", "version",
@@ -135,6 +135,10 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 		break;
 	case 3:
 		session.version = SNMP_VERSION_3;
+		break;
+	case SNMP_DEFAULT_VERSION:
+		session.version = netsnmp_ds_get_int(NETSNMP_DS_LIBRARY_ID,
+						     NETSNMP_DS_LIB_SNMPVERSION);
 		break;
 	default:
 		PyErr_Format(PyExc_ValueError, "invalid SNMP version: %d",
@@ -273,11 +277,9 @@ Snmp_repr(SnmpObject *self)
 		Py_DECREF(peer);
 		return NULL;
 	}
-	result = PyString_FromFormat("%s(host=%s, version=%d)",
+	result = PyString_FromFormat("%s(host=%s)",
 	    self->ob_type->tp_name,
-	    PyString_AsString(rpeer),
-	    (sptr->version == SNMP_VERSION_1)?1:
-				     ((sptr->version == SNMP_VERSION_2c)?2:3));
+	    PyString_AsString(rpeer));
 	Py_DECREF(rpeer);
 	Py_DECREF(peer);
 	return result;

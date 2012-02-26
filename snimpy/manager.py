@@ -115,29 +115,23 @@ class CachedSession(object):
 
 class Manager(object):
 
-    # default values
-    _host = "localhost"
-    _community = "public"
-    _version = 2
-
     # do we want this object to be populated with all nodes?
     _complete = False
 
     def __init__(self,
-                 host=None, community=None, version=None,
+                 host="localhost",
+                 community=None, version=None,
                  cache=False, none=False,
                  timeout=None, retries=None,
                  # SNMPv3
-                 seclevel=snmp.SNMP_SEC_LEVEL_NOAUTH, secname=None,
-                 authprotocol="SHA", authpassword=None,
-                 privprotocol="AES", privpassword=None):
+                 seclevel=None, secname=None,
+                 authprotocol=None, authpassword=None,
+                 privprotocol=None, privpassword=None):
         if host is None:
             host = Manager._host
         self._host = host
-        if community is None:
-            community = Manager._community
         if version is None:
-            version = Manager._version
+            version = -1
         self._session = snmp.Session(host, community, version,
                                      seclevel, secname,
                                      authprotocol, authpassword,

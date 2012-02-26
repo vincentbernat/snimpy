@@ -12,7 +12,7 @@ the routing table of a given host:
 
 ```python
 load("IP-FORWARD-MIB")
-m=M()
+m=M("localhost", "public", 2)
 routes = m.ipCidrRouteNextHop
 for x in routes:
     net, netmask, tos, src = x
@@ -92,6 +92,7 @@ load("/usr/share/mibs/ietf/IF-MIB")
  - the `M` class which is used to instantiate a manager (a SNMP client):
 
 ```python
+m = M()
 m = M(host="localhost", community="private", version=2)
 m = M("localhost", "private", 2)
 m = M(community="private")
@@ -99,6 +100,14 @@ m = M(version=3,
       seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV, secname="readonly",
       authprotocol="MD5", authpassword="authpass",
       privprotocol="AES", privpassword="privpass")
+```
+
+Default values are retrieved from NetSNMP. You can for example have
+something like this in `~/.snmp/snimpy.conf`:
+
+```
+defCommunity public
+defVersion 2c
 ```
 
 A manager instance contains all the scalars and the columns that are
