@@ -193,6 +193,14 @@ snimpy should be thread-safe. There are two ground rules:
  1. You must load MIB before invoking additional threads.
  2. You must not share a session between several threads.
 
+When using SNMPv3, it is unknown if thread-safeness can be ensured
+because of this warning from the NetSNMP project:
+
+    Unfortunately, the SNMPv3 support was added about the same time as
+    the thread support and since they occurred in parallel the SNMPv3
+    support was never checked for multi-threading correctness.  It is
+    most likely that it is not thread-safe at this time.
+
 Why another tool?
 -----------------
 
