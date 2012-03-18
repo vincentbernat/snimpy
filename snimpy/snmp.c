@@ -65,6 +65,61 @@ typedef struct {
 	void *ss;
 } SnmpObject;
 
+/* Helper function: convert a tuple to an OID. */
+static int
+tuple2oid(PyObject *tuple, oid anOID[], size_t *anOID_len) {
+	size_t len;
+	int i;
+	PyObject *poid;
+	if (!PyTuple_Check(tuple)) {
+		PyErr_Format(PyExc_TypeError,
+			     "OID should be a tuple of integers");
+		return -1;
+	}
+	len = PyTuple_Size(tuple);
+	if (len > *anOID_len) {
+		PyErr_Format(PyExc_ValueError,
+			     "OID is too large: %zd > %zd",
+			     len, *anOID_len);
+		return -1;
+	}
+	for (i = 0; i < len; i++) {
+		if ((poid = PyTuple_GetItem(tuple, i)) == NULL)
+			return -1;
+		if (PyLong_Check(poid))
+			anOID[i] = (oid)PyLong_AsUnsignedLong(poid);
+		else if (PyInt_Check(poid))
+			anOID[i] = (oid)PyInt_AsLong(poid);
+		else {
+			PyErr_Format(PyExc_TypeError,
+				     "element %d of OID is not an integer",
+				     i);
+			return -1;
+		}
+	}
+	*anOID_len = len;
+	return 0;
+}
+
+/* Helper function: convert an OID to a tuple. */
+static PyObject*
+oid2tuple(oid anOID[], size_t anOID_len) {
+	PyObject *resultoid;
+	PyObject *tmp;
+	int i;
+	if ((resultoid = PyTuple_New(anOID_len)) == NULL)
+		return NULL;
+	for (i = 0; i < anOID_len; i++) {
+		if ((tmp = PyLong_FromLong(anOID[i])) == NULL) {
+			Py_DECREF(resultoid);
+			return NULL;
+		}
+		PyTuple_SetItem(resultoid, i, tmp);
+	}
+	return resultoid;
+}
+
+/* SNMP sessions */
 static void
 Snmp_dealloc(SnmpObject* self)
 {
@@ -325,12 +380,12 @@ converterr:
 static PyObject*
 Snmp_op(SnmpObject *self, PyObject *args, int op)
 {
-	PyObject *roid, *poid, *resultvalue=NULL, *resultoid=NULL,
+	PyObject *roid, *resultvalue=NULL, *resultoid=NULL,
 	    *result=NULL, *results=NULL, *tmp, *setobject;
 	struct snmp_pdu *pdu=NULL, *response=NULL;
 	struct variable_list *vars;
 	oid anOID[MAX_OID_LEN];
-	size_t anOID_len = MAX_OID_LEN;
+	size_t anOID_len;
 	int i = 0, j = 0, status, type;
 	struct ErrorException *e;
 	long long counter64;
@@ -351,33 +406,9 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	while (j < PyTuple_Size(args)) {
 		if ((roid = PyTuple_GetItem(args, j)) == NULL)
 			goto operror;
-		if (!PyTuple_Check(roid)) {
-			PyErr_Format(PyExc_TypeError,
-			    "argument %d should be a tuple of integers",
-			    j);
+		anOID_len = sizeof(anOID)/sizeof(oid);
+		if (tuple2oid(roid, anOID, &anOID_len) == -1)
 			goto operror;
-		}
-		anOID_len = PyTuple_Size(roid);
-		if (anOID_len > MAX_OID_LEN) {
-			PyErr_Format(PyExc_ValueError,
-			    "OID #%d is too large: %zd > %d",
-			    j, anOID_len, MAX_OID_LEN);
-			goto operror;
-		}
-		for (i = 0; i < anOID_len; i++) {
-			if ((poid = PyTuple_GetItem(roid, i)) == NULL)
-				goto operror;
-			if (PyLong_Check(poid))
-				anOID[i] = (oid)PyLong_AsUnsignedLong(poid);
-			else if (PyInt_Check(poid))
-				anOID[i] = (oid)PyInt_AsLong(poid);
-			else {
-				PyErr_Format(PyExc_TypeError,
-				    "element %d of OID #%d is not an integer",
-				    i, j);
-				goto operror;
-			}
-		}
 		if (op != SNMP_MSG_SET) {
 			snmp_add_null_var(pdu, anOID, anOID_len);
 			j++;
@@ -504,13 +535,8 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 		if (resultvalue == NULL) goto operror;
 		
 		/* And now, the OID */
-		if ((resultoid = PyTuple_New(vars->name_length)) == NULL)
+		if ((resultoid = oid2tuple(vars->name, vars->name_length)) == NULL)
 			goto operror;
-		for (i = 0; i < vars->name_length; i++) {
-			if ((tmp = PyLong_FromLong(vars->name[i])) == NULL)
-				goto operror;
-			PyTuple_SetItem(resultoid, i, tmp);
-		}
 		if ((result = PyTuple_Pack(2, resultoid, resultvalue)) == NULL)
 			goto operror;
 		Py_CLEAR(resultoid);
