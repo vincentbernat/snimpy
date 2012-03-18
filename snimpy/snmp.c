@@ -756,10 +756,9 @@ initsnmp(void)
 	}
 
 	/* Constants */
-#define ADDCONSTANT(x)				\
-	if ((c = PyInt_FromLong(x)) == NULL)	\
-		return;				\
-	PyModule_AddObject(m, #x, c)
+#define ADDCONSTANT(x)					\
+	if (PyModule_AddIntConstant(m, #x, x) == -1)	\
+		return;
 	ADDCONSTANT(ASN_BOOLEAN);
 	ADDCONSTANT(ASN_INTEGER);
 	ADDCONSTANT(ASN_UNSIGNED);
