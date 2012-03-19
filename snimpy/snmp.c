@@ -509,11 +509,9 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 					PyErr_SetFromErrno(PyExc_IOError);
 					goto operror;
 				}
-				/* We received a Ctrl-C, let's stop here. */
-				snmp_free_pdu(pdu);
-				free(buffer);
-				*hstate = NULL; /* Means: callback, return immediatly */
-				Py_RETURN_NONE;
+				if (PyErr_CheckSignals())
+					/* Ctrl-C */
+					goto operror;
 				break;
 			}
 	}
