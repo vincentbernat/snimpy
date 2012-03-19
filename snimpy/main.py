@@ -79,8 +79,15 @@ def interact():
             from IPython.frontend.terminal.embed import InteractiveShellEmbed
             from IPython.config.loader import Config
             cfg = Config()
-            cfg.InteractiveShellEmbed.prompt_in1="Snimpy [\\#]> "
-            cfg.InteractiveShellEmbed.prompt_out="Snimpy [\\#]: "
+            try:
+                # >= 0.12
+                from IPython.core.prompts import PromptManager
+                cfg.PromptManager.in_template="Snimpy [\\#]> "
+                cfg.PromptManager.out_template="Snimpy [\\#]: "
+            except ImportError:
+                # 0.11
+                cfg.InteractiveShellEmbed.prompt_in1="Snimpy [\\#]> "
+                cfg.InteractiveShellEmbed.prompt_out="Snimpy [\\#]: "
             if conf.ipythonprofile:
               cfg.InteractiveShellEmbed.profile=conf.ipythonprofile
             shell = InteractiveShellEmbed(config=cfg, banner1=banner, user_ns=local)
