@@ -377,6 +377,51 @@ converterr:
 	return NULL;
 }
 
+static int
+Snmp_handle_answer(int op,
+		   netsnmp_session * session,
+		   int reqid, netsnmp_pdu *pdu, void *magic)
+{
+	struct synch_state **state = (struct synch_state **) magic;
+
+	if (*state == NULL)
+		return 0;
+	(*state)->waiting = 0;
+
+	if (op == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE && pdu) {
+		switch (pdu->command) {
+		case SNMP_MSG_RESPONSE:
+			(*state)->pdu = snmp_clone_pdu(pdu);
+			(*state)->status = STAT_SUCCESS;
+			session->s_snmp_errno = SNMPERR_SUCCESS;
+			free(state);
+			return 1;
+		}
+	} else if (op == NETSNMP_CALLBACK_OP_TIMED_OUT) {
+		(*state)->pdu = NULL;
+		(*state)->status = STAT_TIMEOUT;
+		session->s_snmp_errno = SNMPERR_TIMEOUT;
+		SET_SNMP_ERROR(SNMPERR_TIMEOUT);
+		free(state);
+		return 1;
+	} else if (op == NETSNMP_CALLBACK_OP_DISCONNECT) {
+		(*state)->pdu = NULL;
+		(*state)->status = STAT_ERROR;
+		session->s_snmp_errno = SNMPERR_ABORT;
+		SET_SNMP_ERROR(SNMPERR_ABORT);
+		free(state);
+		return 1;
+	}
+	/* Unexpected error. */
+	(*state)->pdu = NULL;
+	(*state)->status = STAT_ERROR;
+	session->s_snmp_errno = SNMPERR_PROTOCOL;
+	SET_SNMP_ERROR(SNMPERR_PROTOCOL);
+	snmp_set_detail("Unexpected reply");
+	free(state);
+	return 0;
+}
+
 static PyObject*
 Snmp_op(SnmpObject *self, PyObject *args, int op)
 {
@@ -384,6 +429,7 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	    *result=NULL, *results=NULL, *tmp, *setobject;
 	struct snmp_pdu *pdu=NULL, *response=NULL;
 	struct variable_list *vars;
+	struct synch_state state, **hstate;
 	oid anOID[MAX_OID_LEN];
 	size_t anOID_len;
 	int i = 0, j = 0, status, type;
@@ -423,11 +469,56 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 			j += 2;
 		}
 	}
-	Py_BEGIN_ALLOW_THREADS
-	status = snmp_sess_synch_response(self->ss, pdu, &response);
-	Py_END_ALLOW_THREADS
-	free(buffer);
-	pdu = NULL;		/* Don't try to free it from now */
+	/* Start sending... */
+	/* We don't use snmp_sess_synch_response because it is not interruptible. */
+	if ((hstate = calloc(1, sizeof(struct synch_state *))) == NULL) {
+		PyErr_NoMemory();
+		goto operror;
+	}
+	/* hstate should be freed by the callback, not here. */
+	memset(&state, 0, sizeof(struct synch_state));
+	*hstate = &state;
+	if (snmp_sess_async_send(self->ss, pdu, Snmp_handle_answer, hstate) == 0) {
+		Snmp_raise_error(self->ss, 0);
+		goto operror;
+	}
+	state.waiting = 1;
+	while(state.waiting) {
+		fd_set fdset;
+		int    block  = 1;
+		int    count;
+		int    numfds = 0;
+		struct timeval tv = {0, 0};
+		FD_ZERO(&fdset);
+		snmp_sess_select_info(self->ss, &numfds, &fdset, &tv, &block);
+		Py_BEGIN_ALLOW_THREADS
+		count = select(numfds, &fdset, 0, 0, (block == 1)?NULL:&tv);
+		Py_END_ALLOW_THREADS
+		if (count > 0)
+			snmp_sess_read(self->ss, &fdset);
+		else
+			switch (count) {
+			case 0:
+				snmp_sess_timeout(self->ss);
+				break;
+			case -1:
+				if (errno != EINTR) {
+					PyErr_SetFromErrno(PyExc_IOError);
+					goto operror;
+				}
+				/* We received a Ctrl-C, let's stop here. */
+				snmp_free_pdu(pdu);
+				free(buffer);
+				*hstate = NULL; /* Means: callback, return immediatly */
+				Py_RETURN_NONE;
+				break;
+			}
+	}
+	response = state.pdu;
+	status   = state.status;
+	hstate   = NULL;	/* Means: callback has been called */
+	pdu      = NULL;
+	/* Got answer... */
 	if (status != STAT_SUCCESS) {
 		Snmp_raise_error(self->ss, 0);
 		goto operror;
@@ -553,6 +644,8 @@ operror:
 	Py_XDECREF(resultoid);
 	Py_XDECREF(results);
 	Py_XDECREF(result);
+	if (hstate) *hstate = NULL; /* Callback: don't run anything */
+	free(buffer);
 	if (pdu)
 		snmp_free_pdu(pdu);
 	if (response)
