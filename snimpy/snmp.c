@@ -431,7 +431,7 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	    *result=NULL, *results=NULL, *tmp, *setobject;
 	struct snmp_pdu *pdu=NULL, *response=NULL;
 	struct variable_list *vars;
-	struct synch_state state, **hstate;
+	struct synch_state state, **hstate = NULL;
 	oid anOID[MAX_OID_LEN];
 	size_t anOID_len;
 	int i = 0, j = 0, status, type;
@@ -484,6 +484,7 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 		Snmp_raise_error(self->ss, 0);
 		goto operror;
 	}
+	pdu = NULL;
 	state.waiting = 1;
 	while(state.waiting) {
 		fd_set fdset;
@@ -519,7 +520,6 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	response = state.pdu;
 	status   = state.status;
 	hstate   = NULL;	/* Means: callback has been called */
-	pdu      = NULL;
 	/* Got answer... */
 	if (status != STAT_SUCCESS) {
 		Snmp_raise_error(self->ss, 0);
