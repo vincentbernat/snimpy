@@ -384,8 +384,10 @@ Snmp_handle_answer(int op,
 {
 	struct synch_state **state = (struct synch_state **) magic;
 
-	if (*state == NULL)
+	if (*state == NULL) {
+		free(state);
 		return 0;
+	}
 	(*state)->waiting = 0;
 
 	if (op == NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE && pdu) {
