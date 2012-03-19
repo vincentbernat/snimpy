@@ -1,0 +1,9 @@
+*.pyc
+*~
+*.so
+cscope.out
+build
+dist
+MANIFEST
+.index
+.coverage
