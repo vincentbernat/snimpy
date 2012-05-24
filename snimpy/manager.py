@@ -258,16 +258,20 @@ class ProxyColumn(Proxy, DictMixin):
             yield k
 
     def iteritems(self):
+        count = 0
         oid = self.proxy.oid
         indexes = self.proxy.table.index
         while True:
-            noid, result = self.session.getnext(oid)[0]
+            try:
+                noid, result = self.session.getnext(oid)[0]
+            except snmp.SNMPEndOfMibView:
+                break
             if noid <= oid:
-                raise StopIteration
+                break
             oid = noid
             if not((len(oid) >= len(self.proxy.oid) and
                     oid[:len(self.proxy.oid)] == self.proxy.oid[:len(self.proxy.oid)])):
-                raise StopIteration
+                break
 
             # oid should be turned into index
             index = oid[len(self.proxy.oid):]
@@ -276,11 +280,33 @@ class ProxyColumn(Proxy, DictMixin):
                 l, o = x.type.fromOid(x, tuple(index))
                 target.append(x.type(x, o))
                 index = index[l:]
+            count = count + 1
             if len(target) == 1:
                 # Should work most of the time
                 yield target[0], result
             else:
                 yield tuple(target), result
+        if count == 0:
+            # We did not find any element. Is it because the column is
+            # empty or because the column does not exist. We do a SNMP
+            # GET to know. If we get a "No such instance" exception,
+            # this means the column is empty. If we get "No such
+            # object", this means the column does not exist. We cannot
+            # make such a distinction with SNMPv1.
+            try:
+                self.session.get(self.proxy.oid)
+            except snmp.SNMPNoSuchInstance:
+                # OK, the set of result is really empty
+                raise StopIteration
+            except snmp.SNMPNoSuchName:
+                # SNMPv1, we don't know
+                pass
+            except snmp.SNMPNoSuchObject:
+                # The result is empty because the column is unknown
+                raise
+
+        raise StopIteration
+
 
 loaded = []
 def load(mibname):
