@@ -14,7 +14,7 @@ snimpy MODULE-IDENTITY
     LAST-UPDATED "200809160000Z"
     ORGANIZATION
            "snimpy
-            http://trac.luffy.cx/snimpy/"
+            https://github.com/vincentbernat/snimpy"
     CONTACT-INFO
            "Lorem ipsum, etc, etc."
     DESCRIPTION
