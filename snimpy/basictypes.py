@@ -333,7 +333,13 @@ class String(Type, str):
 
 
 class MacAddress(String):
-    pass
+
+    @classmethod
+    def _internal(cls, entity, value):
+        return str(value)
+
+    def display(self):
+        return ":".join(["{0:02x}".format(ord(a)) for a in self._value])
 
 
 class Integer(Type, long):
