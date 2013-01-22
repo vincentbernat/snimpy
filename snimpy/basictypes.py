@@ -331,6 +331,11 @@ class String(Type, str):
                 return False
         return True
 
+
+class MacAddress(String):
+    pass
+
+
 class Integer(Type, long):
     """Class for any integer"""
 
