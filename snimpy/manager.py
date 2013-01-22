@@ -261,31 +261,43 @@ class ProxyColumn(Proxy, DictMixin):
         count = 0
         oid = self.proxy.oid
         indexes = self.proxy.table.index
+
         while True:
             try:
-                noid, result = self.session.getnext(oid)[0]
+                if self.session.bulk and self.session.use_bulk:
+                    results = self.session.getbulk(oid)
+                else:
+                    results = self.session.getnext(oid)
             except snmp.SNMPEndOfMibView:
                 break
-            if noid <= oid:
-                break
-            oid = noid
-            if not((len(oid) >= len(self.proxy.oid) and
+
+            for noid, result in results:
+                if noid <= oid:
+                    noid = None
+                    break
+                oid = noid
+                if not((len(oid) >= len(self.proxy.oid) and
                     oid[:len(self.proxy.oid)] == self.proxy.oid[:len(self.proxy.oid)])):
+                    noid = None
+                    break
+
+                # oid should be turned into index
+                index = oid[len(self.proxy.oid):]
+                target = []
+                for x in indexes:
+                    l, o = x.type.fromOid(x, tuple(index))
+                    target.append(x.type(x, o))
+                    index = index[l:]
+                count = count + 1
+                if len(target) == 1:
+                    # Should work most of the time
+                    yield target[0], result
+                else:
+                    yield tuple(target), result
+
+            if noid is None:
                 break
 
-            # oid should be turned into index
-            index = oid[len(self.proxy.oid):]
-            target = []
-            for x in indexes:
-                l, o = x.type.fromOid(x, tuple(index))
-                target.append(x.type(x, o))
-                index = index[l:]
-            count = count + 1
-            if len(target) == 1:
-                # Should work most of the time
-                yield target[0], result
-            else:
-                yield tuple(target), result
         if count == 0:
             # We did not find any element. Is it because the column is
             # empty or because the column does not exist. We do a SNMP

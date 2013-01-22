@@ -331,6 +331,17 @@ class String(Type, str):
                 return False
         return True
 
+
+class MacAddress(String):
+
+    @classmethod
+    def _internal(cls, entity, value):
+        return str(value)
+
+    def display(self):
+        return ":".join(["{0:02x}".format(ord(a)) for a in self._value])
+
+
 class Integer(Type, long):
     """Class for any integer"""
 
