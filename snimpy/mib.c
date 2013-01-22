@@ -468,6 +468,7 @@ static struct typeConversion typeToPython[] = {
 	{ SMI_BASETYPE_UNSIGNED32, NULL, "Unsigned32" },
 	{ SMI_BASETYPE_UNSIGNED64, NULL, "Unsigned64" },
 	{ SMI_BASETYPE_OCTETSTRING, "IpAddress", "IpAddress" },
+	{ SMI_BASETYPE_OCTETSTRING, "MacAddress", "MacAddress" },
 	{ SMI_BASETYPE_OCTETSTRING, NULL, "String" },
 	{ SMI_BASETYPE_OBJECTIDENTIFIER, NULL, "Oid" },
 	{ SMI_BASETYPE_ENUM, "TruthValue", "Boolean" },

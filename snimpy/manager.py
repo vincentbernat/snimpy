@@ -261,6 +261,7 @@ class ProxyColumn(Proxy, DictMixin):
         count = 0
         oid = self.proxy.oid
         indexes = self.proxy.table.index
+
         while True:
             try:
                 noid, result = self.session.getnext(oid)[0]
