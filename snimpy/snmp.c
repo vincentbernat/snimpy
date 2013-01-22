@@ -65,7 +65,7 @@ typedef struct {
 	void *ss;
 	unsigned int bulk_non_repeaters,
 	             bulk_max_repetitions,
-	             snmp_version;
+	             snmp_version, use_bulk;
 } SnmpObject;
 
 /* Helper function: convert a tuple to an OID. */
@@ -205,6 +205,7 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 	}
 
 	self->snmp_version = session.version;
+    self->use_bulk = (self->snmp_version != SNMP_VERSION_1);
 
 	/* Fill out session */
 	if (community != NULL && community != Py_None) {
@@ -465,7 +466,7 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 
 	pdu = snmp_pdu_create(op);
 
-	if ((op == SNMP_MSG_GETBULK)) {
+	if (op == SNMP_MSG_GETBULK) {
         pdu->non_repeaters = self->bulk_non_repeaters;
         pdu->max_repetitions = self->bulk_max_repetitions;
 	}
@@ -559,7 +560,7 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 
 	/* Let's handle the value */
 	j = 0;
-	if ((op == SNMP_MSG_GETBULK)) {
+	if (op == SNMP_MSG_GETBULK) {
 	    if ((results = PyTuple_New(self->bulk_max_repetitions)) == NULL)
 	        goto operror;
 	} else if ((results = PyTuple_New(PyTuple_Size(args) /
@@ -723,6 +724,20 @@ Snmp_getbulksettings(SnmpObject *self, void *closure)
 	return result;
 }
 
+static int
+Snmp_setusebulk(SnmpObject *self, PyObject * use_bulk, void *closure)
+{
+    self->use_bulk = PyInt_AsLong(use_bulk);
+    return 0;
+}
+
+static PyObject*
+Snmp_getusebulk(SnmpObject *self, void *closure)
+{
+	return PyInt_FromLong(self->use_bulk);
+}
+
+
 static PyObject*
 Snmp_gettimeout(SnmpObject *self, void *closure)
 {
@@ -815,6 +830,9 @@ static PyGetSetDef Snmp_getseters[] = {
 	{"bulk",
 	 (getter)Snmp_getbulksettings, (setter)Snmp_setbulksettings,
 	 "bulk", NULL},
+	{"use_bulk",
+	 (getter)Snmp_getusebulk, (setter)Snmp_setusebulk,
+	 "use_bulk", NULL},
 	{NULL}			/* Sentinel */
 };
 
