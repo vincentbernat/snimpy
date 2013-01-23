@@ -4,7 +4,8 @@ python:
  - "2.7"
 install:
  - sudo apt-get update
+ - sudo mkdir /etc/snmp
+ - sudo perl -e 'open(OUT, ">", "/etc/snmp/snmpd.conf"); print OUT "rocommunity public\n"'
  - sudo apt-get install libsmi2-dev libsnmp-dev snmpd snmp-mibs-downloader
- - sudo snmpd -Lsd -Lf /dev/null -u snmp -g snmp -I -smux -p /var/run/snmpd.pid
  - python setup.py install
 script: "cd tests && nosetests"
