@@ -64,13 +64,14 @@ typedef struct {
 	PyObject_HEAD
 	void *ss;
 	unsigned int bulk_non_repeaters,
-	             bulk_max_repetitions,
-	             snmp_version, use_bulk;
+		bulk_max_repetitions,
+		snmp_version, use_bulk;
 } SnmpObject;
 
 /* Helper function: convert a tuple to an OID. */
 static int
-tuple2oid(PyObject *tuple, oid anOID[], size_t *anOID_len) {
+tuple2oid(PyObject *tuple, oid anOID[], size_t *anOID_len)
+{
 	size_t len;
 	int i;
 	PyObject *poid;
@@ -106,7 +107,8 @@ tuple2oid(PyObject *tuple, oid anOID[], size_t *anOID_len) {
 
 /* Helper function: convert an OID to a tuple. */
 static PyObject*
-oid2tuple(oid anOID[], size_t anOID_len) {
+oid2tuple(oid anOID[], size_t anOID_len)
+{
 	PyObject *resultoid;
 	PyObject *tmp;
 	int i;
@@ -171,13 +173,13 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 				 "authprotocol", "authpassword",
 				 "privprotocol", "privpassword",
 				 NULL};
-		
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OiOOOOOO", kwlist, 
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OiOOOOOO", kwlist,
 					 &host, &community, &version,
 					 &seclevel, &secname,
 					 &authprotocol, &authpassword,
 					 &privprotocol, &privpassword))
-		return -1; 
+		return -1;
 
 	snmp_sess_init(&session);
 	if ((chost = PyString_AsString(host)) == NULL)
@@ -200,12 +202,12 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 		break;
 	default:
 		PyErr_Format(PyExc_ValueError, "invalid SNMP version: %d",
-		    version);
+			     version);
 		return -1;
 	}
 
 	self->snmp_version = session.version;
-    self->use_bulk = (self->snmp_version != SNMP_VERSION_1);
+	self->use_bulk = (self->snmp_version != SNMP_VERSION_1);
 
 	/* Fill out session */
 	if (community != NULL && community != Py_None) {
@@ -320,9 +322,9 @@ Snmp_init(SnmpObject *self, PyObject *args, PyObject *kwds)
 	self->bulk_non_repeaters = 0;
 	self->bulk_max_repetitions = 40;
 	return 0;
- initoutofmem:
+initoutofmem:
 	PyErr_NoMemory();
- initerror:
+initerror:
 	if (session.community) free(session.community);
 	if (session.peername) free(session.peername);
 	if (session.securityName) free(session.securityName);
@@ -341,8 +343,8 @@ Snmp_repr(SnmpObject *self)
 		return NULL;
 	}
 	result = PyString_FromFormat("%s(host=%s)",
-	    self->ob_type->tp_name,
-	    PyString_AsString(rpeer));
+				     self->ob_type->tp_name,
+				     PyString_AsString(rpeer));
 	Py_DECREF(rpeer);
 	Py_DECREF(peer);
 	return result;
@@ -378,7 +380,7 @@ Snmp_convert_object(PyObject *obj, int *type, ssize_t *bufsize)
 	Py_XDECREF(BasicType);
 	Py_XDECREF(convertor);
 	return result;
-		
+
 converterr:
 	Py_XDECREF(BasicType);
 	Py_XDECREF(convertor);
@@ -436,7 +438,7 @@ static PyObject*
 Snmp_op(SnmpObject *self, PyObject *args, int op)
 {
 	PyObject *roid, *resultvalue=NULL, *resultoid=NULL,
-	    *result=NULL, *results=NULL, *tmp, *setobject;
+		*result=NULL, *results=NULL, *tmp, *setobject;
 	struct snmp_pdu *pdu=NULL, *response=NULL;
 	struct variable_list *vars;
 	struct synch_state state, **hstate = NULL;
@@ -451,17 +453,17 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 
 	if (PyTuple_Size(args) < 1) {
 		PyErr_SetString(PyExc_TypeError,
-		    "not enough arguments");
+				"not enough arguments");
 		return NULL;
 	}
 	if ((op == SNMP_MSG_SET) && (PyTuple_Size(args)%2 != 0)) {
 		PyErr_SetString(PyExc_TypeError,
-		    "need an even number of arguments for SET operation");
+				"need an even number of arguments for SET operation");
 		return NULL;
 	}
 	if ((op == SNMP_MSG_GETBULK) &&(sptr->version == SNMP_VERSION_1)) {
-			PyErr_SetString(SnmpException, "getbulk not supported in SNMPv1");
-		    return NULL;
+		PyErr_SetString(SnmpException, "getbulk not supported in SNMPv1");
+		return NULL;
 	}
 	if ((op == SNMP_MSG_GETBULK) && (self->bulk_non_repeaters > PyTuple_Size(args))) {
 		PyErr_SetString(SnmpException, "too many non repeaters requested for GETBULK");
@@ -471,8 +473,8 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	pdu = snmp_pdu_create(op);
 
 	if (op == SNMP_MSG_GETBULK) {
-        pdu->non_repeaters = self->bulk_non_repeaters;
-        pdu->max_repetitions = self->bulk_max_repetitions;
+		pdu->non_repeaters = self->bulk_non_repeaters;
+		pdu->max_repetitions = self->bulk_max_repetitions;
 	}
 
 	while (j < PyTuple_Size(args)) {
@@ -488,10 +490,10 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 			if ((setobject = PyTuple_GetItem(args, j+1)) == NULL)
 				goto operror;
 			if ((buffer = Snmp_convert_object(setobject,
-				    &type, &bufsize)) == NULL)
+							  &type, &bufsize)) == NULL)
 				goto operror;
 			snmp_pdu_add_variable(pdu, anOID, anOID_len,
-			    type, buffer, bufsize); /* There is a copy of all params */
+					      type, buffer, bufsize); /* There is a copy of all params */
 			j += 2;
 		}
 	}
@@ -519,25 +521,25 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 		FD_ZERO(&fdset);
 		snmp_sess_select_info(self->ss, &numfds, &fdset, &tv, &block);
 		Py_BEGIN_ALLOW_THREADS
-		count = select(numfds, &fdset, 0, 0, (block == 1)?NULL:&tv);
+			count = select(numfds, &fdset, 0, 0, (block == 1)?NULL:&tv);
 		Py_END_ALLOW_THREADS
-		if (count > 0)
-			snmp_sess_read(self->ss, &fdset);
-		else
-			switch (count) {
-			case 0:
-				snmp_sess_timeout(self->ss);
-				break;
-			case -1:
-				if (errno != EINTR) {
-					PyErr_SetFromErrno(PyExc_IOError);
-					goto operror;
+			if (count > 0)
+				snmp_sess_read(self->ss, &fdset);
+			else
+				switch (count) {
+				case 0:
+					snmp_sess_timeout(self->ss);
+					break;
+				case -1:
+					if (errno != EINTR) {
+						PyErr_SetFromErrno(PyExc_IOError);
+						goto operror;
+					}
+					if (PyErr_CheckSignals())
+						/* Ctrl-C */
+						goto operror;
+					break;
 				}
-				if (PyErr_CheckSignals())
-					/* Ctrl-C */
-					goto operror;
-				break;
-			}
 	}
 	response = state.pdu;
 	status   = state.status;
@@ -568,15 +570,15 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 		if ((results = PyTuple_New(
 			self->bulk_non_repeaters +
 			(PyTuple_Size(args) - self->bulk_non_repeaters) * self->bulk_max_repetitions)) == NULL)
-	        goto operror;
+			goto operror;
 	} else if ((results = PyTuple_New(PyTuple_Size(args) /
-		    ((op == SNMP_MSG_SET)?2:1))) == NULL)
+					  ((op == SNMP_MSG_SET)?2:1))) == NULL)
 		goto operror;
 	do {
 		j++;
 		if (j > PyTuple_Size(results)) {
 			PyErr_SetString(SnmpException,
-			    "Received too many answers");
+					"Received too many answers");
 			goto operror;
 		}
 		switch (vars->type) {
@@ -600,11 +602,11 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 			break;
 		case ASN_OCTET_STR:
 			resultvalue = PyString_FromStringAndSize((char*)vars->val.string,
-			    vars->val_len);
+								 vars->val_len);
 			break;
 		case ASN_BIT_STR:
 			resultvalue = PyString_FromStringAndSize((char*)vars->val.bitstring,
-			    vars->val_len);
+								 vars->val_len);
 			break;
 		case ASN_OBJECT_ID:
 			if ((resultvalue = PyTuple_New(vars->val_len/sizeof(oid))) == NULL)
@@ -618,15 +620,15 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 		case ASN_IPADDRESS:
 			if (vars->val_len < 4) {
 				PyErr_Format(SnmpException,
-				    "IP address is too short (%zd < 4)",
-				    vars->val_len);
+					     "IP address is too short (%zd < 4)",
+					     vars->val_len);
 				goto operror;
 			}
 			resultvalue = PyString_FromFormat("%d.%d.%d.%d",
-			    vars->val.string[0],
-			    vars->val.string[1],
-			    vars->val.string[2],
-			    vars->val.string[3]);
+							  vars->val.string[0],
+							  vars->val.string[1],
+							  vars->val.string[2],
+							  vars->val.string[3]);
 			break;
 		case ASN_COUNTER64:
 #ifdef NETSNMP_WITH_OPAQUE_SPECIAL_TYPES
@@ -635,8 +637,8 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 		case ASN_OPAQUE_COUNTER64:
 #endif                          /* NETSNMP_WITH_OPAQUE_SPECIAL_TYPES */
 			counter64 = ((unsigned long long)
-			    (vars->val.counter64->high) << 32) +
-			    (unsigned long long)(vars->val.counter64->low);
+				     (vars->val.counter64->high) << 32) +
+				(unsigned long long)(vars->val.counter64->low);
 			resultvalue = PyLong_FromUnsignedLongLong(counter64);
 			break;
 #ifdef NETSNMP_WITH_OPAQUE_SPECIAL_TYPES
@@ -649,11 +651,11 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 #endif                          /* NETSNMP_WITH_OPAQUE_SPECIAL_TYPES */
 		default:
 			PyErr_Format(SnmpException, "unknown type returned (%d)",
-			    vars->type);
+				     vars->type);
 			goto operror;
 		}
 		if (resultvalue == NULL) goto operror;
-		
+
 		/* And now, the OID */
 		if ((resultoid = oid2tuple(vars->name, vars->name_length)) == NULL)
 			goto operror;
@@ -667,7 +669,7 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	} while ((vars = vars->next_variable));
 	snmp_free_pdu(response);
 	return results;
-	
+
 operror:
 	Py_XDECREF(resultvalue);
 	Py_XDECREF(resultoid);
@@ -711,12 +713,12 @@ Snmp_setbulksettings(SnmpObject *self, PyObject * settings_tuple, void *closure)
 {
 	if (PyTuple_Size(settings_tuple) != 2) {
 		PyErr_SetString(PyExc_TypeError,
-		    "bulk settings need a tuple of size 2 (non_repeaters, max_repetitions)");
+				"bulk settings need a tuple of size 2 (non_repeaters, max_repetitions)");
 		return -1;
 	}
-    self->bulk_non_repeaters = PyInt_AsLong(PyTuple_GetItem(settings_tuple, 0));
-    self->bulk_max_repetitions = PyInt_AsLong(PyTuple_GetItem(settings_tuple, 1));
-    return 0;
+	self->bulk_non_repeaters = PyInt_AsLong(PyTuple_GetItem(settings_tuple, 0));
+	self->bulk_max_repetitions = PyInt_AsLong(PyTuple_GetItem(settings_tuple, 1));
+	return 0;
 }
 
 static PyObject*
@@ -724,17 +726,17 @@ Snmp_getbulksettings(SnmpObject *self, void *closure)
 {
 	struct snmp_session *sptr = snmp_sess_session(self->ss);
 	if (sptr->version == SNMP_VERSION_1) return Py_None;
-    PyObject * result = PyTuple_New(2);
-    PyTuple_SetItem(result, 0, PyInt_FromLong(self->bulk_non_repeaters));
-    PyTuple_SetItem(result, 1, PyInt_FromLong(self->bulk_max_repetitions));
+	PyObject * result = PyTuple_New(2);
+	PyTuple_SetItem(result, 0, PyInt_FromLong(self->bulk_non_repeaters));
+	PyTuple_SetItem(result, 1, PyInt_FromLong(self->bulk_max_repetitions));
 	return result;
 }
 
 static int
 Snmp_setusebulk(SnmpObject *self, PyObject * use_bulk, void *closure)
 {
-    self->use_bulk = PyInt_AsLong(use_bulk);
-    return 0;
+	self->use_bulk = PyInt_AsLong(use_bulk);
+	return 0;
 }
 
 static PyObject*
@@ -886,7 +888,7 @@ static PyTypeObject SnmpType = {
 };
 
 PyDoc_STRVAR(module_doc,
-    "simple interface to libnetsnmp");
+	     "simple interface to libnetsnmp");
 
 PyMODINIT_FUNC
 initsnmp(void)
@@ -904,9 +906,9 @@ initsnmp(void)
 	/* Exception registration */
 #define ADDEXCEPTION(var, name, parent)					\
 	if (var == NULL) {						\
-	    var = PyErr_NewException("snmp." name, parent, NULL);	\
-	    if (var == NULL)						\
-		    return;						\
+		var = PyErr_NewException("snmp." name, parent, NULL);	\
+		if (var == NULL)					\
+			return;						\
 	}								\
 	Py_INCREF(var);							\
 	PyModule_AddObject(m, name, var)
@@ -940,12 +942,12 @@ initsnmp(void)
 	ADDCONSTANT(ASN_BIT_STR);
 	ADDCONSTANT(ASN_OCTET_STR);
 	ADDCONSTANT(ASN_NULL);
-	ADDCONSTANT(ASN_OBJECT_ID);	
+	ADDCONSTANT(ASN_OBJECT_ID);
 	ADDCONSTANT(ASN_IPADDRESS);
 	ADDCONSTANT(SNMP_SEC_LEVEL_NOAUTH);
 	ADDCONSTANT(SNMP_SEC_LEVEL_AUTHNOPRIV);
 	ADDCONSTANT(SNMP_SEC_LEVEL_AUTHPRIV);
-	
+
 	Py_INCREF(&SnmpType);
 	PyModule_AddObject(m, "Session", (PyObject *)&SnmpType);
 
@@ -953,7 +955,7 @@ initsnmp(void)
 		if ((TypesModule = PyImport_ImportModule("snimpy.basictypes")) == NULL)
 			return;
 	Py_INCREF(TypesModule);
-	
+
 	/* Try to load as less MIB as possible */
 	unsetenv("MIBS");
 	setenv("MIBDIRS", "/dev/null", 1);
