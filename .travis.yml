@@ -2,7 +2,7 @@ language: "python"
 install:
   - "sudo apt-get -qq update"
   - "sudo apt-get -y install pkg-config libsmi2-dev libsnmp-dev"
-  - "pip install python-pysnmp4"
+  - "pip install pysnmp"
 python:
  - "2.6"
  - "2.7"
