@@ -6,7 +6,7 @@
 /dist
 /MANIFEST
 /.coverage
-/cover
+/htmlcov
 /.tox
 .index
 cscope.out

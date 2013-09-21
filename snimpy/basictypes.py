@@ -64,10 +64,10 @@ class Type(object):
     @classmethod
     def _internal(cls, entity, value):
         """Get internal value for a given value."""
-        raise NotImplementedError
+        raise NotImplementedError # pragma: no cover
 
     def pack(self):
-        raise NotImplementedError
+        raise NotImplementedError # pragma: no cover
 
     def toOid(self):
         """Convert to an OID.
@@ -80,7 +80,7 @@ class Type(object):
 
         @return: OID that can be used as index
         """
-        raise NotImplementedError
+        raise NotImplementedError # pragma: no cover
 
     @classmethod
     def fromOid(cls, entity, oid):
@@ -94,7 +94,7 @@ class Type(object):
            needed to create the instance and v the instance created from
            the OID
         """
-        raise NotImplementedError
+        raise NotImplementedError # pragma: no cover
 
     @classmethod
     def _fixedOrImplied(cls, entity):
@@ -175,7 +175,7 @@ class IpAddress(Type):
             try:
                 other = IpAddress(self.entity, other)
             except:
-                raise NotImplementedError
+                raise NotImplementedError # pragma: no cover
         if self._value == other._value:
             return 0
         if self._value < other._value:
@@ -449,7 +449,7 @@ class Enum(Integer):
             try:
                 other = self.__class__(self.entity, other)
             except:
-                raise NotImplementedError
+                raise NotImplementedError # pragma: no cover
         return self._value == other._value
 
     def __ne__(self, other):
