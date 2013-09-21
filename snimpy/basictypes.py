@@ -108,7 +108,7 @@ class Type(object):
         @return: C{fixed} if it is fixed-len, C{implied} if implied var-len,
            C{False} otherwise
         """
-        if entity.ranges and type(entity.ranges) is not tuple:
+        if entity.ranges and type(entity.ranges) is not tuple and type(entity.ranges) is not list:
             # Fixed length
             return "fixed"
 

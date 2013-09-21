@@ -1,4 +1,5 @@
 import shlex
+import snimpy.mib
 from snimpy.version import VERSION
 from setuptools import setup, Extension
 
@@ -25,8 +26,6 @@ except ImportError:
         return output
 
 if __name__ == "__main__":
-    smi_cflags = check_output(["pkg-config", "--cflags", "libsmi"])
-    smi_ldflags = check_output(["pkg-config", "--libs", "libsmi"])
     snmp_cflags = check_output(["net-snmp-config", "--base-cflags"])
     snmp_ldflags = check_output(["net-snmp-config", "--libs"])
     setup(name="snimpy",
@@ -54,15 +53,15 @@ if __name__ == "__main__":
           },
           data_files = [('share/man/man1', ['man/snimpy.1'])],
           ext_modules = [
-            Extension('snimpy.mib',
-                      extra_compile_args= shlex.split(smi_cflags),
-                      extra_link_args= shlex.split(smi_ldflags),
-                      sources= ['snimpy/mib.c']),
-            Extension('snimpy.snmp',
-                      extra_compile_args= shlex.split(snmp_cflags),
-                      extra_link_args= shlex.split(snmp_ldflags),
-                      libraries= ['netsnmp', 'crypto'],
-                      sources= ['snimpy/snmp.c'])
+              snimpy.mib.ffi.verifier.get_extension(),
+              Extension('snimpy.snmp',
+                        extra_compile_args= shlex.split(snmp_cflags),
+                        extra_link_args= shlex.split(snmp_ldflags),
+                        libraries= ['netsnmp', 'crypto'],
+                        sources= ['snimpy/snmp.c'])
+          ],
+          install_requires = [
+              "cffi"
           ],
           tests_require = [
               "pysnmp >= 4",

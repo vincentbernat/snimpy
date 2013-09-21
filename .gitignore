@@ -8,5 +8,6 @@
 /.coverage
 /htmlcov
 /.tox
+__pycache__
 .index
 cscope.out
