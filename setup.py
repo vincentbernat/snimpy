@@ -1,5 +1,5 @@
 from snimpy.version import VERSION
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 
 if __name__ == "__main__":
     setup(name="snimpy",
@@ -20,7 +20,11 @@ if __name__ == "__main__":
           author="Vincent Bernat",
           author_email="bernat@luffy.cx",
           packages=["snimpy"],
-          scripts=["bin/snimpy"],
+          entry_points = {
+              'console_scripts': [
+                  'snimpy = snimpy.main:interact',
+              ],
+          },
           data_files = [('share/man/man1', ['man/snimpy.1'])],
           ext_modules = [
             Extension('snimpy.mib',
@@ -31,4 +35,3 @@ if __name__ == "__main__":
                       sources= ['snimpy/snmp.c'])
             ]
           )
-    
