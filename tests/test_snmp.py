@@ -1,7 +1,8 @@
 import unittest
 import os
-import threading
+import time
 import random
+from multiprocessing import Process, Queue
 from datetime import timedelta
 from snimpy import basictypes, snmp, mib
 
@@ -144,19 +145,37 @@ class TestSnmp1(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Create a real agent with PySNMP
-        cls.snmpEngine = engine.SnmpEngine()
-        cls.port = random.randrange(20000, 23000)
+        mib.load('IF-MIB')
+        mib.load('SNMPv2-MIB')
+        q = Queue()
+        cls.snmp = Process(target=cls.setUpSnmp, args=(q,))
+        cls.snmp.start()
+        cls.port = q.get()
+
+    @classmethod
+    def setUpSnmp(cls, q):
+        port = random.randrange(22000, 22989) + cls.version*1000
+        snmpEngine = engine.SnmpEngine()
         config.addSocketTransport(
-            cls.snmpEngine,
+            snmpEngine,
             udp.domainName,
-            udp.UdpTransport().openServerMode(('127.0.0.1', cls.port)))
+            udp.UdpTransport().openServerMode(('127.0.0.1', port)))
         # Community is public and MIB is writable
-        config.addV1System(cls.snmpEngine, 'read-write', 'public')
-        config.addVacmUser(cls.snmpEngine, cls.version, 'read-write', 'noAuthNoPriv',
+        config.addV1System(snmpEngine, 'read-write', 'public')
+        config.addVacmUser(snmpEngine, 1, 'read-write', 'noAuthNoPriv',
                            (1, 3, 6), (1, 3, 6))
+        config.addVacmUser(snmpEngine, 2, 'read-write', 'noAuthNoPriv',
+                           (1, 3, 6), (1, 3, 6))
+        config.addV3User(
+            snmpEngine, 'read-write',
+            config.usmHMACMD5AuthProtocol, 'authpass',
+            config.usmAesCfb128Protocol, 'privpass'
+        )
+        config.addVacmUser(snmpEngine, 3, 'read-write', 'authPriv',
+                           (1, 3, 6), (1, 3, 6))
+
         # Build MIB
-        snmpContext = context.SnmpContext(cls.snmpEngine)
+        snmpContext = context.SnmpContext(snmpEngine)
         mibBuilder = snmpContext.getMibInstrum().getMibBuilder()
         (MibTable, MibTableRow, MibTableColumn,
          MibScalar, MibScalarInstance) = mibBuilder.importSymbols(
@@ -230,29 +249,22 @@ class TestSnmp1(unittest.TestCase):
             MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 11), (0,), v2c.OctetString("\x00")),
         )
         # Start agent
-        cmdrsp.GetCommandResponder(cls.snmpEngine, snmpContext)
-        cmdrsp.SetCommandResponder(cls.snmpEngine, snmpContext)
-        cmdrsp.NextCommandResponder(cls.snmpEngine, snmpContext)
-        cmdrsp.BulkCommandResponder(cls.snmpEngine, snmpContext)
-        cls.snmpEngine.transportDispatcher.jobStarted(1)
-        def runDispatcher():
-            try:
-                cls.snmpEngine.transportDispatcher.runDispatcher()
-            except:
-                pass
-        threading.Thread(target=runDispatcher,).start()
+        cmdrsp.GetCommandResponder(snmpEngine, snmpContext)
+        cmdrsp.SetCommandResponder(snmpEngine, snmpContext)
+        cmdrsp.NextCommandResponder(snmpEngine, snmpContext)
+        cmdrsp.BulkCommandResponder(snmpEngine, snmpContext)
+        q.put(port)
+        snmpEngine.transportDispatcher.jobStarted(1)
+        snmpEngine.transportDispatcher.runDispatcher()
 
     def setUp(self):
-        mib.load('IF-MIB')
-        mib.load('SNMPv2-MIB')
-        self.session = snmp.Session(host="localhost:%d" % self.port,
+        self.session = snmp.Session(host="127.0.0.1:%d" % self.port,
                                     community="public",
                                     version=self.version)
 
     @classmethod
     def tearDownClass(cls):
-        cls.snmpEngine.transportDispatcher.jobFinished(1)
-        cls.snmpEngine.transportDispatcher.closeDispatcher()
+        cls.snmp.terminate()
 
     def testGetString(self):
         """Get a string value"""
@@ -393,3 +405,15 @@ class TestSnmp2(TestSnmp1):
                           (ooid2 + (1,), 24),
                           (ooid2 + (2,), 6),
                           (ooid2 + (3,), 6)))
+
+class TestSnmp3(TestSnmp2):
+    """Test communicaton with an agent with SNMPv3."""
+    version = 3
+
+    def setUp(self):
+        self.session = snmp.Session(host="127.0.0.1:%d" % self.port,
+                                    version=3,
+                                    seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
+                                    secname="read-write",
+                                    authprotocol="MD5", authpassword="authpass",
+                                    privprotocol="AES", privpassword="privpass")
