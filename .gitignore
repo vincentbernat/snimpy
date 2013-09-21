@@ -7,5 +7,6 @@
 /MANIFEST
 /.coverage
 /cover
+/.tox
 .index
 cscope.out
