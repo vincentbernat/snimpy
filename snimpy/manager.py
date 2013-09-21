@@ -26,7 +26,16 @@ from time import time
 from UserDict import DictMixin
 import snmp, mib, basictypes
 
-class DelayedSetSession(object):
+class DelegatedSession(object):
+    """General class for SNMP session for delegation"""
+    def __init__(self, session):
+        self._session = session
+    def __getattr__(self, attr):
+        return getattr(self._session, attr)
+    def __setattribute__(self, attr, value):
+        return setattr(self._session, attr, value)
+
+class DelayedSetSession(DelegatedSession):
     """SNMP session that is able to delay SET requests.
 
     This is an adapter. The constructor takes the original (not
@@ -34,21 +43,17 @@ class DelayedSetSession(object):
     """
 
     def __init__(self, session):
-        self.session = session
+        DelegatedSession.__init__(self, session)
         self.setters = []
 
-    def get(self, *args):
-        return self.session.get(*args)
-    def getnext(self, *args):
-        return self.session.getnext(*args)
     def set(self, *args):
         self.setters.extend(args)
 
     def commit(self):
         if self.setters:
-            self.session.set(*self.setters)
+            self._session.set(*self.setters)
 
-class NoneSession(object):
+class NoneSession(DelegatedSession):
     """SNMP session that will return None on unsucessful GET requests.
 
     In a normal session, a GET request returning `No such instance`
@@ -56,14 +61,9 @@ class NoneSession(object):
     error and return None instead.
     """
 
-    def __init__(self, session):
-        self.session = session
-        self.set = self.session.set
-        self.getnext = self.session.getnext
-
     def get(self, *args):
         try:
-            return self.session.get(*args)
+            return self._session.get(*args)
         except (snmp.SNMPNoSuchName,
                 snmp.SNMPNoSuchObject,
                 snmp.SNMPNoSuchInstance):
@@ -73,20 +73,17 @@ class NoneSession(object):
                 raise
             return ((args[0], None),)
 
-class CachedSession(object):
+class CachedSession(DelegatedSession):
     """SNMP session using a cache.
 
     This is an adapter. The constructor takes the original session.
     """
 
     def __init__(self, session, timeout=5):
-        self.session = session
+        DelegatedSession.__init__(self, session)
         self.cache = {}
         self.timeout = timeout
         self.count = 0
-
-    def set(self, *args):
-        return self.session.set(*args)
 
     def getorgetnext(self, op, *args):
         self.count += 1
@@ -94,7 +91,7 @@ class CachedSession(object):
             t, v = self.cache[op, args]
             if time() - t < self.timeout:
                 return v
-        value = getattr(self.session, op)(*args)
+        value = getattr(self._session, op)(*args)
         self.cache[op, args] = [time(), value]
         self.flush()
         return value
@@ -264,7 +261,7 @@ class ProxyColumn(Proxy, DictMixin):
 
         while True:
             try:
-                if self.session.bulk and self.session.use_bulk:
+                if self.session.bulk is not None and self.session.use_bulk:
                     results = self.session.getbulk(oid)
                 else:
                     results = self.session.getnext(oid)

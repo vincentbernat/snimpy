@@ -46,6 +46,17 @@ class TestAgent(object):
                            (1, 3, 6), (1, 3, 6))
 
         # Build MIB
+        def stringToOid(string):
+            return [ord(x) for x in string]
+        def flatten(*args):
+            result = []
+            for el in args:
+                if type(el) is list or type(el) is tuple:
+                    for sub in el:
+                        result.append(sub)
+                else:
+                    result.append(el)
+            return tuple(result)
         snmpContext = context.SnmpContext(snmpEngine)
         mibBuilder = snmpContext.getMibInstrum().getMibBuilder()
         (MibTable, MibTableRow, MibTableColumn,
@@ -64,9 +75,8 @@ class TestAgent(object):
             MibScalar((1, 3, 6, 1, 2, 1, 2, 1), v2c.Integer()),
             MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 1), (0,), v2c.Integer(3)),
             # IF-MIB::ifTable
-            # IF-MIB::ifDescr
             MibTable((1, 3, 6, 1, 2, 1, 2, 2)),
-            MibTableRow((1, 3, 6, 1, 2, 1, 2, 2, 1)).setIndexNames((0, '__IF_MIB', 'ifIndex')),
+            MibTableRow((1, 3, 6, 1, 2, 1, 2, 2, 1)).setIndexNames((0, '__MY_IF_MIB', 'ifIndex')),
             # IF-MIB::ifIndex
             MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 1), (1,), v2c.Integer(1)),
             MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 1), (2,), v2c.Integer(2)),
@@ -96,10 +106,10 @@ class TestAgent(object):
             MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 3), (0,), v2c.Integer(19)),
             # SNIMPY-MIB::snimpyEnum
             MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 4), v2c.Integer()).setMaxAccess("readwrite"),
-            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 4), (0,), v2c.Integer(19)),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 4), (0,), v2c.Integer(2)),
             # SNIMPY-MIB::snimpyObjectId
             MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 5), v2c.ObjectIdentifier()).setMaxAccess("readwrite"),
-            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 5), (0,), v2c.ObjectIdentifier((0,0))),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 5), (0,), v2c.ObjectIdentifier((1,3,6,4454,0,0))),
             # SNIMPY-MIB::snimpyBoolean
             MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 6), v2c.Integer()).setMaxAccess("readwrite"),
             MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 6), (0,), v2c.Integer(1)),
@@ -114,10 +124,49 @@ class TestAgent(object):
             MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 9), (0,), v2c.TimeTicks(12111100)),
             # SNIMPY-MIB::snimpyCounter64
             MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 10), v2c.Counter64()).setMaxAccess("readwrite"),
-            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 10), (0,), v2c.Counter64(47)),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 10), (0,), v2c.Counter64(2**48+3)),
             # SNIMPY-MIB::snimpyBits
             MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 11), v2c.OctetString()).setMaxAccess("readwrite"),
-            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 11), (0,), v2c.OctetString("\x00")),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 11), (0,), v2c.OctetString("\xa0")),
+
+            # SNIMPY-MIB::snimpyIndexTable
+            MibTable((1, 3, 6, 1, 2, 1, 45121, 2, 3)),
+            MibTableRow((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1)).setIndexNames((0, "__MY_SNIMPY-MIB", "snimpyIndexVarLen"),
+                                                                          (0, "__MY_SNIMPY-MIB", "snimpyIndexOidVarLen"),
+                                                                          (0, "__MY_SNIMPY-MIB", "snimpyIndexFixedLen"),
+                                                                          (1, "__MY_SNIMPY-MIB", "snimpyIndexImplied")),
+            # SNIMPY-MIB::snimpyIndexInt
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 6),
+                              flatten(4, stringToOid('row1'),
+                                      3, 1, 2, 3,
+                                      stringToOid('alpha5'),
+                                      stringToOid('end of row1')),
+                              v2c.Integer(4571)),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 6),
+                              flatten(4, stringToOid('row2'),
+                                      4, 1, 0, 2, 3,
+                                      stringToOid('beta32'),
+                                      stringToOid('end of row2')),
+                              v2c.Integer(78741)),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 6),
+                              flatten(4, stringToOid('row3'),
+                                      4, 120, 1, 2, 3,
+                                      stringToOid('gamma7'),
+                                      stringToOid('end of row3')),
+                              v2c.Integer(4110)),
+            # Indexes
+            snimpyIndexVarLen= MibTableColumn((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 1),
+                                              v2c.OctetString()).setMaxAccess("noaccess"),
+            snimpyIndexIntIndex= MibTableColumn((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 2),
+                                                v2c.Integer()).setMaxAccess("noaccess"),
+            snimpyIndexOidVarLen= MibTableColumn((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 3),
+                                                 v2c.ObjectIdentifier()).setMaxAccess("noaccess"),
+            snimpyIndexFixedLen= MibTableColumn((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 4),
+                                                v2c.OctetString().setFixedLength(6)).setMaxAccess("noaccess"),
+            snimpyIndexImplied= MibTableColumn((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 5),
+                                               v2c.OctetString()).setMaxAccess("noaccess"),
+            snimpyIndexInt= MibTableColumn((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 6),
+                                           v2c.Integer()).setMaxAccess("readwrite")
         )
         # Start agent
         cmdrsp.GetCommandResponder(snmpEngine, snmpContext)

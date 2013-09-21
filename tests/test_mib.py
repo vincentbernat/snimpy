@@ -40,7 +40,8 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyGauge",
                         "snimpyTimeticks",
                         "snimpyCounter64",
-                        "snimpyBits"]
+                        "snimpyBits",
+                        "snimpyNotImplemented"]
         self.scalars.sort()
 
     def tearDown(self):

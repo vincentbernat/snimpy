@@ -131,6 +131,14 @@ snimpyBits	OBJECT-TYPE
 	"A bit field"
     ::= { snimpyScalars 11 }
 
+snimpyNotImplemented OBJECT-TYPE
+    SYNTAX 	DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An string to display (not implemented)"
+    ::= { snimpyScalars 12 }
+
 -- A simple table
 
 snimpySimpleTable OBJECT-TYPE
@@ -319,7 +327,7 @@ snimpyIndexInt OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-            "Blah blah"
+            "An integer of fixed size"
     ::= { snimpyIndexEntry 6 }
 
 END
