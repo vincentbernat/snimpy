@@ -148,7 +148,10 @@ class IpAddress(Type):
         try:
             value = socket.inet_ntoa(socket.inet_aton(value))
         except:
-            raise ValueError("%r is not a valid IP" % value)
+            try:
+                value = socket.inet_ntoa(value)
+            except:
+                raise ValueError("%r is not a valid IP" % value)
         return [int(a) for a in value.split(".")]
 
     def pack(self):

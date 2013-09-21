@@ -1,6 +1,7 @@
 import unittest
 import os
 import re
+import socket
 from datetime import timedelta
 from snimpy import mib, basictypes, snmp
 
@@ -54,7 +55,7 @@ class TestBasicTypes(unittest.TestCase):
         self.assertRaises(ValueError,
                           basictypes.build,
                           "SNIMPY-MIB", "snimpyIpAddress", "999.5.6.4")
-        a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", "10.0.4.5")
+        a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", socket.inet_aton("10.0.4.5"))
         self.assert_(isinstance(a, basictypes.IpAddress))
         self.assertEqual(a, "10.0.4.5")
         self.assertEqual(a, "10.00.4.05")
@@ -64,6 +65,9 @@ class TestBasicTypes(unittest.TestCase):
         self.assert_(a > "10.0.0.1")
         a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", [1, 2, 3, 5])
         self.assertEqual(a, "1.2.3.5")
+        a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", "10.0.4.5")
+        self.assertEqual(a, "10.0.4.5")
+        self.assertEqual(a, [10, 0, 4, 5])
 
     def testEnum(self):
         """Test enum basic type"""
