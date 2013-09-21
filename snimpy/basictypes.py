@@ -577,10 +577,12 @@ class Timeticks(Type):
         return str(self._value)
 
     def __cmp__(self, other):
-        if isinstance(other, int) or isinstance(other, long):
+        if isinstance(other, Timeticks):
+            other = other._value
+        elif isinstance(other, int) or isinstance(other, long):
             other = timedelta(0, other/100.)
         elif not isinstance(other, timedelta):
-            raise NotImplementedError("only compare to int or timedelta")
+            raise NotImplementedError("only compare to int or timedelta, not %s" % type(other))
         if self._value == other:
             return 0
         if self._value < other:

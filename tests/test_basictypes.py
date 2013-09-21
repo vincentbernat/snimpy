@@ -153,6 +153,11 @@ class TestBasicTypes(unittest.TestCase):
         self.assert_(a > 654)
         self.assert_(a >= 654)
         self.assert_(a < (3+3600*24)*100 + 2)
+        self.assertEqual(a,
+                         basictypes.build("SNIMPY-MIB", "snimpyTimeticks",
+                                          timedelta(1, 3)))
+        self.assert_(a < basictypes.build("SNIMPY-MIB", "snimpyTimeticks",
+                                          timedelta(100, 30)))
 
     def testBits(self):
         """Test bit basic type"""
