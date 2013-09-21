@@ -267,23 +267,23 @@ column_gettable(EntityObject *self, void *closure)
 	parent = smiGetParentNode(self->node);
 	if (!parent || (parent->nodekind != SMI_NODEKIND_ROW)) {
 		PyErr_Format(SmiException, "parent %s of %s is not a row",
-		    parent->name, self->node->name);
+			     parent->name, self->node->name);
 		return NULL;
 	}
 	if ((parent = smiGetParentNode(parent)) == NULL) {
 		PyErr_Format(SmiException, "unable to get parent of %s",
-		    self->node->name);
+			     self->node->name);
 		return NULL;
 	}
 	if (parent->nodekind != SMI_NODEKIND_TABLE) {
 		PyErr_Format(SmiException, "parent %s of %s is not a table",
-		    parent->name, self->node->name);
+			     parent->name, self->node->name);
 		return NULL;
 	}
 	if ((table = (EntityObject*)PyObject_CallObject((PyObject*)&TableType,
-		    NULL)) == NULL) {
+							NULL)) == NULL) {
 		PyErr_Format(SmiException, "unable to create table object for %s",
-		    parent->name);
+			     parent->name);
 		return NULL;
 	}
 	table->node = parent;
@@ -305,7 +305,7 @@ table_getcolumns(EntityObject *self, void *closure)
 	child = smiGetFirstChildNode(self->node);
 	if (!child || (child->nodekind != SMI_NODEKIND_ROW)) {
 		PyErr_Format(SmiException, "child %s of %s is not a row",
-		    child->name, self->node->name);
+			     child->name, self->node->name);
 		return NULL;
 	}
 	if ((lcolumns = PyList_New(0)) == NULL)
@@ -314,14 +314,14 @@ table_getcolumns(EntityObject *self, void *closure)
 	while (child != NULL) {
 		if (child->nodekind != SMI_NODEKIND_COLUMN) {
 			PyErr_Format(SmiException, "child %s of %s is not a column",
-			    child->name, self->node->name);
+				     child->name, self->node->name);
 			Py_DECREF(lcolumns);
 			return NULL;
 		}
 		if ((column = (EntityObject*)PyObject_CallObject((PyObject*)&ColumnType,
-			    NULL)) == NULL) {
+								 NULL)) == NULL) {
 			PyErr_Format(SmiException, "unable to create column object for %s",
-			    child->name);
+				     child->name);
 			Py_DECREF(lcolumns);
 			return NULL;
 		}
@@ -346,20 +346,20 @@ table_getrow(EntityObject *self, void *closure)
 		child = smiGetRelatedNode(child);
 		if (!child) {
 			PyErr_Format(SmiException,
-			    "AUGMENT index for %s but unable to retrieve it",
-			    self->node->name);
+				     "AUGMENT index for %s but unable to retrieve it",
+				     self->node->name);
 			return NULL;
 		}
 	}
 	if (!child || (child->nodekind != SMI_NODEKIND_ROW)) {
 		PyErr_Format(SmiException, "child %s of %s is not a row",
-		    child->name, self->node->name);
+			     child->name, self->node->name);
 		return NULL;
 	}
 	if (child->indexkind != SMI_INDEX_INDEX) {
 		PyErr_Format(SmiException,
-		    "child %s of %s has an unhandled kind of index",
-		    child->name, self->node->name);
+			     "child %s of %s has an unhandled kind of index",
+			     child->name, self->node->name);
 		return NULL;
 	}
 	return child;
@@ -404,20 +404,20 @@ table_getindex(EntityObject *self, void *closure)
 	while (element != NULL) {
 		if ((nelement = smiGetElementNode(element)) == NULL) {
 			PyErr_Format(SmiException, "cannot get index associated with %s",
-			    self->node->name);
+				     self->node->name);
 			Py_DECREF(lindex);
 			return NULL;
 		}
 		if (nelement->nodekind != SMI_NODEKIND_COLUMN) {
 			PyErr_Format(SmiException, "index %s for %s is not a column",
-			    nelement->name, self->node->name);
+				     nelement->name, self->node->name);
 			Py_DECREF(lindex);
 			return NULL;
 		}
 		if ((index = (EntityObject*)PyObject_CallObject((PyObject*)&ColumnType,
-			    NULL)) == NULL) {
+								NULL)) == NULL) {
 			PyErr_Format(SmiException, "unable to create column object for %s",
-			    index->node->name);
+				     index->node->name);
 			Py_DECREF(lindex);
 			return NULL;
 		}
@@ -443,7 +443,7 @@ entity_getoid(EntityObject *self, void *closure)
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
-	
+
 	if ((tuple = PyTuple_New(self->node->oidlen)) == NULL)
 		return NULL;
 	for (i = 0; i < self->node->oidlen; i++) {
@@ -492,11 +492,11 @@ entity_gettype(EntityObject *self, void *closure)
 		PyErr_SetString(SmiException, "unable to retrieve type");
 		return NULL;
 	}
-	
+
 	while (typeToPython[i].target != NULL) {
 		if ((type->basetype == typeToPython[i].type) &&
 		    ((typeToPython[i].name == NULL) ||
-			(type->name && !strcmp(type->name, typeToPython[i].name)))) {
+		     (type->name && !strcmp(type->name, typeToPython[i].name)))) {
 			result = PyObject_GetAttrString(TypesModule, typeToPython[i].target);
 			break;
 		}
@@ -504,7 +504,7 @@ entity_gettype(EntityObject *self, void *closure)
 	}
 	if ((result == NULL) && (!PyErr_Occurred()))
 		PyErr_Format(SmiException, "unable to convert type of %s",
-		    self->node->name);
+			     self->node->name);
 	return result;
 }
 
@@ -602,7 +602,7 @@ entity_getranges(EntityObject *self, void *closure)
 		Py_INCREF(couple);
 		Py_DECREF(list);
 		return couple;
-	}	
+	}
 	return list;
 }
 
@@ -616,7 +616,7 @@ entity_getenum(EntityObject *self, void *closure)
 	if ((self->node == NULL) ||
 	    ((type = smiGetNodeType(self->node)) == NULL) ||
 	    ((type->basetype != SMI_BASETYPE_ENUM) &&
-		(type->basetype != SMI_BASETYPE_BITS))) {
+	     (type->basetype != SMI_BASETYPE_BITS))) {
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
@@ -627,7 +627,7 @@ entity_getenum(EntityObject *self, void *closure)
 		if ((element->value.basetype != SMI_BASETYPE_UNSIGNED32) &&
 		    (element->value.basetype != SMI_BASETYPE_INTEGER32)) {
 			PyErr_Format(SmiException, "unhandled member for enumeration of %s (%d)",
-			    self->node->name, element->value.basetype);
+				     self->node->name, element->value.basetype);
 			Py_DECREF(dict);
 			return NULL;
 		}
@@ -672,15 +672,15 @@ entity_repr(EntityObject *self)
 	if ((self->node == NULL) ||
 	    (repr = smiRenderNode(self->node, SMI_RENDER_ALL)) == NULL)
 		return PyString_FromFormat("<uninitialized %s object at %p>",
-		    self->ob_type->tp_name, self);
+					   self->ob_type->tp_name, self);
 	if ((module = smiGetNodeModule(self->node)) == NULL) {
 		PyErr_SetString(SmiException, "unable to guess module");
 		free(repr);
 		return NULL;
 	}
 	result = PyString_FromFormat("<%s %s from '%s'>",
-	    self->ob_type->tp_name, repr,
-	    module->name);
+				     self->ob_type->tp_name, repr,
+				     module->name);
 	free(repr);
 	return result;
 }
@@ -691,7 +691,7 @@ mib_reset(PyObject *self)
 	smiExit();
 	if (smiInit("snimpy") != 0) {
 		PyErr_SetString(SmiException,
-		    "unable to init libsmi");
+				"unable to init libsmi");
 		return NULL;
 	}
 	smiSetErrorLevel(0);
@@ -753,9 +753,9 @@ mib_get_kind(PyObject *self, PyObject *args, int kind, PyObject *ObjectType)
 	node = smiGetFirstNode(module, kind);
 	while (node != NULL) {
 		if ((pnode = (EntityObject*)PyObject_CallObject(ObjectType,
-			    NULL)) == NULL) {
+								NULL)) == NULL) {
 			PyErr_Format(SmiException, "unable to create entity object for %s",
-			    node->name);
+				     node->name);
 			Py_DECREF(lnode);
 			return NULL;
 		}
@@ -817,23 +817,23 @@ mib_get(PyObject* self, PyObject *args)
 	switch (node->nodekind) {
 	case SMI_NODEKIND_NODE:
 		pnode = (EntityObject*)PyObject_CallObject((PyObject*)&NodeType,
-		    NULL);
+							   NULL);
 		break;
 	case SMI_NODEKIND_SCALAR:
 		pnode = (EntityObject*)PyObject_CallObject((PyObject*)&ScalarType,
-		    NULL);
+							   NULL);
 		break;
 	case SMI_NODEKIND_TABLE:
 		pnode = (EntityObject*)PyObject_CallObject((PyObject*)&TableType,
-		    NULL);
+							   NULL);
 		break;
 	case SMI_NODEKIND_COLUMN:
 		pnode = (EntityObject*)PyObject_CallObject((PyObject*)&ColumnType,
-		    NULL);
+							   NULL);
 		break;
 	default:
 		pnode = (EntityObject*)PyObject_CallObject((PyObject*)&EntityType,
-		    NULL);
+							   NULL);
 		break;
 	}
 	if (!pnode) {
@@ -863,7 +863,7 @@ static PyMethodDef mib_methods[] = {
 };
 
 PyDoc_STRVAR(module_doc,
-    "simple interface to libsmi");
+	     "simple interface to libsmi");
 
 PyMODINIT_FUNC
 initmib(void)
