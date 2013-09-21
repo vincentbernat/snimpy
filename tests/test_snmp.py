@@ -1,7 +1,7 @@
 import unittest
 import os
-import random
 import threading
+import random
 from datetime import timedelta
 from snimpy import basictypes, snmp, mib
 
@@ -135,6 +135,7 @@ class TestSnmpSession(unittest.TestCase):
                      authprotocol=auth, authpassword="authpass",
                      privprotocol=priv, privpassword="privpass")
 
+
 class TestSnmp2(unittest.TestCase):
     """
     Test communication with an agent with SNMPv2.
@@ -143,22 +144,21 @@ class TestSnmp2(unittest.TestCase):
     """
     version = 2
 
-    def setUp(self):
-        mib.load('IF-MIB')
-        mib.load('SNMPv2-MIB')
+    @classmethod
+    def setUpClass(cls):
         # Create a real agent with PySNMP
-        self.snmpEngine = engine.SnmpEngine()
-        self.port = random.randrange(20000, 23000)
+        cls.snmpEngine = engine.SnmpEngine()
+        cls.port = random.randrange(20000, 23000)
         config.addSocketTransport(
-            self.snmpEngine,
+            cls.snmpEngine,
             udp.domainName,
-            udp.UdpTransport().openServerMode(('127.0.0.1', self.port)))
+            udp.UdpTransport().openServerMode(('127.0.0.1', cls.port)))
         # Community is public and MIB is writable
-        config.addV1System(self.snmpEngine, 'read-write', 'public')
-        config.addVacmUser(self.snmpEngine, self.version, 'read-write', 'noAuthNoPriv',
+        config.addV1System(cls.snmpEngine, 'read-write', 'public')
+        config.addVacmUser(cls.snmpEngine, cls.version, 'read-write', 'noAuthNoPriv',
                            (1, 3, 6), (1, 3, 6))
         # Build MIB
-        snmpContext = context.SnmpContext(self.snmpEngine)
+        snmpContext = context.SnmpContext(cls.snmpEngine)
         mibBuilder = snmpContext.getMibInstrum().getMibBuilder()
         (MibTable, MibTableRow, MibTableColumn,
          MibScalar, MibScalarInstance) = mibBuilder.importSymbols(
@@ -232,25 +232,29 @@ class TestSnmp2(unittest.TestCase):
             MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 11), (0,), v2c.OctetString("\x00")),
         )
         # Start agent
-        cmdrsp.GetCommandResponder(self.snmpEngine, snmpContext)
-        cmdrsp.SetCommandResponder(self.snmpEngine, snmpContext)
-        cmdrsp.NextCommandResponder(self.snmpEngine, snmpContext)
-        cmdrsp.BulkCommandResponder(self.snmpEngine, snmpContext)
-        self.snmpEngine.transportDispatcher.jobStarted(1)
+        cmdrsp.GetCommandResponder(cls.snmpEngine, snmpContext)
+        cmdrsp.SetCommandResponder(cls.snmpEngine, snmpContext)
+        cmdrsp.NextCommandResponder(cls.snmpEngine, snmpContext)
+        cmdrsp.BulkCommandResponder(cls.snmpEngine, snmpContext)
+        cls.snmpEngine.transportDispatcher.jobStarted(1)
         def runDispatcher():
             try:
-                self.snmpEngine.transportDispatcher.runDispatcher()
+                cls.snmpEngine.transportDispatcher.runDispatcher()
             except:
                 pass
         threading.Thread(target=runDispatcher,).start()
-        # Open session
+
+    def setUp(self):
+        mib.load('IF-MIB')
+        mib.load('SNMPv2-MIB')
         self.session = snmp.Session(host="localhost:%d" % self.port,
                                     community="public",
                                     version=self.version)
 
-    def tearDown(self):
-        self.snmpEngine.transportDispatcher.jobFinished(1)
-        self.snmpEngine.transportDispatcher.closeDispatcher()
+    @classmethod
+    def tearDownClass(cls):
+        cls.snmpEngine.transportDispatcher.jobFinished(1)
+        cls.snmpEngine.transportDispatcher.closeDispatcher()
 
     def testGetString(self):
         """Get a string value"""
