@@ -1,10 +1,10 @@
 *.pyc
 *~
 *.so
-cscope.out
-build
-dist
-MANIFEST
+/build
+/dist
+/MANIFEST
+/.coverage
+/cover
 .index
-.coverage
-.idea
+cscope.out
