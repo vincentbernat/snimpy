@@ -33,5 +33,7 @@ if __name__ == "__main__":
             Extension('snimpy.snmp',
                       libraries = ['netsnmp', 'crypto'],
                       sources= ['snimpy/snmp.c'])
-            ]
+          ],
+          tests_require = "pysnmp >= 4",
+          test_suite="tests"
           )
