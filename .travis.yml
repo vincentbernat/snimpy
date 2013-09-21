@@ -1,9 +1,9 @@
-language: python
+language: "python"
+install:
+  - "sudo apt-get -qq update"
+  - "sudo apt-get -y install pkg-config libsmi2-dev libsnmp-dev"
+  - "pip install python-pysnmp4"
 python:
  - "2.6"
  - "2.7"
-install:
- - sudo apt-get update
- - sudo apt-get install libsmi2-dev libsnmp-dev snmpd snmp-mibs-downloader
- - python setup.py install
-script: "cd tests && nosetests"
+script: nosetests
