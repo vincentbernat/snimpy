@@ -1,7 +1,14 @@
 import unittest
 import os
+import random
+import threading
 from datetime import timedelta
 from snimpy import basictypes, snmp, mib
+
+from pysnmp.entity import engine, config
+from pysnmp.entity.rfc3413 import cmdrsp, context
+from pysnmp.carrier.asynsock.dgram import udp
+from pysnmp.proto.api import v2c
 
 class TestSnmpRetriesTimeout(unittest.TestCase):
     """Live modification of retry and timeout values for a session"""
@@ -139,17 +146,119 @@ class TestSnmp2(unittest.TestCase):
     def setUp(self):
         mib.load('IF-MIB')
         mib.load('SNMPv2-MIB')
-        self.session = snmp.Session(host="localhost",
+        # Create a real agent with PySNMP
+        self.snmpEngine = engine.SnmpEngine()
+        self.port = random.randrange(20000, 23000)
+        config.addSocketTransport(
+            self.snmpEngine,
+            udp.domainName,
+            udp.UdpTransport().openServerMode(('127.0.0.1', self.port)))
+        # Community is public and MIB is writable
+        config.addV1System(self.snmpEngine, 'read-write', 'public')
+        config.addVacmUser(self.snmpEngine, self.version, 'read-write', 'noAuthNoPriv',
+                           (1, 3, 6), (1, 3, 6))
+        # Build MIB
+        snmpContext = context.SnmpContext(self.snmpEngine)
+        mibBuilder = snmpContext.getMibInstrum().getMibBuilder()
+        (MibTable, MibTableRow, MibTableColumn,
+         MibScalar, MibScalarInstance) = mibBuilder.importSymbols(
+             'SNMPv2-SMI',
+             'MibTable', 'MibTableRow', 'MibTableColumn',
+             'MibScalar', 'MibScalarInstance')
+        mibBuilder.exportSymbols(
+            '__MY_SNMPv2_MIB',
+            # SNMPv2-MIB::sysDescr
+            MibScalar((1, 3, 6, 1, 2, 1, 1, 1), v2c.OctetString()),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 1, 1), (0,), v2c.OctetString("Snimpy Test Agent")))
+        mibBuilder.exportSymbols(
+            '__MY_IF_MIB',
+            # IF-MIB::ifNumber
+            MibScalar((1, 3, 6, 1, 2, 1, 2, 1), v2c.Integer()),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 1), (0,), v2c.Integer(3)),
+            # IF-MIB::ifTable
+            # IF-MIB::ifDescr
+            MibTable((1, 3, 6, 1, 2, 1, 2, 2)),
+            MibTableRow((1, 3, 6, 1, 2, 1, 2, 2, 1)).setIndexNames((0, '__IF_MIB', 'ifIndex')),
+            # IF-MIB::ifIndex
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 1), (1,), v2c.Integer(1)),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 1), (2,), v2c.Integer(2)),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 1), (3,), v2c.Integer(3)),
+            # IF-MIB::ifDescr
+            MibTableColumn((1, 3, 6, 1, 2, 1, 2, 2, 1, 2), v2c.OctetString()),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 2), (1,), v2c.OctetString("lo")),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 2), (2,), v2c.OctetString("eth0")),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 2), (3,), v2c.OctetString("eth1")),
+            # IF-MIB::ifType
+            MibTableColumn((1, 3, 6, 1, 2, 1, 2, 2, 1, 3), v2c.Integer()),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 3), (1,), v2c.Integer(24)),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 3), (2,), v2c.Integer(6)),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 2, 2, 1, 3), (3,), v2c.Integer(6)),
+            # IF-MIB::ifIndex
+            ifIndex=MibTableColumn((1, 3, 6, 1, 2, 1, 2, 2, 1, 1), v2c.Integer()))
+        mibBuilder.exportSymbols(
+            '__MY_SNIMPY-MIB',
+            # SNIMPY-MIB::snimpyIpAddress
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 1), v2c.OctetString()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 1), (0,), v2c.OctetString("AAAA")),
+            # SNIMPY-MIB::snimpyString
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 2), v2c.OctetString()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 2), (0,), v2c.OctetString("bye")),
+            # SNIMPY-MIB::snimpyInteger
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 3), v2c.Integer()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 3), (0,), v2c.Integer(19)),
+            # SNIMPY-MIB::snimpyEnum
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 4), v2c.Integer()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 4), (0,), v2c.Integer(19)),
+            # SNIMPY-MIB::snimpyObjectId
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 5), v2c.ObjectIdentifier()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 5), (0,), v2c.ObjectIdentifier((0,0))),
+            # SNIMPY-MIB::snimpyBoolean
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 6), v2c.Integer()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 6), (0,), v2c.Integer(1)),
+            # SNIMPY-MIB::snimpyCounter
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 7), v2c.Counter32()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 7), (0,), v2c.Counter32(47)),
+            # SNIMPY-MIB::snimpyGauge
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 8), v2c.Gauge32()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 8), (0,), v2c.Gauge32(18)),
+            # SNIMPY-MIB::snimpyTimeticks
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 9), v2c.TimeTicks()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 9), (0,), v2c.TimeTicks(12111100)),
+            # SNIMPY-MIB::snimpyCounter64
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 10), v2c.Counter64()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 10), (0,), v2c.Counter64(47)),
+            # SNIMPY-MIB::snimpyBits
+            MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 11), v2c.OctetString()).setMaxAccess("readwrite"),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 11), (0,), v2c.OctetString("\x00")),
+        )
+        # Start agent
+        cmdrsp.GetCommandResponder(self.snmpEngine, snmpContext)
+        cmdrsp.SetCommandResponder(self.snmpEngine, snmpContext)
+        cmdrsp.NextCommandResponder(self.snmpEngine, snmpContext)
+        cmdrsp.BulkCommandResponder(self.snmpEngine, snmpContext)
+        self.snmpEngine.transportDispatcher.jobStarted(1)
+        def runDispatcher():
+            try:
+                self.snmpEngine.transportDispatcher.runDispatcher()
+            except:
+                pass
+        threading.Thread(target=runDispatcher,).start()
+        # Open session
+        self.session = snmp.Session(host="localhost:%d" % self.port,
                                     community="public",
                                     version=self.version)
+
+    def tearDown(self):
+        self.snmpEngine.transportDispatcher.jobFinished(1)
+        self.snmpEngine.transportDispatcher.closeDispatcher()
 
     def testGetString(self):
         """Get a string value"""
         ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
         oid, a = self.session.get(ooid)[0]
         self.assertEqual(oid, ooid)
-        self.assertEqual(a, " ".join(os.uname()))
-    
+        self.assertEqual(a, "Snimpy Test Agent")
+
     def testGetInteger(self):
         """Get an integer value"""
         oid, a = self.session.get(mib.get('IF-MIB', 'ifNumber').oid + (0,))[0]
@@ -161,13 +270,13 @@ class TestSnmp2(unittest.TestCase):
         self.assertEqual(a, 24) # This is software loopback
         b = basictypes.build('IF-MIB', 'ifType', a)
         self.assertEqual(b, "softwareLoopback")
-    
+
     def testGetNext(self):
         """Get next value"""
         ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid
         oid, a = self.session.getnext(ooid)[0]
         self.assertEqual(oid, ooid + (0,))
-        self.assertEqual(a, " ".join(os.uname()))
+        self.assertEqual(a, "Snimpy Test Agent")
 
     def testInexistant(self):
         """Get an inexistant value"""
@@ -175,22 +284,59 @@ class TestSnmp2(unittest.TestCase):
                           self.session.get,
                           (1,2,3))
 
-    def testVariousSet(self):
-        """Set value of many types. This test should be monitored with a traffic capture"""
+    def testSetIpAddress(self):
+        """Set IpAddress."""
+        self.setAndCheck('snimpyIpAddress',  '10.14.12.12')
+
+    def testSetString(self):
+        """Set String."""
+        self.setAndCheck('snimpyString',  'hello')
+
+    def testSetInteger(self):
+        """Set Integer."""
+        self.setAndCheck('snimpyInteger',  1574512)
+
+    def testSetEnum(self):
+        """Set Enum."""
+        self.setAndCheck('snimpyEnum',  'testing')
+
+    def testSetObjectId(self):
+        """Set ObjectId."""
+        self.setAndCheck('snimpyObjectId',  (1,2,3,4,5,6))
+
+    def testSetCounter(self):
+        """Set Counter."""
+        self.setAndCheck('snimpyCounter',  545424)
+
+    def testSetCounter64(self):
+        """Set Counter64."""
+        self.setAndCheck('snimpyCounter64',  2**47+1)
+
+    def testSetGauge(self):
+        """Set Gauge."""
+        self.setAndCheck('snimpyGauge',  4857544)
+
+    def testSetBoolean(self):
+        """Set Boolean."""
+        self.setAndCheck('snimpyBoolean',  True)
+
+    def testSetTimeticks(self):
+        """Set Timeticks."""
+        self.setAndCheck('snimpyTimeticks',  timedelta(3, 18))
+
+    def testSetBits(self):
+        """Set Bits."""
+        self.setAndCheck('snimpyBits',  ["third", "last"])
+
+    def setAndCheck(self, oid, value):
+        """Set and check a value"""
         mib.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               "SNIMPY-MIB.mib"))
-        for oid, value in [('snimpyIpAddress', '10.14.12.12'),
-                           ('snimpyInteger', 1574512),
-                           ('snimpyEnum', 'testing'),
-                           ('snimpyObjectId', (1,2,3,4,5,6)),
-                           ('snimpyCounter', 545424),
-                           ('snimpyGauge', 4857544),
-                           ('snimpyTimeticks', timedelta(3, 18)),
-                           ('snimpyBits', ["third", "last"])]:
-            self.assertRaises(self.version == 1 and snmp.SNMPNoSuchName or snmp.SNMPNoAccess,
-                              self.session.set,
-                              mib.get('SNIMPY-MIB', oid).oid + (0,),
-                              basictypes.build('SNIMPY-MIB', oid, value))
+        ooid = mib.get('SNIMPY-MIB', oid).oid + (0,)
+        self.session.set(ooid,
+                         basictypes.build('SNIMPY-MIB', oid, value))
+        self.assertEqual(basictypes.build('SNIMPY-MIB', oid, self.session.get(ooid)[0][1]),
+                         basictypes.build('SNIMPY-MIB', oid, value))
 
     def testMultipleGet(self):
         """Get multiple values at once"""
@@ -202,7 +348,7 @@ class TestSnmp2(unittest.TestCase):
         self.assertEqual(oid1, ooid1)
         self.assertEqual(oid2, ooid2)
         self.assertEqual(oid3, ooid3)
-        self.assertEqual(a1, " ".join(os.uname()))
+        self.assertEqual(a1, "Snimpy Test Agent")
         self.assert_(a2 > 1)
         b = basictypes.build('IF-MIB', 'ifType', a3)
         self.assertEqual(b, "softwareLoopback")
@@ -210,3 +356,7 @@ class TestSnmp2(unittest.TestCase):
 class TestSnmp1(TestSnmp2):
     """Test communication with an agent with SNMPv1."""
     version = 1
+
+    @unittest.skip("no counter64 for SNMPv1")
+    def testSetCounter64(self):
+        pass
