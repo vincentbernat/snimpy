@@ -43,7 +43,7 @@ import manager
 from config import conf
 from version import VERSION
 
-def interact():
+def interact(argv=sys.argv): # pragma: no cover
     banner  = "\033[1mSnimpy\033[0m (%s) -- An interactive SNMP tool.\n" % VERSION
     banner += "  load        -> load an additional MIB\n"
     banner += "  M           -> manager object"
@@ -55,7 +55,7 @@ def interact():
               "snmp": manager.snmp
               }
 
-    if len(sys.argv) <= 1:
+    if len(argv) <= 1:
         manager.Manager._complete = True
 
     for ms in conf.mibs:
@@ -63,9 +63,9 @@ def interact():
 
     globals().update(local)
 
-    if len(sys.argv) > 1:
-        sys.argv = sys.argv[1:]
-        execfile(sys.argv[0], local)
+    if len(argv) > 1:
+        argv = argv[1:]
+        execfile(argv[0], local)
         return
 
     try:
