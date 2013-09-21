@@ -64,6 +64,9 @@ if __name__ == "__main__":
                       libraries= ['netsnmp', 'crypto'],
                       sources= ['snimpy/snmp.c'])
           ],
-          tests_require = "pysnmp >= 4",
-          test_suite="tests"
+          tests_require = [
+              "pysnmp >= 4",
+              "nose",
+          ],
+          test_suite="nose.collector"
           )
