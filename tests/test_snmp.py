@@ -136,13 +136,11 @@ class TestSnmpSession(unittest.TestCase):
                      privprotocol=priv, privpassword="privpass")
 
 
-class TestSnmp2(unittest.TestCase):
+class TestSnmp1(unittest.TestCase):
     """
-    Test communication with an agent with SNMPv2.
-
-    An agent should run on localhost for those tests to work.
+    Test communication with an agent with SNMPv1.
     """
-    version = 2
+    version = 1
 
     @classmethod
     def setUpClass(cls):
@@ -312,10 +310,6 @@ class TestSnmp2(unittest.TestCase):
         """Set Counter."""
         self.setAndCheck('snimpyCounter',  545424)
 
-    def testSetCounter64(self):
-        """Set Counter64."""
-        self.setAndCheck('snimpyCounter64',  2**47+1)
-
     def testSetGauge(self):
         """Set Gauge."""
         self.setAndCheck('snimpyGauge',  4857544)
@@ -357,10 +351,45 @@ class TestSnmp2(unittest.TestCase):
         b = basictypes.build('IF-MIB', 'ifType', a3)
         self.assertEqual(b, "softwareLoopback")
 
-class TestSnmp1(TestSnmp2):
-    """Test communication with an agent with SNMPv1."""
-    version = 1
+    def testGetBulk(self):
+        """Check if GETBULK is disabled"""
+        self.assertFalse(self.session.use_bulk)
+        self.assertRaises(snmp.SNMPException,
+                          self.session.getbulk, (1,2,3))
 
-    @unittest.skip("no counter64 for SNMPv1")
+class TestSnmp2(TestSnmp1):
+    """Test communication with an agent with SNMPv2."""
+    version = 2
+
     def testSetCounter64(self):
-        pass
+        """Set Counter64."""
+        self.setAndCheck('snimpyCounter64',  2**47+1)
+
+    def testGetBulk(self):
+        """Test GETBULK operation."""
+        ooid = mib.get("IF-MIB", "ifDescr").oid
+        self.assertTrue(self.session.use_bulk)
+        self.session.bulk = (0, 4)
+        results = self.session.getbulk(ooid)
+        self.assertEqual(len(results), 4)
+        self.assertEqual(results,
+                         ((ooid + (1,), "lo"),
+                          (ooid + (2,), "eth0"),
+                          (ooid + (3,), "eth1"),
+                          (mib.get("IF-MIB", "ifType").oid + (1,), 24)))
+        self.session.bulk = (0, 2)
+        results = self.session.getbulk(ooid)
+        self.assertEqual(len(results), 2)
+
+    def testGetBulkWithNonRepeaters(self):
+        """Test GETBULK operations with non repeaters."""
+        ooid1 = mib.get("IF-MIB", "ifNumber").oid
+        ooid2 = mib.get("IF-MIB", "ifType").oid
+        self.session.bulk = (1, 3)
+        results = self.session.getbulk(ooid1, ooid2)
+        self.assertEqual(len(results), 4)
+        self.assertEqual(results,
+                         ((ooid1 + (0,), 3),
+                          (ooid2 + (1,), 24),
+                          (ooid2 + (2,), 6),
+                          (ooid2 + (3,), 6)))

@@ -463,6 +463,10 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 			PyErr_SetString(SnmpException, "getbulk not supported in SNMPv1");
 		    return NULL;
 	}
+	if ((op == SNMP_MSG_GETBULK) && (self->bulk_non_repeaters > PyTuple_Size(args))) {
+		PyErr_SetString(SnmpException, "too many non repeaters requested for GETBULK");
+		return NULL;
+	}
 
 	pdu = snmp_pdu_create(op);
 
@@ -561,7 +565,9 @@ Snmp_op(SnmpObject *self, PyObject *args, int op)
 	/* Let's handle the value */
 	j = 0;
 	if (op == SNMP_MSG_GETBULK) {
-	    if ((results = PyTuple_New(self->bulk_max_repetitions)) == NULL)
+		if ((results = PyTuple_New(
+			self->bulk_non_repeaters +
+			(PyTuple_Size(args) - self->bulk_non_repeaters) * self->bulk_max_repetitions)) == NULL)
 	        goto operror;
 	} else if ((results = PyTuple_New(PyTuple_Size(args) /
 		    ((op == SNMP_MSG_SET)?2:1))) == NULL)
