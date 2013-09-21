@@ -52,9 +52,6 @@ class TestBasicTypes(unittest.TestCase):
 
     def testIpAddress(self):
         """Test IP address basic type"""
-        self.assertRaises(ValueError,
-                          basictypes.build,
-                          "SNIMPY-MIB", "snimpyIpAddress", "999.5.6.4")
         a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", socket.inet_aton("10.0.4.5"))
         self.assert_(isinstance(a, basictypes.IpAddress))
         self.assertEqual(a, "10.0.4.5")
@@ -68,6 +65,24 @@ class TestBasicTypes(unittest.TestCase):
         a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", "10.0.4.5")
         self.assertEqual(a, "10.0.4.5")
         self.assertEqual(a, [10, 0, 4, 5])
+        a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", "1001")
+        self.assertEqual(a, [49, 48, 48, 49])
+        a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", "0101")
+        self.assertEqual(a, [48, 49, 48, 49])
+        a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", "100")
+        self.assertEqual(a, [0, 0, 0, 100])
+
+    def testIncorrectIpAddress(self):
+        """Test inappropriate IP addresses"""
+        self.assertRaises(ValueError,
+                          basictypes.build,
+                          "SNIMPY-MIB", "snimpyIpAddress", "999.5.6.4")
+        self.assertRaises(ValueError,
+                          basictypes.build,
+                          "SNIMPY-MIB", "snimpyIpAddress", "AAA")
+        self.assertRaises(ValueError,
+                          basictypes.build,
+                          "SNIMPY-MIB", "snimpyIpAddress", "AAACC")
 
     def testEnum(self):
         """Test enum basic type"""

@@ -146,10 +146,10 @@ class IpAddress(Type):
         if isinstance(value, list) or isinstance(value, tuple):
             value = ".".join([str(a) for a in value])
         try:
-            value = socket.inet_ntoa(socket.inet_aton(value))
+            value = socket.inet_ntoa(value)
         except:
             try:
-                value = socket.inet_ntoa(value)
+                value = socket.inet_ntoa(socket.inet_aton(value))
             except:
                 raise ValueError("%r is not a valid IP" % value)
         return [int(a) for a in value.split(".")]
