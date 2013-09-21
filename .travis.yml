@@ -3,6 +3,8 @@ install:
   - "sudo apt-get -qq update"
   - "sudo apt-get -y install pkg-config libsmi2-dev libsnmp-dev snmp-mibs-downloader"
   - "pip install pysnmp"
+  # Solution to travis issue #155
+  - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
 python:
  - "2.6"
  - "2.7"
