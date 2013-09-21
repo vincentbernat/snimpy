@@ -6,4 +6,4 @@ install:
 python:
  - "2.6"
  - "2.7"
-script: nosetests
+script: python setup.py nosetests
