@@ -3,6 +3,7 @@
 *.so
 /build
 /snimpy.egg-info
+/*.egg
 /dist
 /MANIFEST
 /.coverage
