@@ -73,8 +73,8 @@ typedef unsigned int SmiNodekind;
 
 typedef struct SmiNode {
     SmiIdentifier       name;
-    unsigned int	oidlen;
-    SmiSubid		*oid;
+    unsigned int        oidlen;
+    SmiSubid            *oid;
     char                *format;
     SmiIndexkind        indexkind;
     int                 implied;
@@ -92,7 +92,7 @@ typedef struct SmiValue {
         SmiFloat32          float32;
         SmiFloat64          float64;
         SmiFloat128         float128;
-        SmiSubid	    *oid;
+        SmiSubid            *oid;
         char                *ptr;
     } value;
     ...;
@@ -255,7 +255,7 @@ class Entity(object):
         while element != ffi.NULL:
             result[self._convert(element.value)] = ffi.string(element.name)
             element = _smi.smiGetNextNamedNumber(element);
-	return result
+        return result
 
     def __str__(self):
         return ffi.string(self.node.name)
