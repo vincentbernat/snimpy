@@ -153,7 +153,6 @@ _smi = ffi.verify("""
 
 class SMIException(Exception):
     """SMI related exception"""
-    pass
 
 class Entity(object):
     """MIB entity"""

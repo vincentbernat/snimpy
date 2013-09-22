@@ -57,29 +57,9 @@ class TestSnmpSession(unittest.TestCase):
         """Check initialization of SNMPv3 session"""
         snmp.Session(host="localhost",
                      version=3,
-                     seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
                      secname="readonly",
                      authprotocol="MD5", authpassword="authpass",
                      privprotocol="AES", privpassword="privpass")
-
-    def testSnmpV3TooShortPassword(self):
-        """Try to use a password too short with SNMPv3"""
-        self.assertRaises(ValueError,
-                          snmp.Session,
-                          host="localhost",
-                          version=3,
-                          seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
-                          secname="readonly",
-                          authprotocol="MD5", authpassword="au",
-                          privprotocol="AES", privpassword="privpass")
-        self.assertRaises(ValueError,
-                          snmp.Session,
-                          host="localhost",
-                          version=3,
-                          seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
-                          secname="readonly",
-                          authprotocol="MD5", authpassword="authpass",
-                          privprotocol="AES", privpassword="pr")
 
     def testSnmpV3Protocols(self):
         """Check accepted auth and privacy protocols"""
@@ -87,7 +67,6 @@ class TestSnmpSession(unittest.TestCase):
             for priv in ["AES", "AES128", "DES"]:
                 snmp.Session(host="localhost",
                              version=3,
-                             seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
                              secname="readonly",
                              authprotocol=auth, authpassword="authpass",
                              privprotocol=priv, privpassword="privpass")
@@ -95,7 +74,6 @@ class TestSnmpSession(unittest.TestCase):
                           snmp.Session,
                           host="localhost",
                           version=3,
-                          seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
                           secname="readonly",
                           authprotocol="NOEXIST", authpassword="authpass",
                           privprotocol="AES", privpassword="privpass")
@@ -103,7 +81,6 @@ class TestSnmpSession(unittest.TestCase):
                           snmp.Session,
                           host="localhost",
                           version=3,
-                          seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
                           secname="readonly",
                           authprotocol="MD5", authpassword="authpass",
                           privprotocol="NOEXIST", privpassword="privpass")
@@ -119,16 +96,14 @@ class TestSnmpSession(unittest.TestCase):
                      privprotocol=priv, privpassword="privpass")
         snmp.Session(host="localhost",
                      version=3,
-                     seclevel=snmp.SNMP_SEC_LEVEL_NOAUTH,
                      secname="readonly",
-                     authprotocol=auth, authpassword="authpass",
-                     privprotocol=priv, privpassword="privpass")
+                     authprotocol=None,
+                     privprotocol=None)
         snmp.Session(host="localhost",
                      version=3,
-                     seclevel=snmp.SNMP_SEC_LEVEL_AUTHNOPRIV,
                      secname="readonly",
                      authprotocol=auth, authpassword="authpass",
-                     privprotocol=priv, privpassword="privpass")
+                     privprotocol=None)
 
 
 class TestSnmp1(unittest.TestCase):
@@ -251,7 +226,6 @@ class TestSnmp1(unittest.TestCase):
 
     def testGetBulk(self):
         """Check if GETBULK is disabled"""
-        self.assertFalse(self.session.use_bulk)
         self.assertRaises(snmp.SNMPException,
                           self.session.getbulk, (1,2,3))
 
@@ -266,10 +240,8 @@ class TestSnmp2(TestSnmp1):
     def testGetBulk(self):
         """Test GETBULK operation."""
         ooid = mib.get("IF-MIB", "ifDescr").oid
-        self.assertTrue(self.session.use_bulk)
         self.session.bulk = (0, 4)
         results = self.session.getbulk(ooid)
-        self.assertEqual(len(results), 4)
         self.assertEqual(results,
                          ((ooid + (1,), "lo"),
                           (ooid + (2,), "eth0"),
@@ -277,7 +249,9 @@ class TestSnmp2(TestSnmp1):
                           (mib.get("IF-MIB", "ifType").oid + (1,), 24)))
         self.session.bulk = (0, 2)
         results = self.session.getbulk(ooid)
-        self.assertEqual(len(results), 2)
+        self.assertEqual(results,
+                         ((ooid + (1,), "lo"),
+                          (ooid + (2,), "eth0")))
 
     def testGetBulkWithNonRepeaters(self):
         """Test GETBULK operations with non repeaters."""
@@ -285,7 +259,6 @@ class TestSnmp2(TestSnmp1):
         ooid2 = mib.get("IF-MIB", "ifType").oid
         self.session.bulk = (1, 3)
         results = self.session.getbulk(ooid1, ooid2)
-        self.assertEqual(len(results), 4)
         self.assertEqual(results,
                          ((ooid1 + (0,), 3),
                           (ooid2 + (1,), 24),
@@ -299,7 +272,6 @@ class TestSnmp3(TestSnmp2):
     def setUp(self):
         self.session = snmp.Session(host="127.0.0.1:%d" % self.agent.port,
                                     version=3,
-                                    seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV,
                                     secname="read-write",
                                     authprotocol="MD5", authpassword="authpass",
                                     privprotocol="AES", privpassword="privpass")

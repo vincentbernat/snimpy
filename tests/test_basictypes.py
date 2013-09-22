@@ -4,6 +4,7 @@ import re
 import socket
 from datetime import timedelta
 from snimpy import mib, basictypes, snmp
+from pysnmp.proto import rfc1902
 
 class TestBasicTypes(unittest.TestCase):
 
@@ -214,38 +215,35 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyString",
                                           "Hello world").pack(),
-                         (snmp.ASN_OCTET_STR, "Hello world"))
+                         rfc1902.OctetString("Hello world"))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyInteger",
                                           18).pack(),
-                         (snmp.ASN_INTEGER, struct.pack("l", 18)))
+                         rfc1902.Integer(18))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyInteger",
                                           1804).pack(),
-                         (snmp.ASN_INTEGER, struct.pack("l", 1804)))
+                         rfc1902.Integer(1804))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyEnum",
                                           "testing").pack(),
-                         (snmp.ASN_INTEGER, struct.pack("l", 3)))
+                         rfc1902.Integer(3))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyIpAddress",
                                           "10.11.12.13").pack(),
-                         (snmp.ASN_IPADDRESS, "\x0a\x0b\x0c\x0d"))
+                         rfc1902.IpAddress("10.11.12.13"))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyObjectId",
                                           (1,2,3,4)).pack(),
-                         (snmp.ASN_OBJECT_ID, ("%s"*4) % (struct.pack("l", 1),
-                                                        struct.pack("l", 2),
-                                                        struct.pack("l", 3),
-                                                        struct.pack("l", 4))))
+                         rfc1902.univ.ObjectIdentifier((1,2,3,4)))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyTimeticks",
                                           timedelta(3, 2)).pack(),
-                         (snmp.ASN_INTEGER, struct.pack("l", 3*3600*24*100 + 2*100)))
+                         rfc1902.TimeTicks(3*3600*24*100 + 2*100))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyBits",
                                           [1,7]).pack(),
-                         (snmp.ASN_OCTET_STR, "\x41"))
+                         rfc1902.Bits("\x41"))
 
     def testOid(self):
         """Test conversion to/from OID."""

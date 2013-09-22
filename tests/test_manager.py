@@ -202,7 +202,7 @@ class TestManagerSet(TestManager):
         self.assertNotEqual(m.snimpyString, "Abort sir!")
         self.assertNotEqual(m.snimpyInteger, 37)
 
-    def testGetInexistentStuff(self):
+    def testSetInexistentStuff(self):
         """Try to access stuff that does not exist on the agent"""
         self.assertRaises(snmp.SNMPNotWritable,
                           setattr, self.manager, "snimpyNotImplemented", "Hello")

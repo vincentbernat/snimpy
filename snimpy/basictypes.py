@@ -26,6 +26,7 @@ between the MIB and SNMP.
 import struct
 import socket
 from datetime import timedelta
+from pysnmp.proto import rfc1902
 
 import mib, snmp
 
@@ -155,8 +156,7 @@ class IpAddress(Type):
         return [int(a) for a in value.split(".")]
 
     def pack(self):
-        return (snmp.ASN_IPADDRESS,
-                socket.inet_aton(".".join(["%d" % x for x in self._value])))
+        return rfc1902.IpAddress(".".join(["%d" % x for x in self._value]))
 
     def toOid(self):
         return tuple(self._value)
@@ -193,7 +193,7 @@ class String(Type, str):
         return str(value)
 
     def pack(self):
-        return (snmp.ASN_OCTET_STR, self._value)
+        return rfc1902.OctetString(self._value)
 
     def toOid(self):
         # To convert properly to OID, we need to know if it is a
@@ -356,15 +356,11 @@ class Integer(Type, long):
         if self._value >= (1L << 64):
             raise OverflowError("too large to be packed")
         if self._value >= (1L << 32):
-            # Pack in a 64 bit counter
-            return (snmp.ASN_OCTET_STR,
-                    struct.pack("LL",
-                                self._value/(1L << 32),
-                                self._value%(1L << 32)))
+            return rfc1902.Counter64(self._value)
         if self._value >= 0:
-            return (snmp.ASN_INTEGER, struct.pack("L", self._value))
+            return rfc1902.Integer(self._value)
         if self._value >= -(1L << 31):
-            return (snmp.ASN_INTEGER, struct.pack("l", self._value))
+            return rfc1902.Integer(self._value)
         raise OverflowError("too small to be packed")
 
     def toOid(self):
@@ -408,7 +404,7 @@ class Unsigned32(Integer):
             raise OverflowError("too large to be packed")
         if self._value < 0:
             raise OverflowError("too small to be packed")
-        return (snmp.ASN_UNSIGNED, struct.pack("L", self._value))
+        return rfc1902.Unsigned32(self._value)
 
 class Unsigned64(Integer):
     def pack(self):
@@ -416,8 +412,7 @@ class Unsigned64(Integer):
             raise OverflowError("too large to be packed")
         if self._value < 0:
             raise OverflowError("too small to be packed")
-        return (snmp.ASN_COUNTER64, struct.pack("LL",
-            self._value/(1L << 32), self._value%(1L << 32)))
+        return rfc1902.Counter64(self._value)
 
 class Enum(Integer):
     """Class for enumeration"""
@@ -436,7 +431,7 @@ class Enum(Integer):
                                                                  entity))
 
     def pack(self):
-        return (snmp.ASN_INTEGER, struct.pack("l", self._value))
+        return rfc1902.Integer(self._value)
 
     @classmethod
     def fromOid(cls, entity, oid):
@@ -477,9 +472,9 @@ class Oid(Type):
             return tuple(value.oid)
         else:
             raise TypeError("don't know how to convert %r to OID" % value)
-            
+
     def pack(self):
-        return (snmp.ASN_OBJECT_ID, "".join([struct.pack("l", x) for x in self._value]))
+        return rfc1902.univ.ObjectIdentifier(self._value)
 
     def toOid(self):
         if self._fixedOrImplied(self.entity):
@@ -569,9 +564,7 @@ class Timeticks(Type):
         return (1, cls(entity, oid[0]))
 
     def pack(self):
-        return (snmp.ASN_INTEGER,
-                struct.pack("l",
-                            int(self)))
+        return rfc1902.TimeTicks(int(self))
 
     def __str__(self):
         return str(self._value)
@@ -647,7 +640,7 @@ class Bits(Type):
             if len(string) < b/16 + 1:
                 string.extend([0]*(b/16 - len(string)+1))
             string[b/16] |= 1 << (7 - b%16)
-        return (snmp.ASN_OCTET_STR, "".join([chr(x) for x in string]))
+        return rfc1902.Bits("".join([chr(x) for x in string]))
 
     def __eq__(self, other):
         if isinstance(other, str):

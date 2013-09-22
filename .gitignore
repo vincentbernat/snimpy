@@ -9,6 +9,7 @@
 /.coverage
 /htmlcov
 /.tox
+/.noseids
 __pycache__
 .index
 cscope.out

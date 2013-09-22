@@ -117,20 +117,18 @@ class Manager(object):
 
     def __init__(self,
                  host="localhost",
-                 community=None, version=None,
+                 community=None, version=2,
                  cache=False, none=False,
                  timeout=None, retries=None,
                  # SNMPv3
-                 seclevel=None, secname=None,
+                 secname=None,
                  authprotocol=None, authpassword=None,
                  privprotocol=None, privpassword=None):
         if host is None:
             host = Manager._host
         self._host = host
-        if version is None:
-            version = -1
         self._session = snmp.Session(host, community, version,
-                                     seclevel, secname,
+                                     secname,
                                      authprotocol, authpassword,
                                      privprotocol, privpassword)
         if timeout is not None:
@@ -144,6 +142,7 @@ class Manager(object):
                 self._session = CachedSession(self._session, cache)
         if none:
             self._session = NoneSession(self._session)
+        self._session.use_bulk = (version > 1)
 
     def _locate(self, attribute):
         for m in loaded:
@@ -261,7 +260,7 @@ class ProxyColumn(Proxy, DictMixin):
 
         while True:
             try:
-                if self.session.bulk is not None and self.session.use_bulk:
+                if self.session.use_bulk:
                     results = self.session.getbulk(oid)
                 else:
                     results = self.session.getnext(oid)
