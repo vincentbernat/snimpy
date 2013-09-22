@@ -99,7 +99,7 @@ m = M(host="localhost", community="private", version=2)
 m = M("localhost", "private", 2)
 m = M(community="private")
 m = M(version=3,
-      seclevel=snmp.SNMP_SEC_LEVEL_AUTHPRIV, secname="readonly",
+      secname="readonly",
       authprotocol="MD5", authpassword="authpass",
       privprotocol="AES", privpassword="privpass")
 ```
