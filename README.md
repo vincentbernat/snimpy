@@ -43,8 +43,8 @@ Snimpy is aimed at being the more Pythonic possible. You should forget
 that you are doing SNMP requests. Snimpy will rely on MIB to hide SNMP
 details. Here are some "features" of snmimpy:
 
- - MIB parser based on libsmi
- - SNMP requests are handled by libnetsnmp
+ - MIB parser based on libsmi  (through CFFI)
+ - SNMP requests are handled by PySNMP
  - scalars are just attributes of your session object
  - columns are like a Python dictionary and made available as
    an attribute
@@ -57,8 +57,7 @@ License
 -------
 
 Snimpy is licensed under MIT/X11 license. See at the top of source
-files for details. This license allows to interface freely with
-Net-SNMP and OpenSSL.
+files for details.
 
 Installation and usage
 ----------------------
@@ -102,14 +101,6 @@ m = M(version=3,
       secname="readonly",
       authprotocol="MD5", authpassword="authpass",
       privprotocol="AES", privpassword="privpass")
-```
-
-Default values are retrieved from NetSNMP. You can for example have
-something like this in `~/.snmp/snimpy.conf`:
-
-```
-defCommunity public
-defVersion 2c
 ```
 
 A manager instance contains all the scalars and the columns that are
@@ -194,14 +185,6 @@ snimpy should be thread-safe. There are two ground rules:
 
  1. You must load MIB before invoking additional threads.
  2. You must not share a session between several threads.
-
-When using SNMPv3, it is unknown if thread-safeness can be ensured
-because of this warning from the NetSNMP project:
-
-    Unfortunately, the SNMPv3 support was added about the same time as
-    the thread support and since they occurred in parallel the SNMPv3
-    support was never checked for multi-threading correctness.  It is
-    most likely that it is not thread-safe at this time.
 
 Why another tool?
 -----------------
