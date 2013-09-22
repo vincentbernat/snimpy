@@ -109,7 +109,7 @@ class Session(object):
         self._transport = cmdgen.UdpTransportTarget((host, int(port)))
 
         # Bulk stuff
-        self.bulk = (0, 40)
+        self.bulk = 40
 
     def _check_exception(self, value):
         """Check if the given ASN1 value is an exception"""
@@ -168,16 +168,12 @@ class Session(object):
         """Retrieve an OID value using GET."""
         return self._op(self._cmdgen.getCmd, *oids)
 
-    def getbulk(self, *oids):
-        """Retrieve OIDs values using GETBULK."""
-        if self._version == 1:
-            raise SNMPException("BULK cannot be used with SNMPv1")
-        args = [self.bulk[0], self.bulk[1]] + list(oids)
+    def walk(self, *oids):
+        """Retrieve OIDs values using GETBULK or GETNEXT."""
+        if self._version == 1 or not self.bulk:
+            return self._op(self._cmdgen.nextCmd, *oids)
+        args = [0, self.bulk] + list(oids)
         return self._op(self._cmdgen.bulkCmd, *args)
-
-    def getnext(self, *oids):
-        """Retrieve an OID value using GETNEXT."""
-        return self._op(self._cmdgen.nextCmd, *oids)
 
     def set(self, *args):
         """Set an OID value using SET."""
@@ -228,8 +224,8 @@ class Session(object):
     def bulk(self):
         """Get bulk settings.
 
-        @return: a tuple formed by the number of non repeaters and the
-                 maximum repetitions.
+        @return: C{False} if bulk is disabled or a non-negative integer
+                 for the number of repetitions.
         """
         return self._bulk
 
@@ -237,15 +233,14 @@ class Session(object):
     def bulk(self, value):
         """Set bulk settings.
 
-        @param value: a tuple of the number of non repeaters and the maximum
-                      repetitions.
+        @param value: C{False} to disable bulk or a non-negative
+                      integer for the number of allowed repetitions.
         """
-        nonrepeat, maxrepeat = value
-        nonrepeat, maxrepeat = (int(nonrepeat), int(maxrepeat))
-        if nonrepeat < 0:
-            raise ValueError("{0} is not an appropriate value for non repeater parameter".format(
-                nonrepeat))
-        if maxrepeat <= 0:
+        if value is False:
+            self._bulk = False
+            return
+        value = int(value)
+        if value <= 0:
             raise ValueError("{0} is not an appropriate value for max repeater parameter".format(
-                maxrepeat))
-        self._bulk = (nonrepeat, maxrepeat)
+                value))
+        self._bulk = value

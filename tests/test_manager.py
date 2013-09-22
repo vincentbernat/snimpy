@@ -87,11 +87,8 @@ class TestManagerGet(TestManager):
 
     def testWalkIfTableWithoutBulk(self):
         """Walk IF-MIB::ifTable without GETBULK"""
-        self.session.use_bulk = False
-        try:
-            self.testWalkIfTable()
-        finally:
-            self.session.use_bulk = True
+        self.session.bulk = False
+        self.testWalkIfTable()
 
     def testWalkComplexIndexes(self):
         """Test if we can walk a table with complex indexes"""

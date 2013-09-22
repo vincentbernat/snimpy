@@ -142,7 +142,6 @@ class Manager(object):
                 self._session = CachedSession(self._session, cache)
         if none:
             self._session = NoneSession(self._session)
-        self._session.use_bulk = (version > 1)
 
     def _locate(self, attribute):
         for m in loaded:
@@ -258,41 +257,29 @@ class ProxyColumn(Proxy, DictMixin):
         oid = self.proxy.oid
         indexes = self.proxy.table.index
 
-        while True:
-            try:
-                if self.session.use_bulk:
-                    results = self.session.getbulk(oid)
-                else:
-                    results = self.session.getnext(oid)
-            except snmp.SNMPEndOfMibView:
+        for noid, result in self.session.walk(oid):
+            if noid <= oid:
+                noid = None
+                break
+            oid = noid
+            if not((len(oid) >= len(self.proxy.oid) and
+                oid[:len(self.proxy.oid)] == self.proxy.oid[:len(self.proxy.oid)])):
+                noid = None
                 break
 
-            for noid, result in results:
-                if noid <= oid:
-                    noid = None
-                    break
-                oid = noid
-                if not((len(oid) >= len(self.proxy.oid) and
-                    oid[:len(self.proxy.oid)] == self.proxy.oid[:len(self.proxy.oid)])):
-                    noid = None
-                    break
-
-                # oid should be turned into index
-                index = oid[len(self.proxy.oid):]
-                target = []
-                for x in indexes:
-                    l, o = x.type.fromOid(x, tuple(index))
-                    target.append(x.type(x, o))
-                    index = index[l:]
-                count = count + 1
-                if len(target) == 1:
-                    # Should work most of the time
-                    yield target[0], result
-                else:
-                    yield tuple(target), result
-
-            if noid is None:
-                break
+            # oid should be turned into index
+            index = oid[len(self.proxy.oid):]
+            target = []
+            for x in indexes:
+                l, o = x.type.fromOid(x, tuple(index))
+                target.append(x.type(x, o))
+                index = index[l:]
+            count = count + 1
+            if len(target) == 1:
+                # Should work most of the time
+                yield target[0], result
+            else:
+                yield tuple(target), result
 
         if count == 0:
             # We did not find any element. Is it because the column is
