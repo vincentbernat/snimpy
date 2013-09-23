@@ -23,7 +23,7 @@ Very high level interface to SNMP and MIB for Snimpy
 """
 
 from time import time
-from UserDict import DictMixin
+from collections import MutableMapping
 import snmp, mib, basictypes
 
 class DelegatedSession(object):
@@ -201,7 +201,7 @@ class Proxy:
         return "<%s for %s>" % (self.__class__.__name__,
                                 repr(self.proxy)[1:-1])
 
-class ProxyColumn(Proxy, DictMixin):
+class ProxyColumn(Proxy, MutableMapping):
     """Proxy for column access"""
 
     def __init__(self, session, column):
@@ -238,6 +238,9 @@ class ProxyColumn(Proxy, DictMixin):
             value = self.proxy.type(self.proxy, value)
         self._op("set", index, value)
 
+    def __delitem__(self, index):
+        raise NotImplementedError("cannot suppress a column")
+
     def keys(self):
         return [k for k in self]
 
@@ -251,6 +254,9 @@ class ProxyColumn(Proxy, DictMixin):
     def __iter__(self):
         for k, _ in self.iteritems():
             yield k
+
+    def __len__(self):
+        len(list(self.iteritems()))
 
     def iteritems(self):
         count = 0
