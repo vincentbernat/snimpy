@@ -204,7 +204,6 @@ class TestBasicTypes(unittest.TestCase):
         a -= [23, 22]
         self.assert_(a & [2, 10])
         self.assert_(not(a & 23))
-        print repr(a), "\x37\x20\x00", a == "\x37\x20\x00", "\x37\x20\x00" == a
         self.assertEqual(a, "\x37\x20\x00")
         a |= 31
         self.assertEqual(a, "\x37\x20\x00\x01")
@@ -274,7 +273,7 @@ class TestBasicTypes(unittest.TestCase):
             "snimpyIndexImplied": ((104, 101, 108, 108, 111, 50), (6, "hello2")),
             "snimpyComplexFirstIP": ((15, 15, 16, 100, 23, 74, 87), (4, "15.15.16.100")),
             "snimpySimpleIndex": ((17, 19, 20), (1, 17)),
-            "snimpyIndexOidVarLen": ((3, 247, 145, 475568L, 475, 263),
+            "snimpyIndexOidVarLen": ((3, 247, 145, 475568, 475, 263),
                                      (4, (247, 145, 475568))),
             }
         for t in tt:

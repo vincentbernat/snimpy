@@ -22,9 +22,6 @@
 simple interface to PySNMP
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import re
 import inspect
 from pysnmp.entity.rfc3413.oneliner import cmdgen

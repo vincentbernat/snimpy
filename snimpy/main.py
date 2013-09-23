@@ -44,7 +44,7 @@ from snimpy.config import conf
 from snimpy.version import VERSION
 
 def interact(argv=sys.argv): # pragma: no cover
-    banner  = "\033[1mSnimpy\033[0m (%s) -- An interactive SNMP tool.\n" % VERSION
+    banner  = "\033[1mSnimpy\033[0m ({0}) -- An interactive SNMP tool.\n".format(VERSION)
     banner += "  load        -> load an additional MIB\n"
     banner += "  M           -> manager object"
 

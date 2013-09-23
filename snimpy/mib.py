@@ -22,9 +22,6 @@
 simple interface to libsmi
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
-
 from cffi import FFI
 
 ffi = FFI()
@@ -149,7 +146,7 @@ SmiNamedNumber *smiGetNextNamedNumber(SmiNamedNumber *);
 
 _smi = ffi.verify("""
 #include <smi.h>
-""", libraries=[b"smi"])
+""", libraries=["smi"])
 
 class SMIException(Exception):
     """SMI related exception"""
@@ -415,7 +412,7 @@ def _get_module(name):
     @param name: name of the module
     @return: SMI module or None if not found (not loaded)
     """
-    m = _smi.smiGetModule(name)
+    m = _smi.smiGetModule(name.encode("ascii"))
     if m == ffi.NULL:
         return None
     if m.conformance and m.conformance <= 1:
@@ -440,7 +437,7 @@ def get(mib, name):
     module = _get_module(mib)
     if module is None:
         raise SMIException("no module named {0}".format(mib))
-    node = _smi.smiGetNode(module, name)
+    node = _smi.smiGetNode(module, name.encode("ascii"))
     if node == ffi.NULL:
         raise SMIException("in {0}, no node named {1}".format(
             mib,name))
@@ -456,7 +453,6 @@ def _get_kind(mib, kind):
     """
     module = _get_module(mib)
     if module is None:
-        print(mib)
         raise SMIException("no module named {0}".format(mib))
     lnode = []
     node = _smi.smiGetFirstNode(module, kind)
@@ -503,11 +499,11 @@ def load(mib):
     @param mib: MIB to load, either a filename or a MIB name
     @return: MIB name that has been loaded
     """
-    modulename = _smi.smiLoadModule(mib)
+    modulename = _smi.smiLoadModule(mib.encode("ascii"))
     if modulename == ffi.NULL:
         raise SMIException("unable to load {0}".format(mib))
     modulename = ffi.string(modulename)
-    if not _get_module(modulename):
+    if not _get_module(str(modulename)):
         raise SMIException("{0} contains major SMI error (check with smilint -s -l1)".format(
             mib))
     return modulename

@@ -19,7 +19,7 @@ class TestManager(unittest.TestCase):
         cls.agent.terminate()
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:%d" % self.agent.port,
+        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
                                community="public",
                                version=2)
         self.session = self.manager._session
@@ -224,7 +224,7 @@ class TestManagerWithNone(TestManagerGet):
     """Test a manager answering None for inexistent stuff"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:%d" % self.agent.port,
+        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
                                community="public",
                                version=2, none=True)
         self.session = self.manager._session._session
@@ -239,7 +239,7 @@ class TestCachingManager(TestManagerGet):
     """Test if caching manager works like regular manager without modifications"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:%d" % self.agent.port,
+        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
                                community="public",
                                version=2, cache=1)
         self.session = self.manager._session._session
@@ -248,7 +248,7 @@ class TestCachingManagerWithModificatons(TestManager):
     """Test if caching manager works with modifications"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:%d" % self.agent.port,
+        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
                                community="public",
                                version=2, cache=1)
         self.session = self.manager._session._session

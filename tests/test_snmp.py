@@ -119,7 +119,7 @@ class TestSnmp1(unittest.TestCase):
         cls.agent = agent.TestAgent()
 
     def setUp(self):
-        self.session = snmp.Session(host="127.0.0.1:%d" % self.agent.port,
+        self.session = snmp.Session(host="127.0.0.1:{0}".format(self.agent.port),
                                     community="public",
                                     version=self.version)
 
@@ -270,7 +270,7 @@ class TestSnmp3(TestSnmp2):
     version = 3
 
     def setUp(self):
-        self.session = snmp.Session(host="127.0.0.1:%d" % self.agent.port,
+        self.session = snmp.Session(host="127.0.0.1:{0}".format(self.agent.port),
                                     version=3,
                                     secname="read-write",
                                     authprotocol="MD5", authpassword="authpass",

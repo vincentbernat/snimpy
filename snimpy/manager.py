@@ -150,7 +150,7 @@ class Manager(object):
                 return (m,a)
             except mib.SMIException:
                 pass
-        raise AttributeError("%s is not an attribute" % attribute)
+        raise AttributeError("{0} is not an attribute".format(attribute))
 
 
     def __getattribute__(self, attribute):
@@ -175,10 +175,10 @@ class Manager(object):
         if isinstance(a, mib.Scalar):
             self._session.set(a.oid + (0,), value)
             return
-        raise AttributeError("%s is not writable" % attribute)
+        raise AttributeError("{0} is not writable".format(attribute))
 
     def __repr__(self):
-        return "<Manager for %s>" % self._host
+        return "<Manager for {0}>".format(self._host)
 
     def __enter__(self):
         """In a context, we group all "set" into a single request"""
@@ -198,8 +198,8 @@ class Manager(object):
 class Proxy:
 
     def __repr__(self):
-        return "<%s for %s>" % (self.__class__.__name__,
-                                repr(self.proxy)[1:-1])
+        return "<{0} for {1}>".formay(self.__class__.__name__,
+                                      repr(self.proxy)[1:-1])
 
 class ProxyColumn(Proxy, MutableMapping):
     """Proxy for column access"""
@@ -214,8 +214,8 @@ class ProxyColumn(Proxy, MutableMapping):
         indextype = self.proxy.table.index
         if len(indextype) != len(index):
             raise ValueError(
-                "%s column uses the following indexes: %r" % (str(self.proxy),
-                                                              indextype))
+                "{0} column uses the following indexes: {1!r}".format(self.proxy,
+                                                                      indextype))
         oidindex = []
         for i, ind in enumerate(index):
             ind = indextype[i].type(indextype[i], ind) # Cast to the

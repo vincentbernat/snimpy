@@ -21,11 +21,11 @@ class TestMain(unittest.TestCase):
         try:
             script.write("""
 load("IF-MIB")
-m = M(host="127.0.0.1:%d",
+m = M(host="127.0.0.1:{0}",
       community="public",
       version=2)
 assert(m.ifDescr[1] == "lo")
-""" % self.agent.port)
+""".format(self.agent.port))
             script.close()
             p = Process(target=interact, args=((script.name,),))
             p.start()

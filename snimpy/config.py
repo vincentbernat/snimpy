@@ -34,7 +34,7 @@ conf = Conf()
 # Load user configuration file
 if conf.userconf:
     try:
-        conffile = file(os.path.expanduser(conf.userconf))
+        conffile = open(os.path.expanduser(conf.userconf))
     except (OSError, IOError):
         pass
     else:

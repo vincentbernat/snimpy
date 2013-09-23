@@ -149,10 +149,10 @@ class TestMibSnimpy(unittest.TestCase):
                "snimpyEnum": None,
                "snimpyObjectId": None,
                "snimpyBoolean": None,
-               "snimpyCounter": (0,4294967295L),
-               "snimpyGauge": (0,4294967295L),
-               "snimpyTimeticks": (0,4294967295L),
-               "snimpyCounter64": (0,18446744073709551615L),
+               "snimpyCounter": (0,4294967295),
+               "snimpyGauge": (0,4294967295),
+               "snimpyTimeticks": (0,4294967295),
+               "snimpyCounter64": (0,18446744073709551615),
                "snimpyBits": None,
                "snimpySimpleIndex": (1,30),
                "snimpyComplexFirstIP": 4,
@@ -160,7 +160,6 @@ class TestMibSnimpy(unittest.TestCase):
                "snimpyComplexState": None
                }
         for t in tt:
-            print t
             self.assertEqual(mib.get('SNIMPY-MIB', t).ranges, tt[t])
 
     def testEnums(self):
