@@ -24,7 +24,7 @@ Very high level interface to SNMP and MIB for Snimpy
 
 from time import time
 from collections import MutableMapping
-import snmp, mib, basictypes
+from snimpy import snmp, mib, basictypes
 
 class DelegatedSession(object):
     """General class for SNMP session for delegation"""

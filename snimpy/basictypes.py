@@ -28,7 +28,9 @@ import socket
 from datetime import timedelta
 from pysnmp.proto import rfc1902
 
-import mib, snmp
+from snimpy import mib, snmp
+try: long(1)
+except NameError: long = int
 
 class Type(object):
     """Base class for all types"""

@@ -39,9 +39,9 @@ import atexit
 import code
 from datetime import timedelta
 
-import manager
-from config import conf
-from version import VERSION
+from snimpy import manager
+from snimpy.config import conf
+from snimpy.version import VERSION
 
 def interact(argv=sys.argv): # pragma: no cover
     banner  = "\033[1mSnimpy\033[0m (%s) -- An interactive SNMP tool.\n" % VERSION
