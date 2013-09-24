@@ -198,7 +198,7 @@ class Manager(object):
 class Proxy:
 
     def __repr__(self):
-        return "<{0} for {1}>".formay(self.__class__.__name__,
+        return "<{0} for {1}>".format(self.__class__.__name__,
                                       repr(self.proxy)[1:-1])
 
 class ProxyColumn(Proxy, MutableMapping):
