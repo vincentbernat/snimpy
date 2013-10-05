@@ -62,6 +62,7 @@ class Type(object):
             self = object.__new__(cls)
         self._value = value
         self.entity = entity
+        self.fmt = entity.fmt
         return self
 
     @classmethod
@@ -289,8 +290,8 @@ class String(Type, str):
         return result
 
     def display(self):
-        if self.entity.fmt:
-            return self._display(self.entity.fmt)
+        if self.fmt:
+            return self._display(self.fmt)
         if "\\x" not in repr(self._value):
             return self._value
         return "0x" + " ".join([("0{0}".format(hex(ord(a))[2:]))[-2:] for a in self._value])
@@ -375,12 +376,12 @@ class Integer(Type, long):
         return (1, cls(entity, oid[0]))
 
     def display(self):
-        if self.entity.fmt:
-            if self.entity.fmt[0] == "x":
+        if self.fmt:
+            if self.fmt[0] == "x":
                 return hex(self._value)
-            if self.entity.fmt[0] == "o":
+            if self.fmt[0] == "o":
                 return oct(self._value)
-            if self.entity.fmt[0] == "b":
+            if self.fmt[0] == "b":
                 if self._value == 0:
                     return "0"
                 if self._value > 0:
@@ -390,10 +391,10 @@ class Integer(Type, long):
                         r = str(v%2) + r
                         v = v>>1
                     return r
-            elif self.entity.fmt[0] == "d" and \
-                    len(self.entity.fmt) > 2 and \
-                    self.entity.fmt[1] == "-":
-                dec = int(self.entity.fmt[2:])
+            elif self.fmt[0] == "d" and \
+                    len(self.fmt) > 2 and \
+                    self.fmt[1] == "-":
+                dec = int(self.fmt[2:])
                 result = str(self._value)
                 if len(result) < dec + 1:
                     result = "0"*(dec + 1 - len(result)) + result

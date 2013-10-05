@@ -318,16 +318,23 @@ class TestBasicTypes(unittest.TestCase):
         a = basictypes.build("SNIMPY-MIB",
                              "snimpyString",
                              "test")
-        self.assertEqual(a._display("255a"), "test")
-        self.assertEqual(a._display("1x:"), "74:65:73:74")
-        self.assertEqual(a._display("2a:"), "te:st")
-        self.assertEqual(a._display("3a:"), "tes:t")
-        self.assertEqual(a._display("4a"), "test")
-        self.assertEqual(a._display("2o+1a"), "072145+st")
+        a.fmt = "255a"
+        self.assertEqual(a.display(), "test")
+        a.fmt = "1x:"
+        self.assertEqual(a.display(), "74:65:73:74")
+        a.fmt = "2a:"
+        self.assertEqual(a.display(), "te:st")
+        a.fmt = "3a:"
+        self.assertEqual(a.display(), "tes:t")
+        a.fmt = "4a"
+        self.assertEqual(a.display(), "test")
+        a.fmt = "2o+1a"
+        self.assertEqual(a.display(), "072145+st")
         a = basictypes.build("SNIMPY-MIB",
                              "snimpyString",
                              "\x03testtest...")
-        self.assertEqual(a._display("*2a:+255a"), "te:st:te+st...")
+        a.fmt = "*2a:+255a"
+        self.assertEqual(a.display(), "te:st:te+st...")
 
     def testRepr(self):
         """Test representation"""
