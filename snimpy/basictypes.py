@@ -296,6 +296,16 @@ class String(Type, str):
             return self._value
         return "0x" + " ".join([("0{0}".format(hex(ord(a))[2:]))[-2:] for a in self._value])
 
+    def __eq__(self, other):
+        if self.display() == other:
+            return True
+        if str(self) == other:
+            return True
+        return False
+
+    def __ne__(self, other):
+        return not(self.__eq__(other))
+
     def __ior__(self, value):
         nvalue = [ord(u) for u in self._value]
         if not isinstance(value, tuple) and not isinstance(value, list):
@@ -400,6 +410,15 @@ class Integer(Type, long):
                     result = "0"*(dec + 1 - len(result)) + result
                 return "{0}.{1}".format(result[:-2], result[-2:])
         return self._value
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            if self.display() == other:
+                return True
+        return self._value == other
+
+    def __ne__(self, other):
+        return not(self.__eq__(other))
 
 class Unsigned32(Integer):
     def pack(self):

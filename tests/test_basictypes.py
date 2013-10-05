@@ -370,6 +370,35 @@ class TestBasicTypes(unittest.TestCase):
                                                ["first", "second"])),
                               "<Bits: first(0), second(1)>")
 
+    def testEqualityWithDisplay(self):
+        """Test we can check for equality with displayed form"""
+        a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
+        self.assertEqual(a, "test")
+        a.fmt = "255a"
+        self.assertEqual(a, "test")
+        a.fmt = "1x:"
+        self.assertEqual(a, "74:65:73:74")
+        a.fmt = "2a:"
+        self.assertEqual(a, "te:st")
+        a.fmt = "3a:"
+        self.assertEqual(a, "tes:t")
+        a.fmt = "4a"
+        self.assertEqual(a, "test")
+        a.fmt = "2o+1a"
+        self.assertEqual(a, "072145+st")
+        self.assertNotEqual(a, "072145+sta")
+        self.assertFalse(a != "072145+st")
+        a = basictypes.build("SNIMPY-MIB",
+                             "snimpyString",
+                             "\x03testtest...")
+        a.fmt = "*2a:+255a"
+        self.assertEqual(a, "te:st:te+st...")
+
+    def testEqualityIntegerWithDisplay(self):
+        self.assertEqual(basictypes.build("SNIMPY-MIB",
+                                          "snimpyInteger",
+                                          288), "2.88")
+
     def testIsInstance(self):
         """Test isinstance results"""
         self.assert_(isinstance(basictypes.build("SNIMPY-MIB",
