@@ -598,7 +598,7 @@ class Bits(Type):
 
     @classmethod
     def _internal(cls, entity, value):
-        bits = []
+        bits = set()
         tryalternate = False
         if isinstance(value, str):
             for i,x in enumerate(value):
@@ -609,31 +609,28 @@ class Bits(Type):
                         if j not in entity.enum:
                             tryalternate = True
                             break
-                        bits.append(j)
+                        bits.add(j)
                 if tryalternate:
                     break
             if not tryalternate:
                 return bits
             else:
-                bits = []
-        elif not isinstance(value, tuple) and not isinstance(value, list):
-            value = [value]
+                bits = set()
+        elif not isinstance(value, (tuple, list, set, frozenset)):
+            value = {value}
         for v in value:
             found = False
             if v in entity.enum:
-                if v not in bits:
-                    bits.append(v)
-                    found = True
+                bits.add(v)
+                found = True
             else:
                 for (k, t) in entity.enum.iteritems():
                     if (t == v):
-                        if k not in bits:
-                            bits.append(k)
-                            found = True
-                            break
+                        bits.add(k)
+                        found = True
+                        break
             if not found:
                 raise ValueError("{0!r} is not a valid bit value".format(v))
-        bits.sort()
         return bits
 
     def pack(self):
@@ -653,7 +650,7 @@ class Bits(Type):
 
     def __str__(self):
         result = []
-        for b in self._value:
+        for b in sorted(self._value):
             result.append("{0}({1:d})".format(self.entity.enum[b], b))
         return ", ".join(result)
 
@@ -662,20 +659,15 @@ class Bits(Type):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
-        for o in other._value:
-            if o not in self._value:
-                return False
-        return True
+        print self._value & other._value, self._value, other._value
+        return len(self._value & other._value) > 0
 
     def __ior__(self, other):
         if isinstance(other, str):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
-        for o in other._value:
-            if o not in self._value:
-                self._value.append(o)
-        self._value.sort()
+        self._value |= other._value
         return self
 
     def __isub__(self, other):
@@ -683,9 +675,7 @@ class Bits(Type):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
-        for o in other._value:
-            if o in self._value:
-                self._value.remove(o)
+        self._value -= other._value
         return self
 
 def build(mibname, entity, value):
