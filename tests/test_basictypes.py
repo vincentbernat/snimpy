@@ -40,9 +40,6 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a, "hello")
         self.assertEqual(a + " john", "hello john")
         self.assertEqual(a*2, "hellohello")
-        a = basictypes.build("SNIMPY-MIB", "snimpyString", 45)
-        self.assertEqual(a, "45")
-        self.assert_('4' in a)
         a = basictypes.build("SNIMPY-MIB", "snimpyString", b"hello john")
         self.assert_("john" in a)
         self.assert_("steve" not in a)
@@ -62,7 +59,7 @@ class TestBasicTypes(unittest.TestCase):
         """Test we can create an UTF-8 encoded string"""
         a = basictypes.build("SNIMPY-MIB", "snimpyString", u"hello")
         self.assertEqual(a, u"hello")
-        self.assertEqual(a, b"hello")
+        self.assertEqual(a, "hello")
         a = basictypes.build("SNIMPY-MIB", "snimpyUnicodeString", u"\U0001F60E Hello")
         self.assertEqual(a, u"\U0001F60E Hello")
         a = basictypes.build("SNIMPY-MIB", "snimpyUnicodeString", b'\xf0\x9f\x98\x8e Hello')
@@ -350,10 +347,10 @@ class TestBasicTypes(unittest.TestCase):
                                               "test")), "test")
         self.assertEqual(str(basictypes.build("SNIMPY-MIB",
                                               "snimpyOctetString",
-                                              b"test")), "test")
+                                              b"test")), str(b"test"))
         self.assertEqual(str(basictypes.build("SNIMPY-MIB",
                                               "snimpyOctetString",
-                                              b"tes\x05")), "tes\x05")
+                                              b"tes\x05")), str(b"tes\x05"))
 
 
     def testDisplayFormat(self):
@@ -472,27 +469,27 @@ class TestBasicTypes(unittest.TestCase):
 
         with mock.patch("snimpy.mib.Entity.fmt", new_callable=mock.PropertyMock) as e:
             e.return_value = "255a"
-            a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
+            a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(a, "test")
 
             e.return_value = "1x:"
-            a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
+            a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(a, "74:65:73:74")
 
             e.return_value = "2a:"
-            a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
+            a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(a, "te:st")
 
             e.return_value = "3a:"
-            a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
+            a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(a, "tes:t")
 
             e.return_value = "4a"
-            a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
+            a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(a, "test")
 
             e.return_value = "2o+1a"
-            a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
+            a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(a, "072145+st")
             self.assertNotEqual(a, "072145+sta")
             self.assertFalse(a != "072145+st")
@@ -507,8 +504,6 @@ class TestBasicTypes(unittest.TestCase):
         """Test that equality works for both unicode and bytes"""
         a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
         self.assertEqual(a, "test")
-        a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
-        self.assertEqual(a, b"test")
         a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
         self.assertEqual(a, u"test")
 
