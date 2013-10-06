@@ -423,7 +423,7 @@ class String(StringOrOctetString, unicode):
         i = 0
         j = 0
         fmt = self.entity.fmt
-        bb = ""
+        bb = b""
         while i < len(self._value):
             if j < len(fmt):
                 j, dorepeat, length, format, sep, term = self._parseOctetFormat(fmt, j)
@@ -487,8 +487,8 @@ class String(StringOrOctetString, unicode):
         # case if the value is an OctetString to do the conversion.
         if isinstance(value, OctetString):
             return cls._fromBytes(value._value, entity.fmt)
-        if isinstance(value, str):
-            return value.encode("utf-8")
+        if PYTHON3 and isinstance(value, bytes):
+            return value.decode("utf-8")
         return unicode(value)
 
     def display(self):
