@@ -27,6 +27,11 @@ import sys
 import struct
 import socket
 import re
+try:
+    from functools import total_ordering
+except ImportError:
+    def total_ordering(f):
+        return f
 from datetime import timedelta
 from pysnmp.proto import rfc1902
 
@@ -166,6 +171,7 @@ class Type(object):
         except:
             return '<{0} ????>'.format(self.__class__.__name__)
 
+@total_ordering
 class IpAddress(Type):
     """Class for IP address"""
 
@@ -592,6 +598,7 @@ class Enum(Integer):
         else:
             return str(self._value)
 
+@total_ordering
 class Oid(Type):
     """Class for OID"""
 
@@ -680,6 +687,7 @@ class Boolean(Enum):
     def __bool__(self):
         return self.__nonzero__()
 
+@total_ordering
 class Timeticks(Type):
     """Class for timeticks"""
 
