@@ -65,7 +65,7 @@ def interact(argv=sys.argv): # pragma: no cover
 
     if len(argv) > 1:
         argv = argv[1:]
-        execfile(argv[0], local)
+        exec(compile(open(argv[0]).read(), argv[0], 'exec')) in local
         return
 
     try:
