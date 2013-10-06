@@ -77,6 +77,10 @@ class TestManagerGet(TestManager):
         """Retrieve Bits as a scalar"""
         self.scalarGetAndCheck("snimpyBits", ["first", "third"])
 
+    def testScalar_Bits(self):
+        """Retrieve MacAddress as a scalar"""
+        self.scalarGetAndCheck("snimpyMacAddress", "11:12:13:14:15:16")
+
     def testWalkIfTable(self):
         """Test we can walk IF-MIB::ifTable"""
         results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx]) for idx in self.manager.ifIndex]
@@ -172,6 +176,10 @@ class TestManagerSet(TestManager):
     def testScalar_Bits(self):
         """Retrieve Bits as a scalar"""
         self.scalarSetAndCheck("snimpyBits", ["first", "second"])
+
+    def testScalar_MacAddress(self):
+        """Retrieve MAC address as a scala"""
+        self.scalarSetAndCheck("snimpyMacAddress", "a0:b0:c0:d0:e:ff")
 
     def testNonScalarSet(self):
         """Check we can set a non-scalar value"""

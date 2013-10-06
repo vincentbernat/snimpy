@@ -171,7 +171,7 @@ class Manager(object):
             return object.__setattr__(self, attribute, value)
         m, a = self._locate(attribute)
         if not isinstance(value, basictypes.Type):
-            value = a.type(a, value)
+            value = a.type(a, value, raw=False)
         if isinstance(a, mib.Scalar):
             self._session.set(a.oid + (0,), value)
             return
@@ -218,10 +218,8 @@ class ProxyColumn(Proxy, MutableMapping):
                                                                       indextype))
         oidindex = []
         for i, ind in enumerate(index):
-            ind = indextype[i].type(indextype[i], ind) # Cast to the
-                                                       # correct type
-                                                       # since we need
-                                                       # "toOid()"
+            # Cast to the correct type since we need "toOid()"
+            ind = indextype[i].type(indextype[i], ind, raw=False)
             oidindex.extend(ind.toOid())
         result = getattr(self.session, op)(self.proxy.oid + tuple(oidindex), *args)
         if op != "set":
@@ -235,7 +233,7 @@ class ProxyColumn(Proxy, MutableMapping):
 
     def __setitem__(self, index, value):
         if not isinstance(value, basictypes.Type):
-            value = self.proxy.type(self.proxy, value)
+            value = self.proxy.type(self.proxy, value, raw=False)
         self._op("set", index, value)
 
     def __delitem__(self, index):

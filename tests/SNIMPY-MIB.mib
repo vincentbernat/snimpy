@@ -159,8 +159,16 @@ snimpyUnicodeString OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS	current
     DESCRIPTION
-	"An string to display"
+	"An unicode string to display"
     ::= { snimpyScalars 14 }
+
+snimpyMacAddress OBJECT-TYPE
+    SYNTAX 	PhysAddress
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A MAC address"
+    ::= { snimpyScalars 15 }
 
 -- A simple table
 

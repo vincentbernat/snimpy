@@ -45,11 +45,12 @@ else:
 class Type(object):
     """Base class for all types"""
 
-    def __new__(cls, entity, value):
+    def __new__(cls, entity, value, raw=True):
         """Create a new typed value
 
         @param entity: L{mib.Entity} instance
         @param value: value to set
+        @param raw: raw value is provided (as opposed to a user-supplied value)
         @return: an instance of the new typed value
         """
         if entity.type != cls:
@@ -58,7 +59,7 @@ class Type(object):
 
         if cls == OctetString and entity.fmt is not None:
             # Promotion of OctetString to String if we have unicode stuff
-            if isinstance(value, (String, unicode)):
+            if isinstance(value, (String, unicode)) or not raw:
                 cls = String
 
         if not isinstance(value, Type):

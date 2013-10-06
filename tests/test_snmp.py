@@ -146,6 +146,15 @@ class TestSnmp1(unittest.TestCase):
         b = basictypes.build('IF-MIB', 'ifType', a)
         self.assertEqual(b, "softwareLoopback")
 
+    def testGetMacAddress(self):
+        """Get a MAC address"""
+        mib.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "SNIMPY-MIB.mib"))
+        oid, a = self.session.get((1, 3, 6, 1, 2, 1, 45121, 1, 15, 0))[0]
+        self.assertEqual(a, b"\x11\x12\x13\x14\x15\x16") # This is software loopback
+        b = basictypes.build('SNIMPY-MIB', 'snimpyMacAddress', a)
+        self.assertEqual(b, "11:12:13:14:15:16")
+
     def testInexistant(self):
         """Get an inexistant value"""
         self.assertRaises(self.version == 1 and snmp.SNMPNoSuchName or snmp.SNMPNoSuchObject,
@@ -191,6 +200,12 @@ class TestSnmp1(unittest.TestCase):
     def testSetBits(self):
         """Set Bits."""
         self.setAndCheck('snimpyBits',  ["third", "last"])
+
+    def testSetMacAddress(self):
+        """Set a MAC address."""
+        self.setAndCheck('snimpyMacAddress', u"a0:b0:c0:d0:e:ff")
+        oid, a = self.session.get((1, 3, 6, 1, 2, 1, 45121, 1, 15, 0))[0]
+        self.assertEqual(a, b"\xa0\xb0\xc0\xd0\x0e\xff") # This is software loopback
 
     def setAndCheck(self, oid, value):
         """Set and check a value"""
