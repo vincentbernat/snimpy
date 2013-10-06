@@ -574,7 +574,7 @@ class Enum(Integer):
         if value in entity.enum:
             return value
         for (k, v) in entity.enum.items():
-            if (v.decode("ascii") == value):
+            if (v == value):
                 return k
         try:
             return long(value)
@@ -604,7 +604,7 @@ class Enum(Integer):
 
     def __str__(self):
         if self._value in self.entity.enum:
-            return "{0}({1:d})".format(self.entity.enum[self._value].decode("ascii"), self._value)
+            return "{0}({1:d})".format(self.entity.enum[self._value], self._value)
         else:
             return str(self._value)
 
@@ -784,7 +784,7 @@ class Bits(Type):
                 found = True
             else:
                 for (k, t) in entity.enum.items():
-                    if (t.decode("ascii") == v):
+                    if (t == v):
                         bits.add(k)
                         found = True
                         break
@@ -810,7 +810,7 @@ class Bits(Type):
     def __str__(self):
         result = []
         for b in sorted(self._value):
-            result.append("{0}({1:d})".format(self.entity.enum[b].decode("ascii"), b))
+            result.append("{0}({1:d})".format(self.entity.enum[b], b))
         return ", ".join(result)
 
     def __and__(self, other):

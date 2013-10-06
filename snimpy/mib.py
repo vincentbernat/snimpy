@@ -255,7 +255,7 @@ class Entity(object):
         result = {}
         element = _smi.smiGetFirstNamedNumber(t)
         while element != ffi.NULL:
-            result[self._convert(element.value)] = ffi.string(element.name)
+            result[self._convert(element.value)] = ffi.string(element.name).decode("ascii")
             element = _smi.smiGetNextNamedNumber(element);
         return result
 
