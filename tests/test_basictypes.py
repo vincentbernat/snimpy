@@ -196,8 +196,9 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a, ["second", "third"])
         self.assertEqual(a, set(["second", "third"]))
         self.assertEqual(a, ["second", 2])
-        self.assert_(a != ["second", 3])
-        self.assert_(a != ["second", 2, 3])
+        self.assert_(a != ["second"])
+        self.assertFalse(a == ["second"])
+        self.assertFalse(a != ["second", 2])
         a |= "last"
         a |= ["last", "second"]
         self.assertEqual(a, ["second", "last", "third"])
@@ -217,6 +218,14 @@ class TestBasicTypes(unittest.TestCase):
         a = basictypes.build("SNIMPY-MIB", "snimpyBits", [])
         self.assertEqual(a, [])
         self.assertEqual(str(a), "")
+
+    def testInexistentBits(self):
+        """Check we cannot set inexistent bits"""
+        a = basictypes.build("SNIMPY-MIB", "snimpyBits", [1, 2])
+        self.assert_(a & 1)
+        def nope(a):
+            a |= 3
+        self.assertRaises(ValueError, nope, a)
 
     def testStringAsBits(self):
         """Test using bit specific operator with string"""

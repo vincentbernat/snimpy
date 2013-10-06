@@ -589,7 +589,6 @@ class Enum(Integer):
             except:
                 raise NotImplementedError # pragma: no cover
         return self._value == other._value
-
     def __ne__(self, other):
         return not(self.__eq__(other))
 
@@ -780,6 +779,8 @@ class Bits(Type):
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
         return self._value == other._value
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __str__(self):
         result = []
