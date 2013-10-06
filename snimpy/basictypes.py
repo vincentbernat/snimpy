@@ -441,9 +441,7 @@ class String(StringOrOctetString, unicode):
                         self._value, fmt))
             repeats = []
             while True:
-                print fmatch
                 mo = re.match(fmatch, self._value[i:])
-                print fmatch, mo.groups()
                 if not mo:
                     raise ValueError("{0!r} cannot be parsed because it does not match format {1} at index {i}".format(
                         self._value, fmt, i))
@@ -454,14 +452,12 @@ class String(StringOrOctetString, unicode):
                         r = int(mo.group("x"), 16)
                     else:
                         r = int(mo.group("d"))
-                    print r, self._value
                     result = struct.pack(b"!l", r)[-length:]
                 else:
                     result = mo.group(1).encode("utf-8")
                 i += len(mo.group(1))
                 if dorepeat:
                     repeats.append(result)
-                    print repeats, self._value, i
                     if i < len(self._value):
                         # Approximate...
                         if sep and self._value[i] == sep:
@@ -482,7 +478,6 @@ class String(StringOrOctetString, unicode):
                                              term and self._value[i] == term):
                     i += 1
 
-        print "end:", repr(bb)
         return bb
 
     @classmethod
