@@ -7,6 +7,8 @@ Usage:
  ./set-syslog-ntp.py [syslog|ntp] host community first [...]
 """
 
+from __future__ import print_function
+
 import os
 import sys
 
@@ -20,12 +22,12 @@ try:
     s = M(host=host, community=sys.argv[3])
     sid = str(s.sysObjectID)
 except snmp.SNMPException, e:
-    print "%s: %s" % (host, e)
+    print("%s: %s" % (host, e))
     sys.exit(1)
 
 if sid.startswith("1.3.6.1.4.1.45.3."):
     # Nortel
-    print "%s is Nortel 55xx" % host
+    print("%s is Nortel 55xx" % host)
     load(os.path.expanduser("~/.snmp/mibs/SYNOPTICS-ROOT-MIB"))
     load(os.path.expanduser("~/.snmp/mibs/S5-ROOT-MIB"))
     if operation == "ntp":
@@ -43,7 +45,7 @@ if sid.startswith("1.3.6.1.4.1.45.3."):
         s.bnLogMsgRemoteSyslogSaveTargets = "msgTypeInformational"
         s.bnLogMsgRemoteSyslogEnabled = True
 elif sid.startswith("1.3.6.1.4.1.1872."):
-    print "%s is Alteon" % host
+    print("%s is Alteon" % host)
     load(os.path.expanduser("~/.snmp/mibs/ALTEON-ROOT-MIB"))
     if operation == "ntp":
         s.agNewCfgNTPServer = targets[0]
@@ -65,5 +67,5 @@ elif sid.startswith("1.3.6.1.4.1.1872."):
             s.agApplyConfig = "idle"
         s.agApplyConfig = "apply"
 else:
-    print "%s is unknown (%s)" % (host, s.sysDescr)
+    print("%s is unknown (%s)" % (host, s.sysDescr))
     sys.exit(1)
