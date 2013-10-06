@@ -4,6 +4,7 @@ from setuptools import setup, Extension
 
 try:
     import multiprocessing
+    import pysnmp
 except ImportError:
     pass
 
