@@ -637,7 +637,7 @@ class Bits(Type):
             else:
                 bits = set()
         elif not isinstance(value, (tuple, list, set, frozenset)):
-            value = {value}
+            value = set([value])
         for v in value:
             found = False
             if v in entity.enum:
