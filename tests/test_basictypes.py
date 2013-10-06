@@ -63,8 +63,12 @@ class TestBasicTypes(unittest.TestCase):
         a = basictypes.build("SNIMPY-MIB", "snimpyString", u"hello")
         self.assertEqual(a, u"hello")
         self.assertEqual(a, b"hello")
-        a = basictypes.build("SNIMPY-MIB", "snimpyString", u"\U0001F60E Hello")
+        a = basictypes.build("SNIMPY-MIB", "snimpyUnicodeString", u"\U0001F60E Hello")
         self.assertEqual(a, u"\U0001F60E Hello")
+        a = basictypes.build("SNIMPY-MIB", "snimpyUnicodeString", b'\xf0\x9f\x98\x8e Hello')
+        self.assertEqual(a, u"\U0001F60E Hello")
+        self.assertRaises(UnicodeError,
+                          basictypes.build, "SNIMPY-MIB", "snimpyString", b'\xf0\x9f\x98\x8e Hello')
 
     def testOctetString(self):
         """Test octet string basic type"""

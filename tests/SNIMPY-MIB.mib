@@ -31,6 +31,13 @@ OddInteger ::= TEXTUAL-CONVENTION
 	"Testing fmt"
     SYNTAX       INTEGER (6..18 | 20..23 | 27 | 28..1336)
 
+UnicodeString ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "255t"
+    STATUS       current
+    DESCRIPTION
+	"Testing fmt"
+    SYNTAX       OCTET STRING (SIZE(0..255))
+
 snimpyScalars OBJECT IDENTIFIER ::= { snimpy 1 }
 snimpyTables  OBJECT IDENTIFIER ::= { snimpy 2 }
 
@@ -146,6 +153,14 @@ snimpyOctetString OBJECT-TYPE
     DESCRIPTION
 	"An string to display"
     ::= { snimpyScalars 13 }
+
+snimpyUnicodeString OBJECT-TYPE
+    SYNTAX 	UnicodeString
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An string to display"
+    ::= { snimpyScalars 14 }
 
 -- A simple table
 
