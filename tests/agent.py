@@ -127,7 +127,7 @@ class TestAgent(object):
             MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 10), (0,), v2c.Counter64(2**48+3)),
             # SNIMPY-MIB::snimpyBits
             MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 11), v2c.OctetString()).setMaxAccess("readwrite"),
-            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 11), (0,), v2c.OctetString("\xa0")),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 1, 11), (0,), v2c.OctetString(b"\xa0")),
 
             # SNIMPY-MIB::snimpyIndexTable
             MibTable((1, 3, 6, 1, 2, 1, 45121, 2, 3)),

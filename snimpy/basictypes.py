@@ -23,19 +23,27 @@ Snimpy will use the types defined in this module to make a bridge
 between the MIB and SNMP.
 """
 
+import sys
 import struct
 import socket
+import re
 from datetime import timedelta
 from pysnmp.proto import rfc1902
 
 from snimpy import mib, snmp
-try: long(1)
-except NameError: long = int
+
+PYTHON3 = sys.version_info >= (3, 0)
+if PYTHON3:
+    ord2 = lambda x: x
+    chr2 = lambda x: bytes([x])
+    unicode = str
+    long = int
+else:
+    ord2 = ord
+    chr2 = chr
 
 class Type(object):
     """Base class for all types"""
-
-    consume = 0                 # Consume all suboid if built from OID
 
     def __new__(cls, entity, value):
         """Create a new typed value
@@ -44,25 +52,42 @@ class Type(object):
         @param value: value to set
         @return: an instance of the new typed value
         """
-        if not isinstance(entity, mib.Entity):
-            raise TypeError("{0} not a mib.Entity instance".format(entity))
         if entity.type != cls:
             raise ValueError("MIB node is {0}. We are {1}".format(entity.type,
                                                                   cls))
+
+        if cls == OctetString and entity.fmt is not None:
+            # Promotion of OctetString to String if we have unicode stuff
+            if isinstance(value, (String, unicode)):
+                cls = String
 
         if not isinstance(value, Type):
             value = cls._internal(entity, value)
         else:
             value = cls._internal(entity, value._value)
-        if issubclass(cls, str):
-            self = str.__new__(cls, value)
+        if issubclass(cls, unicode):
+            self = unicode.__new__(cls, value)
+        elif issubclass(cls, bytes):
+            self = bytes.__new__(cls, value)
         elif issubclass(cls, long):
             self = long.__new__(cls, value)
         else:
             self = object.__new__(cls)
+
         self._value = value
         self.entity = entity
-        self.fmt = entity.fmt
+
+        if cls == OctetString and entity.fmt is not None:
+            # A display-hint propose to use only ascii and UTF-8
+            # chars. We promote an OCTET-STRING to a DisplayString if
+            # we have a format. This means we won't be able to access
+            # individual bytes in this format, only the full displayed
+            # version.
+            value = String._internal(entity, self)
+            self = unicode.__new__(String, value)
+            self._value = value
+            self.entity = entity
+
         return self
 
     @classmethod
@@ -71,6 +96,7 @@ class Type(object):
         raise NotImplementedError # pragma: no cover
 
     def pack(self):
+        """Prepare the instance to be sent on the wire."""
         raise NotImplementedError # pragma: no cover
 
     def toOid(self):
@@ -112,7 +138,7 @@ class Type(object):
         @return: C{fixed} if it is fixed-len, C{implied} if implied var-len,
            C{False} otherwise
         """
-        if entity.ranges and type(entity.ranges) is not tuple and type(entity.ranges) is not list:
+        if entity.ranges and not isinstance(entity.ranges, (tuple, list)):
             # Fixed length
             return "fixed"
 
@@ -147,15 +173,17 @@ class IpAddress(Type):
 
     @classmethod
     def _internal(cls, entity, value):
-        if isinstance(value, list) or isinstance(value, tuple):
+        if isinstance(value, (list, tuple)):
             value = ".".join([str(a) for a in value])
-        try:
-            value = socket.inet_ntoa(value)
-        except:
+        elif isinstance(value, bytes):
             try:
-                value = socket.inet_ntoa(socket.inet_aton(value))
+                value = socket.inet_ntoa(value)
             except:
-                raise ValueError("{0!r} is not a valid IP".format(value))
+                pass
+        try:
+            value = socket.inet_ntoa(socket.inet_aton(value))
+        except:
+            raise ValueError("{0!r} is not a valid IP".format(value))
         return [int(a) for a in value.split(".")]
 
     def pack(self):
@@ -184,40 +212,43 @@ class IpAddress(Type):
         if self._value < other._value:
             return -1
         return 1
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
 
     def __getitem__(self, nb):
         return self._value[nb]
 
-class String(Type, str):
-    """Class for any string"""
-
-    @classmethod
-    def _internal(cls, entity, value):
-        return str(value)
-
-    def pack(self):
-        return rfc1902.OctetString(self._value)
-
+class StringOrOctetString(Type):
     def toOid(self):
         # To convert properly to OID, we need to know if it is a
         # fixed-len string, an implied string or a variable-len
         # string.
+        b = self._toBytes()
         if self._fixedOrImplied(self.entity):
-            return tuple(ord(a) for a in self._value)
-        return tuple([len(self._value)] + [ord(a) for a in self._value])
+            return tuple(ord2(a) for a in b)
+        return tuple([len(b)] + [ord2(a) for a in b])
+
+    def _toBytes(self):
+        raise NotImplementedError
 
     @classmethod
     def fromOid(cls, entity, oid):
         type = cls._fixedOrImplied(entity)
         if type == "implied":
             # Eat everything
-            return (len(oid), cls(entity,"".join([chr(x) for x in oid])))
+            return (len(oid), cls(entity,b"".join([chr2(x) for x in oid])))
         if type == "fixed":
             l = entity.ranges
             if len(oid) < l:
                 raise ValueError(
                     "{0} is too short for wanted fixed string (need at least {1:d})".format(oid, l))
-            return (l, cls(entity,b"".join([chr(x) for x in oid[:l]])))
+            return (l, cls(entity,b"".join([chr2(x) for x in oid[:l]])))
         # This is var-len
         if not oid:
             raise ValueError("empty OID while waiting for var-len string")
@@ -225,62 +256,156 @@ class String(Type, str):
         if len(oid) < l + 1:
             raise ValueError(
                 "{0} is too short for variable-len string (need at least {1:d})".format(oid, l))
-        return (l+1, cls(entity,b"".join([chr(x) for x in oid[1:(l+1)]])))
+        return (l+1, cls(entity,b"".join([chr2(x) for x in oid[1:(l+1)]])))
 
-    def _display(self, fmt):
-        i = 0               # Position in self._value
+    def pack(self):
+        return rfc1902.OctetString(self._toBytes())
+
+class OctetString(StringOrOctetString, bytes):
+    """Class for a generic octet string"""
+
+    @classmethod
+    def _internal(cls, entity, value):
+        # Internally, we are using bytes
+        if isinstance(value, bytes):
+            return value
+        if isinstance(value, unicode):
+            return value.encode("ascii")
+        return bytes(value)
+
+    def _toBytes(self):
+        return self._value
+
+    def display(self):
+        value = None
+        try:
+            value = self._value.decode("ascii")
+        except UnicodeDecodeError:
+            pass
+        if value is None or "\\x" in repr(value):
+            return "0x" + " ".join([("0{0}".format(hex(ord2(a))[2:]))[-2:] for a in self._value])
+        return value
+
+    def __ior__(self, value):
+        nvalue = [ord2(u) for u in self._value]
+        if not isinstance(value, (tuple, list)):
+            value = [value]
+        for v in value:
+            if not isinstance(v, (int, long)):
+                raise NotImplementedError(
+                    "on string, bit-operation are limited to integers")
+            if len(nvalue) < (v>>3) + 1:
+                nvalue.extend([0] * ((v>>3) + 1 - len(self._value)))
+            nvalue[v>>3] |= 1 << (7-v%8)
+        return self.__class__(self.entity, b"".join([chr2(i) for i in nvalue]))
+
+    def __isub__(self, value):
+        nvalue = [ord2(u) for u in self._value]
+        if not isinstance(value, (tuple, list)):
+            value = [value]
+        for v in value:
+            if not isinstance(v, int) and not isinstance(v, long):
+                raise NotImplementedError(
+                    "on string, bit-operation are limited to integers")
+            if len(nvalue) < (v>>3) + 1:
+                continue
+            nvalue[v>>3] &= ~(1 << (7-v%8))
+        return self.__class__(self.entity, b"".join([chr2(i) for i in nvalue]))
+        return self
+
+    def __and__(self, value):
+        nvalue = [ord2(u) for u in self._value]
+        if not isinstance(value, (tuple, list)):
+            value = [value]
+        for v in value:
+            if not isinstance(v, (int, long)):
+                raise NotImplementedError(
+                    "on string, bit-operation are limited to integers")
+            if len(nvalue) < (v>>3) + 1:
+                return False
+            if not(nvalue[v>>3] & (1 << (7-v%8))):
+                return False
+        return True
+
+class String(StringOrOctetString, unicode):
+    """Class for a display string"""
+
+    @classmethod
+    def _parseOctetFormat(cls, fmt, j):
+        # repeater
+        if fmt[j] == "*":
+            dorepeat = True
+            j += 1
+        else:
+            dorepeat = False
+
+        # length
+        length = ""
+        while fmt[j].isdigit():
+            length += fmt[j]
+            j += 1
+        length = int(length)
+
+        # format
+        format = fmt[j]
+        j += 1
+
+        # seperator
+        if j < len(fmt) and \
+                fmt[j] != "*" and not fmt[j].isdigit():
+            sep = fmt[j]
+            j += 1
+        else:
+            sep = ""
+
+        # terminator
+        if j < len(fmt) and \
+                fmt[j] != "*" and not fmt[j].isdigit():
+            term = fmt[j]
+            j += 1
+        else:
+            term = ""
+
+        return (j, dorepeat, length, format, sep, term)
+
+    @classmethod
+    def _fromBytes(cls, value, fmt):
+        i = 0               # Position in value
         j = 0               # Position in fmt
         result = ""
-        while i < len(self._value):
+        while i < len(value):
             if j < len(fmt):
-                # repeater
-                if fmt[j] == "*":
-                    repeat = ord(self._value[i])
-                    j += 1
-                    i += 1
-                else:
-                    repeat = 1
-                # length
-                length = ""
-                while fmt[j].isdigit():
-                    length += fmt[j]
-                    j += 1
-                length = int(length)
-                # format
-                format = fmt[j]
-                j += 1
-                # seperator
-                if j < len(fmt) and \
-                        fmt[j] != "*" and not fmt[j].isdigit():
-                    sep = fmt[j]
-                    j += 1
-                else:
-                    sep = ""
-                # terminator
-                if j < len(fmt) and \
-                        fmt[j] != "*" and not fmt[j].isdigit():
-                    term = fmt[j]
-                    j += 1
-                else:
-                    term = ""
+                j, dorepeat, length, format, sep, term = cls._parseOctetFormat(fmt, j)
+
             # building
+            if dorepeat:
+                repeat = ord2(value[i])
+                i += 1
+            else:
+                repeat = 1
             for r in range(repeat):
-                bytes = self._value[i:i+length]
+                bb = value[i:i+length]
                 i += length
                 if format in ['o', 'x', 'd']:
-                    if length > 8:
+                    if length > 4:
                         raise ValueError(
                             "don't know how to handle integers more than 4 bytes long")
-                    bytes = b"\x00"*(4-length) + bytes
-                    number = struct.unpack(b"!l", bytes)[0]
+                    bb = b"\x00"*(4-length) + bb
+                    number = struct.unpack(b"!l", bb)[0]
                     if format == "o":
-                        result += oct(number)
+                        # In Python2, oct() is 01242, while it is 0o1242 in Python3
+                        result += "".join(oct(number).partition("o")[0:3:2])
                     elif format == "x":
                         result += hex(number)[2:]
                     else:       # format == "d":
                         result += str(number)
-                else: # should be a, but can be something else like t
-                    result += bytes
+                elif format == "a":
+                    result += bb.decode("ascii")
+                elif format == "t":
+                    result += bb.decode("utf-8")
+                else:
+                    raise ValueError("{0!r} cannot be represented with the given display string ({1})".format(
+                        bb, fmt))
                 result += sep
             if sep and term:
                 result = result[:-1]
@@ -289,74 +414,92 @@ class String(Type, str):
             result = result[:-1]
         return result
 
-    def display(self):
-        if self.fmt:
-            return self._display(self.fmt)
-        if "\\x" not in repr(self._value):
-            return self._value
-        return "0x" + " ".join([("0{0}".format(hex(ord(a))[2:]))[-2:] for a in self._value])
+    def _toBytes(self):
+        # We need to reverse what was done by `_fromBytes`. This is
+        # not an exact science. In most case, this is easy because a
+        # separator is used but sometimes, this is not. We do some
+        # black magic that will fail.
+        i = 0
+        j = 0
+        fmt = self.entity.fmt
+        bb = ""
+        while i < len(self._value):
+            if j < len(fmt):
+                j, dorepeat, length, format, sep, term = self._parseOctetFormat(fmt, j)
+                if format == "o":
+                    fmatch = "(?P<o>[0-7]{{1,{0}}})".format(int(length*2.66667)+1)
+                elif format == "x":
+                    fmatch = "(?P<x>[0-9A-Fa-f]{{1,{0}}})".format(length*2)
+                elif format == "d":
+                    fmatch = "(?P<d>[0-9]{{1,{0}}})".format(int(length*2.4083)+1)
+                elif format == "a":
+                    fmatch = "(?P<a>.{{1,{0}}})".format(length)
+                elif format == "t":
+                    fmatch = "(?P<t>.{{1,{0}}})".format(length)
+                else:
+                    raise ValueError("{0!r} cannot be parsed due to an incorrect format ({1})".format(
+                        self._value, fmt))
+            repeats = []
+            while True:
+                print fmatch
+                mo = re.match(fmatch, self._value[i:])
+                print fmatch, mo.groups()
+                if not mo:
+                    raise ValueError("{0!r} cannot be parsed because it does not match format {1} at index {i}".format(
+                        self._value, fmt, i))
+                if format in ["o", "x", "d"]:
+                    if format == "o":
+                        r = int(mo.group("o"), 8)
+                    elif format == "x":
+                        r = int(mo.group("x"), 16)
+                    else:
+                        r = int(mo.group("d"))
+                    print r, self._value
+                    result = struct.pack(b"!l", r)[-length:]
+                else:
+                    result = mo.group(1).encode("utf-8")
+                i += len(mo.group(1))
+                if dorepeat:
+                    repeats.append(result)
+                    print repeats, self._value, i
+                    if i < len(self._value):
+                        # Approximate...
+                        if sep and self._value[i] == sep:
+                            i += 1
+                        elif term and self._value[i] == term:
+                            i += 1
+                            break
+                    else:
+                        break
+                else:
+                    break
+            if dorepeat:
+                bb += chr2(len(repeats))
+                bb += b"".join(repeats)
+            else:
+                bb += result
+                if i < len(self._value) and (sep and self._value[i] == sep or \
+                                             term and self._value[i] == term):
+                    i += 1
 
-    def __eq__(self, other):
-        if self.display() == other:
-            return True
-        if str(self) == other:
-            return True
-        return False
-
-    def __ne__(self, other):
-        return not(self.__eq__(other))
-
-    def __ior__(self, value):
-        nvalue = [ord(u) for u in self._value]
-        if not isinstance(value, tuple) and not isinstance(value, list):
-            value = [value]
-        for v in value:
-            if not isinstance(v, int) and not isinstance(v, long):
-                raise NotImplementedError(
-                    "on string, bit-operation are limited to integers")
-            if len(nvalue) < v/8 + 1:
-                nvalue.extend([0] * (v/8 + 1 - len(self._value)))
-            nvalue[v/8] |= 1 << (7-v%8)
-        return self.__class__(self.entity, b"".join([chr(i) for i in nvalue]))
-
-    def __isub__(self, value):
-        nvalue = [ord(u) for u in self._value]
-        if not isinstance(value, tuple) and not isinstance(value, list):
-            value = [value]
-        for v in value:
-            if not isinstance(v, int) and not isinstance(v, long):
-                raise NotImplementedError(
-                    "on string, bit-operation are limited to integers")
-            if len(nvalue) < v/8 + 1:
-                continue
-            nvalue[v/8] &= ~(1 << (7-v%8))
-        return self.__class__(self.entity, b"".join([chr(i) for i in nvalue]))
-        return self
-
-    def __and__(self, value):
-        nvalue = [ord(u) for u in self._value]
-        if not isinstance(value, tuple) and not isinstance(value, list):
-            value = [value]
-        for v in value:
-            if not isinstance(v, int) and not isinstance(v, long):
-                raise NotImplementedError(
-                    "on string, bit-operation are limited to integers")
-            if len(nvalue) < v/8 + 1:
-                return False
-            if not(nvalue[v/8] & (1 << (7-v%8))):
-                return False
-        return True
-
-
-class MacAddress(String):
+        print "end:", repr(bb)
+        return bb
 
     @classmethod
     def _internal(cls, entity, value):
-        return str(value)
+        # Internally, we use the displayed string. We have a special
+        # case if the value is an OctetString to do the conversion.
+        if isinstance(value, OctetString):
+            return cls._fromBytes(value._value, entity.fmt)
+        if isinstance(value, str):
+            return value.encode("utf-8")
+        return unicode(value)
 
     def display(self):
-        return ":".join(["{0:02x}".format(ord(a)) for a in self._value])
+        return self._value
 
+    def __str__(self):
+        return self._value
 
 class Integer(Type, long):
     """Class for any integer"""
@@ -386,12 +529,12 @@ class Integer(Type, long):
         return (1, cls(entity, oid[0]))
 
     def display(self):
-        if self.fmt:
-            if self.fmt[0] == "x":
+        if self.entity.fmt:
+            if self.entity.fmt[0] == "x":
                 return hex(self._value)
-            if self.fmt[0] == "o":
+            if self.entity.fmt[0] == "o":
                 return oct(self._value)
-            if self.fmt[0] == "b":
+            if self.entity.fmt[0] == "b":
                 if self._value == 0:
                     return "0"
                 if self._value > 0:
@@ -401,24 +544,15 @@ class Integer(Type, long):
                         r = str(v%2) + r
                         v = v>>1
                     return r
-            elif self.fmt[0] == "d" and \
-                    len(self.fmt) > 2 and \
-                    self.fmt[1] == "-":
-                dec = int(self.fmt[2:])
+            elif self.entity.fmt[0] == "d" and \
+                    len(self.entity.fmt) > 2 and \
+                    self.entity.fmt[1] == "-":
+                dec = int(self.entity.fmt[2:])
                 result = str(self._value)
                 if len(result) < dec + 1:
                     result = "0"*(dec + 1 - len(result)) + result
                 return "{0}.{1}".format(result[:-2], result[-2:])
-        return self._value
-
-    def __eq__(self, other):
-        if isinstance(other, str):
-            if self.display() == other:
-                return True
-        return self._value == other
-
-    def __ne__(self, other):
-        return not(self.__eq__(other))
+        return str(self._value)
 
 class Unsigned32(Integer):
     def pack(self):
@@ -443,14 +577,14 @@ class Enum(Integer):
     def _internal(cls, entity, value):
         if value in entity.enum:
             return value
-        for (k, v) in entity.enum.iteritems():
-            if (v == value):
+        for (k, v) in entity.enum.items():
+            if (v.decode("ascii") == value):
                 return k
         try:
             return long(value)
         except:
             raise ValueError("{0!r} is not a valid value for {1}".format(value,
-                                                                       entity))
+                                                                         entity))
 
     def pack(self):
         return rfc1902.Integer(self._value)
@@ -474,7 +608,7 @@ class Enum(Integer):
 
     def __str__(self):
         if self._value in self.entity.enum:
-            return "{0}({1:d})".format(self.entity.enum[self._value], self._value)
+            return "{0}({1:d})".format(self.entity.enum[self._value].decode("ascii"), self._value)
         else:
             return str(self._value)
 
@@ -486,10 +620,10 @@ class Oid(Type):
 
     @classmethod
     def _internal(cls, entity, value):
-        if isinstance(value, list) or isinstance(value, tuple):
+        if isinstance(value, (list, tuple)):
             return tuple([int(v) for v in value])
         elif isinstance(value, str):
-            return tuple([int(i) for i in value.split(".") if i])
+            return tuple([ord2(i) for i in value.split(".") if i])
         elif isinstance(value, mib.Entity):
             return tuple(value.oid)
         else:
@@ -531,6 +665,14 @@ class Oid(Type):
         if self._value > other._value:
             return 1
         return -1
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
 
     def __contains__(self, item):
         """Test if item is a sub-oid of this OID"""
@@ -545,7 +687,7 @@ class Boolean(Enum):
 
     @classmethod
     def _internal(cls, entity, value):
-        if type(value) is bool:
+        if isinstance(value, bool):
             if value:
                 return Enum._internal(entity, "true")
             else:
@@ -558,13 +700,15 @@ class Boolean(Enum):
             return True
         else:
             return False
+    def __bool__(self):
+        return self.__nonzero__()
 
 class Timeticks(Type):
     """Class for timeticks"""
 
     @classmethod
     def _internal(cls, entity, value):
-        if isinstance(value, int) or isinstance(value, long):
+        if isinstance(value, (int, long)):
             # Value in centiseconds
             return timedelta(0, value/100.)
         elif isinstance(value, timedelta):
@@ -574,7 +718,7 @@ class Timeticks(Type):
 
     def __int__(self):
         return self._value.days*3600*24*100 + self._value.seconds*100 + \
-            self._value.microseconds/10000
+            int(self._value.microseconds/10000)
 
     def toOid(self):
         return (int(self),)
@@ -594,7 +738,7 @@ class Timeticks(Type):
     def __cmp__(self, other):
         if isinstance(other, Timeticks):
             other = other._value
-        elif isinstance(other, int) or isinstance(other, long):
+        elif isinstance(other, (int, long)):
             other = timedelta(0, other/100.)
         elif not isinstance(other, timedelta):
             raise NotImplementedError("only compare to int or timedelta, not {0}".format(type(other)))
@@ -603,7 +747,6 @@ class Timeticks(Type):
         if self._value < other:
             return -1
         return 1
-
     def __eq__(self, other):
         return self.__cmp__(other) == 0
     def __ne__(self, other):
@@ -620,12 +763,12 @@ class Bits(Type):
     def _internal(cls, entity, value):
         bits = set()
         tryalternate = False
-        if isinstance(value, str):
+        if isinstance(value, (str, bytes)):
             for i,x in enumerate(value):
-                if ord(x) == 0:
+                if ord2(x) == 0:
                     continue
                 for j in range(8):
-                    if ord(x) & (1 << (7-j)):
+                    if ord2(x) & (1 << (7-j)):
                         if j not in entity.enum:
                             tryalternate = True
                             break
@@ -644,8 +787,8 @@ class Bits(Type):
                 bits.add(v)
                 found = True
             else:
-                for (k, t) in entity.enum.iteritems():
-                    if (t == v):
+                for (k, t) in entity.enum.items():
+                    if (t.decode("ascii") == v):
                         bits.add(k)
                         found = True
                         break
@@ -656,10 +799,10 @@ class Bits(Type):
     def pack(self):
         string = []
         for b in self._value:
-            if len(string) < b/16 + 1:
-                string.extend([0]*(b/16 - len(string)+1))
-            string[b/16] |= 1 << (7 - b%16)
-        return rfc1902.Bits(b"".join([chr(x) for x in string]))
+            if len(string) < (b>>4) + 1:
+                string.extend([0]*((b>>4) - len(string)+1))
+            string[b>>416] |= 1 << (7 - b%16)
+        return rfc1902.Bits(b"".join([chr2(x) for x in string]))
 
     def __eq__(self, other):
         if isinstance(other, str):
@@ -671,7 +814,7 @@ class Bits(Type):
     def __str__(self):
         result = []
         for b in sorted(self._value):
-            result.append("{0}({1:d})".format(self.entity.enum[b], b))
+            result.append("{0}({1:d})".format(self.entity.enum[b].decode("ascii"), b))
         return ", ".join(result)
 
     def __and__(self, other):
@@ -679,7 +822,6 @@ class Bits(Type):
             other = [other]
         if not isinstance(other, Bits):
             other = Bits(self.entity, other)
-        print self._value & other._value, self._value, other._value
         return len(self._value & other._value) > 0
 
     def __ior__(self, other):

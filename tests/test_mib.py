@@ -41,7 +41,8 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyTimeticks",
                         "snimpyCounter64",
                         "snimpyBits",
-                        "snimpyNotImplemented"]
+                        "snimpyNotImplemented",
+                        "snimpyOctetString"]
         self.scalars.sort()
 
     def tearDown(self):
@@ -125,7 +126,8 @@ class TestMibSnimpy(unittest.TestCase):
     def testTypes(self):
         """Test that we get the correct types"""
         tt = { "snimpyIpAddress": basictypes.IpAddress,
-               "snimpyString": basictypes.String,
+               "snimpyString": basictypes.OctetString,
+               "snimpyOctetString": basictypes.OctetString,
                "snimpyInteger": basictypes.Integer,
                "snimpyEnum": basictypes.Enum,
                "snimpyObjectId": basictypes.Oid,
@@ -145,6 +147,7 @@ class TestMibSnimpy(unittest.TestCase):
     def testRanges(self):
         tt = { "snimpyIpAddress": 4,
                "snimpyString": (0,255),
+               "snimpyOctetString": None,
                "snimpyInteger": [(6,18),(20,23),(27,1336)],
                "snimpyEnum": None,
                "snimpyObjectId": None,

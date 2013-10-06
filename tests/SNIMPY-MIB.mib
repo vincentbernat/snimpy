@@ -139,6 +139,14 @@ snimpyNotImplemented OBJECT-TYPE
 	"An string to display (not implemented)"
     ::= { snimpyScalars 12 }
 
+snimpyOctetString OBJECT-TYPE
+    SYNTAX 	OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An string to display"
+    ::= { snimpyScalars 13 }
+
 -- A simple table
 
 snimpySimpleTable OBJECT-TYPE

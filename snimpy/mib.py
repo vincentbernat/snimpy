@@ -123,6 +123,7 @@ char        *smiLoadModule(const char *);
 SmiModule   *smiGetModule(const char *);
 SmiModule   *smiGetNodeModule(SmiNode *);
 SmiType     *smiGetNodeType(SmiNode *);
+SmiType     *smiGetParentType(SmiType *);
 char        *smiRenderNode(SmiNode *, int);
 SmiElement  *smiGetFirstElement(SmiNode *);
 SmiElement  *smiGetNextElement(SmiElement *);
@@ -168,21 +169,22 @@ class Entity(object):
         target = {
             _smi.SMI_BASETYPE_INTEGER32: basictypes.Integer,
             _smi.SMI_BASETYPE_INTEGER64: basictypes.Integer,
-            _smi.SMI_BASETYPE_UNSIGNED32: { "TimeTicks": basictypes.Timeticks,
+            _smi.SMI_BASETYPE_UNSIGNED32: { b"TimeTicks": basictypes.Timeticks,
                                             None: basictypes.Unsigned32 },
             _smi.SMI_BASETYPE_UNSIGNED64: basictypes.Unsigned64,
-            _smi.SMI_BASETYPE_OCTETSTRING: { "IpAddress": basictypes.IpAddress,
-                                             "MacAddress": basictypes.MacAddress,
-                                             None: basictypes.String },
+            _smi.SMI_BASETYPE_OCTETSTRING: { b"IpAddress": basictypes.IpAddress,
+                                             None: basictypes.OctetString },
             _smi.SMI_BASETYPE_OBJECTIDENTIFIER: basictypes.Oid,
-            _smi.SMI_BASETYPE_ENUM: { "TruthValue": basictypes.Boolean,
+            _smi.SMI_BASETYPE_ENUM: { b"TruthValue": basictypes.Boolean,
                                       None: basictypes.Enum },
             _smi.SMI_BASETYPE_BITS: basictypes.Bits
         }.get(t.basetype, None)
         if isinstance(target, dict):
-            target = target.get(t.name != ffi.NULL
-                                and ffi.string(t.name)
-                                or None, target.get(None, None))
+            tt = _smi.smiGetParentType(t);
+            target = target.get((t.name != ffi.NULL and ffi.string(t.name)) or
+                                (tt.name != ffi.NULL and ffi.string(tt.name)) or None,
+                                           target.get(None, None))
+
         if target is None:
             raise SMIException("unable to retrieve type of entity")
         return target
@@ -194,9 +196,12 @@ class Entity(object):
         @return: entity format or None if there is none
         """
         t = _smi.smiGetNodeType(self.node)
-        if t == ffi.NULL or t.format == ffi.NULL:
+        tt = _smi.smiGetParentType(t)
+        f = (t != ffi.NULL and t.format != ffi.NULL and ffi.string(t.format) or
+             tt != ffi.NULL and tt.format != ffi.NULL and ffi.string(tt.format)) or None
+        if f is None:
             return None
-        return ffi.string(t.format)
+        return f.decode("ascii")
 
     @property
     def oid(self):
@@ -255,7 +260,7 @@ class Entity(object):
         return result
 
     def __str__(self):
-        return ffi.string(self.node.name)
+        return ffi.string(self.node.name).decode("ascii")
 
     def __repr__(self):
         r = _smi.smiRenderNode(self.node, _smi.SMI_RENDER_ALL)
@@ -412,7 +417,8 @@ def _get_module(name):
     @param name: name of the module
     @return: SMI module or None if not found (not loaded)
     """
-    m = _smi.smiGetModule(name.encode("ascii"))
+    if not isinstance(name, bytes): name = name.encode("ascii")
+    m = _smi.smiGetModule(name)
     if m == ffi.NULL:
         return None
     if m.conformance and m.conformance <= 1:
@@ -434,6 +440,7 @@ def get(mib, name):
     @param name: object name to get from the MIB
     @return: the requested MIB entity
     """
+    if not isinstance(mib, bytes): mib = mib.encode("ascii")
     module = _get_module(mib)
     if module is None:
         raise SMIException("no module named {0}".format(mib))
@@ -451,6 +458,7 @@ def _get_kind(mib, kind):
     @param kind: SMI kind of object
     @return: list of matched MIB entities for the MIB
     """
+    if not isinstance(mib, bytes): mib = mib.encode("ascii")
     module = _get_module(mib)
     if module is None:
         raise SMIException("no module named {0}".format(mib))
@@ -499,11 +507,12 @@ def load(mib):
     @param mib: MIB to load, either a filename or a MIB name
     @return: MIB name that has been loaded
     """
-    modulename = _smi.smiLoadModule(mib.encode("ascii"))
+    if not isinstance(mib, bytes): mib = mib.encode("ascii")
+    modulename = _smi.smiLoadModule(mib)
     if modulename == ffi.NULL:
         raise SMIException("unable to load {0}".format(mib))
     modulename = ffi.string(modulename)
-    if not _get_module(str(modulename)):
+    if not _get_module(modulename.decode("ascii")):
         raise SMIException("{0} contains major SMI error (check with smilint -s -l1)".format(
             mib))
     return modulename

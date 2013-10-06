@@ -60,6 +60,6 @@ if __name__ == "__main__":
           zip_safe = False,
           install_requires = [ "cffi", "pysnmp >= 4" ],
           setup_requires = [ "cffi" ],
-          tests_require = [ "cffi", "pysnmp >= 4", "nose" ],
+          tests_require = [ "cffi", "pysnmp >= 4", "nose", "mock" ],
           test_suite="nose.collector"
           )
