@@ -3,6 +3,11 @@ from snimpy.version import VERSION
 from setuptools import setup, Extension
 
 try:
+    import multiprocessing
+except ImportError:
+    pass
+
+try:
     from subprocess import check_output
 except ImportError:
     import subprocess
