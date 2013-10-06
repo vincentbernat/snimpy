@@ -27,11 +27,7 @@ import sys
 import struct
 import socket
 import re
-try:
-    from functools import total_ordering
-except ImportError:
-    def total_ordering(f):
-        return f
+from functools import wraps
 from datetime import timedelta
 from pysnmp.proto import rfc1902
 
@@ -46,6 +42,19 @@ if PYTHON3:
 else:
     ord2 = ord
     chr2 = chr
+
+def ordering_with_cmp(cls):
+    ops = { '__lt__': lambda self, other: self.__cmp__(other) <  0,
+            '__gt__': lambda self, other: self.__cmp__(other) >  0,
+            '__le__': lambda self, other: self.__cmp__(other) <= 0,
+            '__ge__': lambda self, other: self.__cmp__(other) >= 0,
+            '__eq__': lambda self, other: self.__cmp__(other) == 0,
+            '__ne__': lambda self, other: self.__cmp__(other) != 0 }
+    for opname, opfunc in ops.items():
+        opfunc.__name__ = opname
+        opfunc.__doc__ = getattr(int, opname).__doc__
+        setattr(cls, opname, opfunc)
+    return cls
 
 class Type(object):
     """Base class for all types"""
@@ -171,7 +180,7 @@ class Type(object):
         except:
             return '<{0} ????>'.format(self.__class__.__name__)
 
-@total_ordering
+@ordering_with_cmp
 class IpAddress(Type):
     """Class for IP address"""
 
@@ -216,14 +225,6 @@ class IpAddress(Type):
         if self._value < other._value:
             return -1
         return 1
-    def __eq__(self, other):
-        return self.__cmp__(other) == 0
-    def __ne__(self, other):
-        return self.__cmp__(other) != 0
-    def __lt__(self, other):
-        return self.__cmp__(other) < 0
-    def __gt__(self, other):
-        return self.__cmp__(other) > 0
 
     def __getitem__(self, nb):
         return self._value[nb]
@@ -598,7 +599,7 @@ class Enum(Integer):
         else:
             return str(self._value)
 
-@total_ordering
+@ordering_with_cmp
 class Oid(Type):
     """Class for OID"""
 
@@ -649,14 +650,6 @@ class Oid(Type):
         if self._value > other._value:
             return 1
         return -1
-    def __eq__(self, other):
-        return self.__cmp__(other) == 0
-    def __ne__(self, other):
-        return self.__cmp__(other) != 0
-    def __lt__(self, other):
-        return self.__cmp__(other) < 0
-    def __gt__(self, other):
-        return self.__cmp__(other) > 0
 
     def __contains__(self, item):
         """Test if item is a sub-oid of this OID"""
@@ -687,7 +680,7 @@ class Boolean(Enum):
     def __bool__(self):
         return self.__nonzero__()
 
-@total_ordering
+@ordering_with_cmp
 class Timeticks(Type):
     """Class for timeticks"""
 
@@ -732,14 +725,6 @@ class Timeticks(Type):
         if self._value < other:
             return -1
         return 1
-    def __eq__(self, other):
-        return self.__cmp__(other) == 0
-    def __ne__(self, other):
-        return self.__cmp__(other) != 0
-    def __lt__(self, other):
-        return self.__cmp__(other) < 0
-    def __gt__(self, other):
-        return self.__cmp__(other) > 0
 
 class Bits(Type):
     """Class for bits"""
