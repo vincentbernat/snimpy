@@ -117,7 +117,7 @@ class Manager(object):
 
     def __init__(self,
                  host="localhost",
-                 community=None, version=2,
+                 community="public", version=2,
                  cache=False, none=False,
                  timeout=None, retries=None,
                  # SNMPv3
