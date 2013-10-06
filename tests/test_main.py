@@ -25,7 +25,7 @@ m = M(host="127.0.0.1:{0}",
       community="public",
       version=2)
 assert(m.ifDescr[1] == "lo")
-""".format(self.agent.port))
+""".format(self.agent.port).encode("ascii"))
             script.close()
             p = Process(target=interact, args=((script.name,),))
             p.start()
