@@ -132,7 +132,7 @@ class TestSnmp1(unittest.TestCase):
         ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
         oid, a = self.session.get(ooid)[0]
         self.assertEqual(oid, ooid)
-        self.assertEqual(a, "Snimpy Test Agent")
+        self.assertEqual(a, b"Snimpy Test Agent")
 
     def testGetInteger(self):
         """Get an integer value"""
@@ -151,7 +151,7 @@ class TestSnmp1(unittest.TestCase):
         mib.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               "SNIMPY-MIB.mib"))
         oid, a = self.session.get((1, 3, 6, 1, 2, 1, 45121, 1, 15, 0))[0]
-        self.assertEqual(a, b"\x11\x12\x13\x14\x15\x16") # This is software loopback
+        self.assertEqual(a, b"\x11\x12\x13\x14\x15\x16")
         b = basictypes.build('SNIMPY-MIB', 'snimpyMacAddress', a)
         self.assertEqual(b, "11:12:13:14:15:16")
 
@@ -227,7 +227,7 @@ class TestSnmp1(unittest.TestCase):
         self.assertEqual(oid1, ooid1)
         self.assertEqual(oid2, ooid2)
         self.assertEqual(oid3, ooid3)
-        self.assertEqual(a1, "Snimpy Test Agent")
+        self.assertEqual(a1, b"Snimpy Test Agent")
         self.assert_(a2 > 1)
         b = basictypes.build('IF-MIB', 'ifType', a3)
         self.assertEqual(b, "softwareLoopback")
@@ -252,9 +252,9 @@ class TestSnmp1(unittest.TestCase):
         ooid = mib.get("IF-MIB", "ifDescr").oid
         results = self.session.walk(ooid)
         self.assertEqual(results,
-                         ((ooid + (1,), "lo"),
-                          (ooid + (2,), "eth0"),
-                          (ooid + (3,), "eth1")))
+                         ((ooid + (1,), b"lo"),
+                          (ooid + (2,), b"eth0"),
+                          (ooid + (3,), b"eth1")))
 
 class TestSnmp2(TestSnmp1):
     """Test communication with an agent with SNMPv2."""
@@ -270,15 +270,15 @@ class TestSnmp2(TestSnmp1):
         self.session.bulk = 4
         results = self.session.walk(ooid)
         self.assertEqual(results,
-                         ((ooid + (1,), "lo"),
-                          (ooid + (2,), "eth0"),
-                          (ooid + (3,), "eth1"),
+                         ((ooid + (1,), b"lo"),
+                          (ooid + (2,), b"eth0"),
+                          (ooid + (3,), b"eth1"),
                           (mib.get("IF-MIB", "ifType").oid + (1,), 24)))
         self.session.bulk = 2
         results = self.session.walk(ooid)
         self.assertEqual(results[:2],
-                         ((ooid + (1,), "lo"),
-                          (ooid + (2,), "eth0")))
+                         ((ooid + (1,), b"lo"),
+                          (ooid + (2,), b"eth0")))
 
 class TestSnmp3(TestSnmp2):
     """Test communicaton with an agent with SNMPv3."""

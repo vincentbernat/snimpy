@@ -121,7 +121,7 @@ class Session(object):
         """Convert a PySNMP value to some native Python type"""
         for cl, fn in { rfc1902.Integer: int,
                         rfc1902.Integer32: int,
-                        rfc1902.OctetString: str,
+                        rfc1902.OctetString: bytes,
                         rfc1902.IpAddress: value.prettyOut,
                         rfc1902.Counter32: int,
                         rfc1902.Counter64: int,

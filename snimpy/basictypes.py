@@ -732,7 +732,7 @@ class Bits(Type):
     def _internal(cls, entity, value):
         bits = set()
         tryalternate = False
-        if isinstance(value, (str, bytes)):
+        if isinstance(value, bytes):
             for i,x in enumerate(value):
                 if ord2(x) == 0:
                     continue
