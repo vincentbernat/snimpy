@@ -156,16 +156,13 @@ class Type(object):
             return False
         return "implied"
 
-    def display(self):
-        return str(self)
-
     def __str__(self):
         return str(self._value)
 
     def __repr__(self):
         try:
             return '<{0}: {1}>'.format(self.__class__.__name__,
-                                       self.display())
+                                       str(self))
         except:
             return '<{0} ????>'.format(self.__class__.__name__)
 
@@ -276,16 +273,6 @@ class OctetString(StringOrOctetString, bytes):
 
     def _toBytes(self):
         return self._value
-
-    def display(self):
-        value = None
-        try:
-            value = self._value.decode("ascii")
-        except UnicodeDecodeError:
-            pass
-        if value is None or "\\x" in repr(value):
-            return "0x" + " ".join([("0{0}".format(hex(ord2(a))[2:]))[-2:] for a in self._value])
-        return value
 
     def __ior__(self, value):
         nvalue = [ord2(u) for u in self._value]
@@ -491,9 +478,6 @@ class String(StringOrOctetString, unicode):
             return value.decode("utf-8")
         return unicode(value)
 
-    def display(self):
-        return self._value
-
     def __str__(self):
         return self._value
 
@@ -524,7 +508,7 @@ class Integer(Type, long):
             raise ValueError("{0} is too short for an integer".format(oid))
         return (1, cls(entity, oid[0]))
 
-    def display(self):
+    def __str__(self):
         if self.entity.fmt:
             if self.entity.fmt[0] == "x":
                 return hex(self._value)
@@ -607,9 +591,6 @@ class Enum(Integer):
             return "{0}({1:d})".format(self.entity.enum[self._value], self._value)
         else:
             return str(self._value)
-
-    def display(self):
-        return str(self)
 
 class Oid(Type):
     """Class for OID"""
