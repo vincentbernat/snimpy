@@ -1,6 +1,5 @@
-import shlex
 from snimpy.version import VERSION
-from setuptools import setup, Extension
+from setuptools import setup
 
 try:
     import multiprocessing
