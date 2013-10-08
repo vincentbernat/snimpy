@@ -58,7 +58,7 @@ details. Here are some "features" of snmimpy:
 License
 -------
 
-Snimpy is licensed under MIT/X11 license. See at the top of source
+Snimpy is licensed under ISC license. See at the top of source
 files for details.
 
 Installation and usage
