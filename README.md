@@ -1,7 +1,9 @@
 snimpy -- Interactive SNMP tool
 ===============================
 
-[![Build Status](https://secure.travis-ci.org/vincentbernat/snimpy.png?branch=master)](http://travis-ci.org/vincentbernat/snimpy)
+[![Build Status](https://travis-ci.org/vincentbernat/snimpy.png?branch=master)](https://travis-ci.org/vincentbernat/snimpy)
+[![Pypi package](https://badge.fury.io/py/snimpy.png)](http://badge.fury.io/py/snimpy)
+[![Downloads](https://pypip.in/d/snimpy/badge.png)](https://crate.io/packages/snimpy?version=latest)
 
  https://github.com/vincentbernat/snimpy
 
