@@ -297,7 +297,7 @@ class TestBasicTypes(unittest.TestCase):
                                           [1, 7]).pack(),
                          rfc1902.Bits(b"\x41"))
 
-    def testOid(self):
+    def testOidConversion(self):
         """Test conversion to/from OID."""
         tt = {("snimpySimpleIndex", 47): (47,),
               ("snimpyComplexFirstIP", "10.14.15.4"): (10, 14, 15, 4),
