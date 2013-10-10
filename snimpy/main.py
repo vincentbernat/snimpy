@@ -41,17 +41,19 @@ import snimpy
 from snimpy import manager
 from snimpy.config import conf
 
-def interact(argv=sys.argv): # pragma: no cover
-    banner  = "\033[1mSnimpy\033[0m ({0}) -- An interactive SNMP tool.\n".format(snimpy.__version__)
+
+def interact(argv=sys.argv):  # pragma: no cover
+    banner = "\033[1mSnimpy\033[0m ({0}) -- {1}.\n".format(
+        snimpy.__version__, snimpy.__doc__)
     banner += "  load        -> load an additional MIB\n"
     banner += "  M           -> manager object"
 
-    local = { "conf": conf,
-              "M": manager.Manager,
-              "load": manager.load,
-              "timedelta": timedelta,
-              "snmp": manager.snmp
-              }
+    local = {"conf": conf,
+             "M": manager.Manager,
+             "load": manager.load,
+             "timedelta": timedelta,
+             "snmp": manager.snmp
+             }
 
     if len(argv) <= 1:
         manager.Manager._complete = True
@@ -79,17 +81,20 @@ def interact(argv=sys.argv): # pragma: no cover
             cfg = Config()
             try:
                 # >= 0.12
-                from IPython.core.prompts import PromptManager
-                cfg.PromptManager.in_template="Snimpy [\\#]> "
-                cfg.PromptManager.out_template="Snimpy [\\#]: "
+                cfg.PromptManager.in_template = "Snimpy [\\#]> "
+                cfg.PromptManager.out_template = "Snimpy [\\#]: "
             except ImportError:
                 # 0.11
-                cfg.InteractiveShellEmbed.prompt_in1="Snimpy [\\#]> "
-                cfg.InteractiveShellEmbed.prompt_out="Snimpy [\\#]: "
+                cfg.InteractiveShellEmbed.prompt_in1 = "Snimpy [\\#]> "
+                cfg.InteractiveShellEmbed.prompt_out = "Snimpy [\\#]: "
             if conf.ipythonprofile:
-              cfg.InteractiveShellEmbed.profile=conf.ipythonprofile
-            shell = InteractiveShellEmbed(config=cfg, banner1=banner, user_ns=local)
-            shell.InteractiveTB.tb_offset += 1 # Not interested by traceback in this module
+                cfg.InteractiveShellEmbed.profile = conf.ipythonprofile
+            shell = InteractiveShellEmbed(
+                config=cfg,
+                banner1=banner,
+                user_ns=local)
+            # Not interested by traceback in this module
+            shell.InteractiveTB.tb_offset += 1
         except ImportError:
             # ipython < 0.11
             from IPython.Shell import IPShellEmbed
@@ -99,7 +104,8 @@ def interact(argv=sys.argv): # pragma: no cover
                 argv += ["-profile", conf.ipythonprofile]
             shell = IPShellEmbed(argv=argv,
                                  banner=banner, user_ns=local)
-            shell.IP.InteractiveTB.tb_offset += 1 # Not interested by traceback in this module
+            # Not interested by traceback in this module
+            shell.IP.InteractiveTB.tb_offset += 1
     except ImportError:
         shell = None
 
@@ -109,11 +115,12 @@ def interact(argv=sys.argv): # pragma: no cover
         if readline:
             if conf.histfile:
                 try:
-                    readline.read_history_file(os.path.expanduser(conf.histfile))
+                    readline.read_history_file(
+                        os.path.expanduser(conf.histfile))
                 except IOError:
                     pass
                 atexit.register(lambda: readline.write_history_file(
-                        os.path.expanduser(conf.histfile)))
+                    os.path.expanduser(conf.histfile)))
 
             readline.set_completer(rlcompleter.Completer(local).complete)
             readline.parse_and_bind("tab: menu-complete")

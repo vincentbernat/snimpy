@@ -5,7 +5,9 @@ from datetime import timedelta
 from snimpy.manager import load, Manager, snmp
 import agent
 
+
 class TestManager(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         load('IF-MIB')
@@ -24,7 +26,9 @@ class TestManager(unittest.TestCase):
                                version=2)
         self.session = self.manager._session
 
+
 class TestManagerGet(TestManager):
+
     """Test getting stuff from manager"""
 
     def testGetScalar(self):
@@ -54,7 +58,7 @@ class TestManagerGet(TestManager):
 
     def testScalar_ObjectId(self):
         """Retrieve an ObjectId as a scalar"""
-        self.scalarGetAndCheck("snimpyObjectId", (1,3,6,4454,0,0))
+        self.scalarGetAndCheck("snimpyObjectId", (1, 3, 6, 4454, 0, 0))
 
     def testScalar_Boolean(self):
         """Retrieve a Boolean as a scalar"""
@@ -63,7 +67,7 @@ class TestManagerGet(TestManager):
     def testScalar_Counter(self):
         """Retrieve a Counter as a scalar"""
         self.scalarGetAndCheck("snimpyCounter", 47)
-        self.scalarGetAndCheck("snimpyCounter64", 2**48+3)
+        self.scalarGetAndCheck("snimpyCounter64", 2 ** 48 + 3)
 
     def testScalar_Gauge(self):
         """Retrieve a Gauge as a scalar"""
@@ -71,7 +75,12 @@ class TestManagerGet(TestManager):
 
     def testScalar_Timeticks(self):
         """Retrieve a TimeTicks as a scalar"""
-        self.scalarGetAndCheck("snimpyTimeticks", timedelta(days=1, hours=9, minutes=38, seconds=31))
+        self.scalarGetAndCheck(
+            "snimpyTimeticks",
+            timedelta(days=1,
+                      hours=9,
+                      minutes=38,
+                      seconds=31))
 
     def testScalar_Bits(self):
         """Retrieve Bits as a scalar"""
@@ -83,7 +92,8 @@ class TestManagerGet(TestManager):
 
     def testWalkIfTable(self):
         """Test we can walk IF-MIB::ifTable"""
-        results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx]) for idx in self.manager.ifIndex]
+        results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
+                   for idx in self.manager.ifIndex]
         self.assertEqual(results,
                          [(1, "lo", 24),
                           (2, "eth0", 6),
@@ -96,11 +106,15 @@ class TestManagerGet(TestManager):
 
     def testWalkComplexIndexes(self):
         """Test if we can walk a table with complex indexes"""
-        results = [(idx, self.manager.snimpyIndexInt[idx]) for idx in self.manager.snimpyIndexInt]
+        results = [(idx, self.manager.snimpyIndexInt[idx])
+                   for idx in self.manager.snimpyIndexInt]
         self.assertEqual(results,
-                         [(("row1", (1, 2, 3), "alpha5", "end of row1"), 4571),
-                          (("row2", (1, 0, 2, 3), "beta32", "end of row2"), 78741),
-                          (("row3", (120, 1, 2, 3), "gamma7", "end of row3"), 4110)])
+                         [(("row1", (1, 2, 3),
+                            "alpha5", "end of row1"), 4571),
+                          (("row2", (1, 0, 2, 3),
+                            "beta32", "end of row2"), 78741),
+                          (("row3", (120, 1, 2, 3),
+                            "gamma7", "end of row3"), 4110)])
 
     def testGetInexistentStuff(self):
         """Try to access stuff that does not exist on the agent"""
@@ -123,7 +137,9 @@ class TestManagerGet(TestManager):
         self.assertRaises(ValueError,
                           self.manager.ifDescr.__getitem__, "nothing")
 
+
 class TestManagerSet(TestManager):
+
     """Test setting stuff from manager"""
 
     def testSetScalar(self):
@@ -163,7 +179,7 @@ class TestManagerSet(TestManager):
     def testScalar_Counter(self):
         """Retrieve a Counter as a scalar"""
         self.scalarSetAndCheck("snimpyCounter", 4700)
-        self.scalarSetAndCheck("snimpyCounter64", 2**48+3-18)
+        self.scalarSetAndCheck("snimpyCounter64", 2 ** 48 + 3 - 18)
 
     def testScalar_Gauge(self):
         """Retrieve a Gauge as a scalar"""
@@ -171,7 +187,12 @@ class TestManagerSet(TestManager):
 
     def testScalar_Timeticks(self):
         """Retrieve a TimeTicks as a scalar"""
-        self.scalarSetAndCheck("snimpyTimeticks", timedelta(days=1, hours=17, minutes=38, seconds=31))
+        self.scalarSetAndCheck(
+            "snimpyTimeticks",
+            timedelta(days=1,
+                      hours=17,
+                      minutes=38,
+                      seconds=31))
 
     def testScalar_Bits(self):
         """Retrieve Bits as a scalar"""
@@ -210,7 +231,8 @@ class TestManagerSet(TestManager):
     def testSetInexistentStuff(self):
         """Try to access stuff that does not exist on the agent"""
         self.assertRaises(snmp.SNMPNotWritable,
-                          setattr, self.manager, "snimpyNotImplemented", "Hello")
+                          setattr, self.manager, "snimpyNotImplemented",
+                          "Hello")
         self.assertRaises(snmp.SNMPNotWritable,
                           self.manager.ifName.__setitem__, 47, "Wouh")
         self.assertRaises(snmp.SNMPNotWritable,
@@ -226,9 +248,12 @@ class TestManagerSet(TestManager):
         self.assertRaises(ValueError,
                           self.manager.ifDescr.__setitem__, (47, 18), "Nooo")
         self.assertRaises(ValueError,
-                          self.manager.ifDescr.__setitem__, "nothing", "Neither")
+                          self.manager.ifDescr.__setitem__,
+                          "nothing", "Neither")
+
 
 class TestManagerWithNone(TestManagerGet):
+
     """Test a manager answering None for inexistent stuff"""
 
     def setUp(self):
@@ -243,8 +268,10 @@ class TestManagerWithNone(TestManagerGet):
         self.assertEqual(self.manager.ifName[47], None)
         self.assertEqual(self.manager.ifDescr[47], None)
 
+
 class TestCachingManager(TestManagerGet):
-    """Test if caching manager works like regular manager without modifications"""
+
+    """Test if caching manager works like regular manager"""
 
     def setUp(self):
         self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
@@ -252,7 +279,9 @@ class TestCachingManager(TestManagerGet):
                                version=2, cache=1)
         self.session = self.manager._session._session
 
+
 class TestCachingManagerWithModificatons(TestManager):
+
     """Test if caching manager works with modifications"""
 
     def setUp(self):
@@ -276,7 +305,6 @@ class TestCachingManagerWithModificatons(TestManager):
 
     def testCacheExpire(self):
         """Check the cache can expire"""
-        original = self.manager.snimpyString
         self.manager.snimpyString = "Yeesss"
         time.sleep(1)
         self.assertEqual(self.manager.snimpyString, "Yeesss")

@@ -2,6 +2,7 @@ import unittest
 import os
 from snimpy import mib, basictypes
 
+
 class TestMibSnimpy(unittest.TestCase):
 
     def setUp(self):
@@ -53,8 +54,7 @@ class TestMibSnimpy(unittest.TestCase):
     def testGetNodes(self):
         """Test that we can get all nodes"""
         nodes = mib.getNodes('SNIMPY-MIB')
-        snodes = [str(a) for a in nodes]
-        snodes.sort()
+        snodes = sorted([str(a) for a in nodes])
         self.assertEqual(self.nodes,
                          snodes)
         for n in nodes:
@@ -63,8 +63,7 @@ class TestMibSnimpy(unittest.TestCase):
     def testGetTables(self):
         """Test that we can get all tables"""
         tables = mib.getTables('SNIMPY-MIB')
-        stables = [str(a) for a in tables]
-        stables.sort()
+        stables = sorted([str(a) for a in tables])
         self.assertEqual(self.tables,
                          stables)
         for n in tables:
@@ -73,8 +72,7 @@ class TestMibSnimpy(unittest.TestCase):
     def testGetColumns(self):
         """Test that we can get all columns"""
         columns = mib.getColumns('SNIMPY-MIB')
-        scolumns = [str(a) for a in columns]
-        scolumns.sort()
+        scolumns = sorted([str(a) for a in columns])
         self.assertEqual(self.columns,
                          scolumns)
         for n in columns:
@@ -83,8 +81,7 @@ class TestMibSnimpy(unittest.TestCase):
     def testGetScalars(self):
         """Test that we can get all scalars"""
         scalars = mib.getScalars('SNIMPY-MIB')
-        sscalars = [str(a) for a in scalars]
-        sscalars.sort()
+        sscalars = sorted([str(a) for a in scalars])
         self.assertEqual(self.scalars, sscalars)
         for n in scalars:
             self.assert_(isinstance(n, mib.Scalar))
@@ -112,9 +109,10 @@ class TestMibSnimpy(unittest.TestCase):
                 self.assert_(isinstance(r, mib.Column))
                 self.assertEqual(str(r.table), str(i))
                 self.assert_(str(r).startswith(str(i).replace("Table", "")))
-            columns = [str(rr) for rr in self.columns
-                    if str(rr).startswith(str(i).replace("Table", ""))]
-            columns.sort()
+            columns = sorted([str(rr)
+                              for rr in self.columns
+                              if str(rr).startswith(str(i).replace("Table",
+                                                                   ""))])
             tcolumns = [str(rr) for rr in table.columns]
             tcolumns.sort()
             self.assertEqual(columns, tcolumns)
@@ -127,45 +125,45 @@ class TestMibSnimpy(unittest.TestCase):
 
     def testTypes(self):
         """Test that we get the correct types"""
-        tt = { "snimpyIpAddress": basictypes.IpAddress,
-               "snimpyString": basictypes.OctetString,
-               "snimpyOctetString": basictypes.OctetString,
-               "snimpyUnicodeString": basictypes.OctetString,
-               "snimpyMacAddress": basictypes.OctetString,
-               "snimpyInteger": basictypes.Integer,
-               "snimpyEnum": basictypes.Enum,
-               "snimpyObjectId": basictypes.Oid,
-               "snimpyBoolean": basictypes.Boolean,
-               "snimpyCounter": basictypes.Unsigned32,
-               "snimpyGauge": basictypes.Unsigned32,
-               "snimpyTimeticks": basictypes.Timeticks,
-               "snimpyCounter64": basictypes.Unsigned64,
-               "snimpyBits": basictypes.Bits,
-               "snimpySimpleIndex": basictypes.Integer,
-               "snimpyComplexFirstIP": basictypes.IpAddress,
-               "snimpyComplexSecondIP": basictypes.IpAddress,
-               "snimpyComplexState": basictypes.Enum }
+        tt = {"snimpyIpAddress": basictypes.IpAddress,
+              "snimpyString": basictypes.OctetString,
+              "snimpyOctetString": basictypes.OctetString,
+              "snimpyUnicodeString": basictypes.OctetString,
+              "snimpyMacAddress": basictypes.OctetString,
+              "snimpyInteger": basictypes.Integer,
+              "snimpyEnum": basictypes.Enum,
+              "snimpyObjectId": basictypes.Oid,
+              "snimpyBoolean": basictypes.Boolean,
+              "snimpyCounter": basictypes.Unsigned32,
+              "snimpyGauge": basictypes.Unsigned32,
+              "snimpyTimeticks": basictypes.Timeticks,
+              "snimpyCounter64": basictypes.Unsigned64,
+              "snimpyBits": basictypes.Bits,
+              "snimpySimpleIndex": basictypes.Integer,
+              "snimpyComplexFirstIP": basictypes.IpAddress,
+              "snimpyComplexSecondIP": basictypes.IpAddress,
+              "snimpyComplexState": basictypes.Enum}
         for t in tt:
             self.assertEqual(mib.get('SNIMPY-MIB', t).type, tt[t])
 
     def testRanges(self):
-        tt = { "snimpyIpAddress": 4,
-               "snimpyString": (0,255),
-               "snimpyOctetString": None,
-               "snimpyInteger": [(6,18),(20,23),(27,1336)],
-               "snimpyEnum": None,
-               "snimpyObjectId": None,
-               "snimpyBoolean": None,
-               "snimpyCounter": (0,4294967295),
-               "snimpyGauge": (0,4294967295),
-               "snimpyTimeticks": (0,4294967295),
-               "snimpyCounter64": (0,18446744073709551615),
-               "snimpyBits": None,
-               "snimpySimpleIndex": (1,30),
-               "snimpyComplexFirstIP": 4,
-               "snimpyComplexSecondIP": 4,
-               "snimpyComplexState": None
-               }
+        tt = {"snimpyIpAddress": 4,
+              "snimpyString": (0, 255),
+              "snimpyOctetString": None,
+              "snimpyInteger": [(6, 18), (20, 23), (27, 1336)],
+              "snimpyEnum": None,
+              "snimpyObjectId": None,
+              "snimpyBoolean": None,
+              "snimpyCounter": (0, 4294967295),
+              "snimpyGauge": (0, 4294967295),
+              "snimpyTimeticks": (0, 4294967295),
+              "snimpyCounter64": (0, 18446744073709551615),
+              "snimpyBits": None,
+              "snimpySimpleIndex": (1, 30),
+              "snimpyComplexFirstIP": 4,
+              "snimpyComplexSecondIP": 4,
+              "snimpyComplexState": None
+              }
         for t in tt:
             self.assertEqual(mib.get('SNIMPY-MIB', t).ranges, tt[t])
 
@@ -184,30 +182,42 @@ class TestMibSnimpy(unittest.TestCase):
 
     def testIndexes(self):
         """Test that we can retrieve correctly the index of tables"""
-        self.assertEqual([str(i) for i in mib.get("SNIMPY-MIB", "snimpySimpleTable").index],
-                         ["snimpySimpleIndex"])
-        self.assertEqual([str(i) for i in mib.get("SNIMPY-MIB", "snimpyComplexTable").index],
-                         ["snimpyComplexFirstIP", "snimpyComplexSecondIP"])
+        self.assertEqual(
+            [str(i) for i in mib.get("SNIMPY-MIB", "snimpySimpleTable").index],
+            ["snimpySimpleIndex"])
+        self.assertEqual(
+            [str(i)
+             for i in mib.get("SNIMPY-MIB", "snimpyComplexTable").index],
+            ["snimpyComplexFirstIP", "snimpyComplexSecondIP"])
 
     def testImplied(self):
         """Check that we can get implied attribute for a given table"""
-        self.assertEqual(mib.get("SNIMPY-MIB", 'snimpySimpleTable').implied, False)
-        self.assertEqual(mib.get("SNIMPY-MIB", 'snimpyComplexTable').implied, False)
-        self.assertEqual(mib.get("SNIMPY-MIB", 'snimpyIndexTable').implied, True)
+        self.assertEqual(
+            mib.get("SNIMPY-MIB",
+                    'snimpySimpleTable').implied,
+            False)
+        self.assertEqual(
+            mib.get("SNIMPY-MIB",
+                    'snimpyComplexTable').implied,
+            False)
+        self.assertEqual(
+            mib.get("SNIMPY-MIB",
+                    'snimpyIndexTable').implied,
+            True)
 
     def testOid(self):
         """Test that objects are rooted at the correct OID"""
-        oids = { "snimpy": (1,3,6,1,2,1,45121),
-                 "snimpyScalars": (1,3,6,1,2,1,45121,1),
-                 "snimpyString": (1,3,6,1,2,1,45121,1,2),
-                 "snimpyInteger": (1,3,6,1,2,1,45121,1,3),
-                 "snimpyBits": (1,3,6,1,2,1,45121,1,11),
-                 "snimpyTables": (1,3,6,1,2,1,45121,2),
-                 "snimpySimpleTable": (1,3,6,1,2,1,45121,2,1),
-                 "snimpySimplePhys": (1,3,6,1,2,1,45121,2,1,1,4),
-                 "snimpyComplexTable": (1,3,6,1,2,1,45121,2,2),
-                 "snimpyComplexState": (1,3,6,1,2,1,45121,2,2,1,3),
-                 }
+        oids = {"snimpy": (1, 3, 6, 1, 2, 1, 45121),
+                "snimpyScalars": (1, 3, 6, 1, 2, 1, 45121, 1),
+                "snimpyString": (1, 3, 6, 1, 2, 1, 45121, 1, 2),
+                "snimpyInteger": (1, 3, 6, 1, 2, 1, 45121, 1, 3),
+                "snimpyBits": (1, 3, 6, 1, 2, 1, 45121, 1, 11),
+                "snimpyTables": (1, 3, 6, 1, 2, 1, 45121, 2),
+                "snimpySimpleTable": (1, 3, 6, 1, 2, 1, 45121, 2, 1),
+                "snimpySimplePhys": (1, 3, 6, 1, 2, 1, 45121, 2, 1, 1, 4),
+                "snimpyComplexTable": (1, 3, 6, 1, 2, 1, 45121, 2, 2),
+                "snimpyComplexState": (1, 3, 6, 1, 2, 1, 45121, 2, 2, 1, 3),
+                }
         for o in oids:
             self.assertEqual(mib.get('SNIMPY-MIB', o).oid, oids[o])
 
@@ -226,11 +236,11 @@ class TestMibSnimpy(unittest.TestCase):
 
     def testAccesInexistantModule(self):
         """Check that we get an exception when querying inexistant module"""
-        self.assertRaises(mib.SMIException, mib.getNodes, "idontexist.kjgf");
-        self.assertRaises(mib.SMIException, mib.getScalars, "idontexist.kjgf");
-        self.assertRaises(mib.SMIException, mib.getTables, "idontexist.kjgf");
-        self.assertRaises(mib.SMIException, mib.getColumns, "idontexist.kjgf");
-    
+        self.assertRaises(mib.SMIException, mib.getNodes, "idontexist.kjgf")
+        self.assertRaises(mib.SMIException, mib.getScalars, "idontexist.kjgf")
+        self.assertRaises(mib.SMIException, mib.getTables, "idontexist.kjgf")
+        self.assertRaises(mib.SMIException, mib.getColumns, "idontexist.kjgf")
+
     def testFmt(self):
         """Check that we get FMT from types"""
         self.assertEqual(mib.get("SNIMPY-MIB", 'snimpySimplePhys').fmt, "1x:")

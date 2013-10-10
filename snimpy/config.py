@@ -19,13 +19,14 @@
 import os.path
 import imp
 
+
 class Conf:
     prompt = "\033[1m[snimpy]>\033[0m "
-    histfile = "~/.snimpy_history" # Not used with IPython
+    histfile = "~/.snimpy_history"  # Not used with IPython
     userconf = "~/.snimpy.conf"
     ipython = True
-    ipythonprofile = None # Set for example to "snimpy"
-    mibs = [ ]
+    ipythonprofile = None  # Set for example to "snimpy"
+    mibs = []
 
 conf = Conf()
 

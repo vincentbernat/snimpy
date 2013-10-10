@@ -4,8 +4,9 @@ import re
 import socket
 import mock
 from datetime import timedelta
-from snimpy import mib, basictypes, snmp
+from snimpy import mib, basictypes
 from pysnmp.proto import rfc1902
+
 
 class TestBasicTypes(unittest.TestCase):
 
@@ -21,17 +22,18 @@ class TestBasicTypes(unittest.TestCase):
         a = basictypes.build("SNIMPY-MIB", "snimpyInteger", 18)
         self.assert_(isinstance(a, basictypes.Integer))
         self.assertEqual(a, 18)
-        self.assertEqual(a+10, 28)
+        self.assertEqual(a + 10, 28)
         a = basictypes.build("SNIMPY-MIB", "snimpyInteger", 4)
         self.assertEqual(a, 4)
-        self.assertEqual(a*4, 16)
+        self.assertEqual(a * 4, 16)
         a = basictypes.build("SNIMPY-MIB", "snimpyInteger", 5)
         self.assertEqual(a, 5)
         self.assert_(a < 6)
         # self.assert_(a > 4.6) # type coercion does not work
         self.assert_(a > 4)
         self.assertRaises(TypeError,
-                          basictypes.build, ("SNIMPY-MIB", "snimpyInteger", [1,2,3]))
+                          basictypes.build, ("SNIMPY-MIB",
+                                             "snimpyInteger", [1, 2, 3]))
 
     def testString(self):
         """Test string basic type"""
@@ -39,7 +41,7 @@ class TestBasicTypes(unittest.TestCase):
         self.assert_(isinstance(a, basictypes.String))
         self.assertEqual(a, "hello")
         self.assertEqual(a + " john", "hello john")
-        self.assertEqual(a*2, "hellohello")
+        self.assertEqual(a * 2, "hellohello")
         a = basictypes.build("SNIMPY-MIB", "snimpyString", b"hello john")
         self.assert_("john" in a)
         self.assert_("steve" not in a)
@@ -53,19 +55,26 @@ class TestBasicTypes(unittest.TestCase):
         self.assert_(isinstance(a, basictypes.String))
         self.assertEqual(a, "hello")
         self.assertEqual(a + " john", "hello john")
-        self.assertEqual(a*2, "hellohello")
+        self.assertEqual(a * 2, "hellohello")
 
     def testStringEncoding(self):
         """Test we can create an UTF-8 encoded string"""
         a = basictypes.build("SNIMPY-MIB", "snimpyString", u"hello")
         self.assertEqual(a, u"hello")
         self.assertEqual(a, "hello")
-        a = basictypes.build("SNIMPY-MIB", "snimpyUnicodeString", u"\U0001F60E Hello")
+        a = basictypes.build(
+            "SNIMPY-MIB",
+            "snimpyUnicodeString",
+            u"\U0001F60E Hello")
         self.assertEqual(a, u"\U0001F60E Hello")
-        a = basictypes.build("SNIMPY-MIB", "snimpyUnicodeString", b'\xf0\x9f\x98\x8e Hello')
+        a = basictypes.build(
+            "SNIMPY-MIB",
+            "snimpyUnicodeString",
+            b'\xf0\x9f\x98\x8e Hello')
         self.assertEqual(a, u"\U0001F60E Hello")
         self.assertRaises(UnicodeError,
-                          basictypes.build, "SNIMPY-MIB", "snimpyString", b'\xf0\x9f\x98\x8e Hello')
+                          basictypes.build, "SNIMPY-MIB", "snimpyString",
+                          b'\xf0\x9f\x98\x8e Hello')
 
     def testOctetString(self):
         """Test octet string basic type"""
@@ -76,11 +85,14 @@ class TestBasicTypes(unittest.TestCase):
 
     def testIpAddress(self):
         """Test IP address basic type"""
-        a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", socket.inet_aton("10.0.4.5"))
+        a = basictypes.build(
+            "SNIMPY-MIB",
+            "snimpyIpAddress",
+            socket.inet_aton("10.0.4.5"))
         self.assert_(isinstance(a, basictypes.IpAddress))
         self.assertEqual(a, "10.0.4.5")
         self.assertEqual(a, "10.00.4.05")
-        self.assertEqual(a, [10,0,4,5])
+        self.assertEqual(a, [10, 0, 4, 5])
         self.assertEqual(a[2], 4)
         self.assert_(a < "10.1.2.4")
         self.assert_(a > "10.0.0.1")
@@ -135,15 +147,16 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a, mib.get("SNIMPY-MIB", "snimpyInteger").oid)
         # Suboid
         self.assert_((list(mib.get("SNIMPY-MIB",
-                                   "snimpyInteger").oid) + [2,3]) in a)
+                                   "snimpyInteger").oid) + [2, 3]) in a)
         self.assert_((list(mib.get("SNIMPY-MIB",
-                                   "snimpyInteger").oid)[:-1] + [29,3]) not in a)
+                                   "snimpyInteger").oid)[:-1] +
+                      [29, 3]) not in a)
         # Also accepts list
         a = basictypes.build("SNIMPY-MIB", "snimpyObjectId",
-                             (1,2,3,4))
-        self.assertEqual(a, (1,2,3,4))
-        self.assert_((1,2,3,4,5) in a)
-        self.assert_((3,4,5,6) not in a)
+                             (1, 2, 3, 4))
+        self.assertEqual(a, (1, 2, 3, 4))
+        self.assert_((1, 2, 3, 4, 5) in a)
+        self.assert_((3, 4, 5, 6) not in a)
 
     def testBoolean(self):
         """Test boolean basic type"""
@@ -170,13 +183,13 @@ class TestBasicTypes(unittest.TestCase):
         a = basictypes.build("SNIMPY-MIB", "snimpyTimeticks",
                              timedelta(1, 3))
         self.assertEqual(str(a), '1 day, 0:00:03')
-        self.assertEqual(a, (3+3600*24)*100)
-        self.assert_(a != (3+3600*24)*100 + 1)
-        self.assert_(a < timedelta(1,4))
-        self.assert_(a > timedelta(1,1))
+        self.assertEqual(a, (3 + 3600 * 24) * 100)
+        self.assert_(a != (3 + 3600 * 24) * 100 + 1)
+        self.assert_(a < timedelta(1, 4))
+        self.assert_(a > timedelta(1, 1))
         self.assert_(a > 654)
         self.assert_(a >= 654)
-        self.assert_(a < (3+3600*24)*100 + 2)
+        self.assert_(a < (3 + 3600 * 24) * 100 + 2)
         self.assertEqual(a,
                          basictypes.build("SNIMPY-MIB", "snimpyTimeticks",
                                           timedelta(1, 3)))
@@ -187,9 +200,9 @@ class TestBasicTypes(unittest.TestCase):
         """Test bit basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyBits", [1, 2])
         self.assert_(isinstance(a, basictypes.Bits))
-        self.assertEqual(a, [2,1])
-        self.assertEqual(a, (1,2))
-        self.assertEqual(a, set([1,2]))
+        self.assertEqual(a, [2, 1])
+        self.assertEqual(a, (1, 2))
+        self.assertEqual(a, set([1, 2]))
         self.assertEqual(a, ["second", "third"])
         self.assertEqual(a, set(["second", "third"]))
         self.assertEqual(a, ["second", 2])
@@ -211,7 +224,7 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a & ["second", 0], False)
         a = basictypes.build("SNIMPY-MIB", "snimpyBits",
                              set(["first", "second"]))
-        self.assertEqual(a, [0,1])
+        self.assertEqual(a, [0, 1])
         a = basictypes.build("SNIMPY-MIB", "snimpyBits", [])
         self.assertEqual(a, [])
         self.assertEqual(str(a), "")
@@ -220,13 +233,17 @@ class TestBasicTypes(unittest.TestCase):
         """Check we cannot set inexistent bits"""
         a = basictypes.build("SNIMPY-MIB", "snimpyBits", [1, 2])
         self.assert_(a & 1)
+
         def nope(a):
             a |= 3
         self.assertRaises(ValueError, nope, a)
 
     def testStringAsBits(self):
         """Test using bit specific operator with string"""
-        a = basictypes.build("SNIMPY-MIB", "snimpyOctetString", b"\x17\x00\x01")
+        a = basictypes.build(
+            "SNIMPY-MIB",
+            "snimpyOctetString",
+            b"\x17\x00\x01")
         self.assert_(isinstance(a, basictypes.OctetString))
         b = [7, 6, 5, 3, 23]
         for i in range(30):
@@ -247,7 +264,6 @@ class TestBasicTypes(unittest.TestCase):
 
     def testPacking(self):
         """Test pack() function"""
-        import struct
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyString",
                                           "Hello world").pack(),
@@ -270,53 +286,61 @@ class TestBasicTypes(unittest.TestCase):
                          rfc1902.IpAddress("10.11.12.13"))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyObjectId",
-                                          (1,2,3,4)).pack(),
-                         rfc1902.univ.ObjectIdentifier((1,2,3,4)))
+                                          (1, 2, 3, 4)).pack(),
+                         rfc1902.univ.ObjectIdentifier((1, 2, 3, 4)))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyTimeticks",
                                           timedelta(3, 2)).pack(),
-                         rfc1902.TimeTicks(3*3600*24*100 + 2*100))
+                         rfc1902.TimeTicks(3 * 3600 * 24 * 100 + 2 * 100))
         self.assertEqual(basictypes.build("SNIMPY-MIB",
                                           "snimpyBits",
-                                          [1,7]).pack(),
+                                          [1, 7]).pack(),
                          rfc1902.Bits(b"\x41"))
 
     def testOid(self):
         """Test conversion to/from OID."""
-        tt = { ("snimpySimpleIndex", 47): (47,),
-               ("snimpyComplexFirstIP", "10.14.15.4"): (10, 14, 15, 4),
-               ("snimpyComplexSecondIP", (14,15,16,17)): (14, 15, 16, 17),
-               ("snimpyIndexOidVarLen", (47, 48, 49)): (3, 47, 48, 49),
-               ("snimpyIndexVarLen", "hello1"): tuple([len("hello1")] + [ord(a) for a in "hello1"]),
-               ("snimpyIndexFixedLen", "hello2"): tuple(ord(a) for a in "hello2"),
-               ("snimpyIndexImplied", "hello3"): tuple(ord(a) for a in "hello3"),
-               }
-        for t,v in tt:
+        tt = {("snimpySimpleIndex", 47): (47,),
+              ("snimpyComplexFirstIP", "10.14.15.4"): (10, 14, 15, 4),
+              ("snimpyComplexSecondIP", (14, 15, 16, 17)): (14, 15, 16, 17),
+              ("snimpyIndexOidVarLen", (47, 48, 49)): (3, 47, 48, 49),
+              ("snimpyIndexVarLen", "hello1"): tuple([len("hello1")] +
+                                                     [ord(a)
+                                                      for a in "hello1"]),
+              ("snimpyIndexFixedLen", "hello2"): tuple(ord(a)
+                                                       for a in "hello2"),
+              ("snimpyIndexImplied", "hello3"): tuple(ord(a)
+                                                      for a in "hello3"),
+              }
+        for t, v in tt:
             oid = basictypes.build("SNIMPY-MIB",
                                    t,
                                    v).toOid()
             self.assertEqual(oid,
-                             tt[t,v])
+                             tt[t, v])
             # Test double conversion
             self.assertEqual(mib.get("SNIMPY-MIB", t).type.fromOid(
-                    mib.get("SNIMPY-MIB", t), oid),
-                             (len(tt[t,v]), v))
+                mib.get("SNIMPY-MIB", t), oid),
+                (len(tt[t, v]), v))
 
     def testOidGreedy(self):
         """Test greediness of fromOid."""
         tt = {
-            "snimpyIndexVarLen": ((5, 104, 101, 108, 108, 111, 111, 111, 111), (6, "hello")),
-            "snimpyIndexFixedLen": ((104, 101, 108, 108, 111, 49, 49, 111), (6, "hello1")),
-            "snimpyIndexImplied": ((104, 101, 108, 108, 111, 50), (6, "hello2")),
-            "snimpyComplexFirstIP": ((15, 15, 16, 100, 23, 74, 87), (4, "15.15.16.100")),
+            "snimpyIndexVarLen":
+            ((5, 104, 101, 108, 108, 111, 111, 111, 111), (6, "hello")),
+            "snimpyIndexFixedLen":
+            ((104, 101, 108, 108, 111, 49, 49, 111), (6, "hello1")),
+            "snimpyIndexImplied":
+            ((104, 101, 108, 108, 111, 50), (6, "hello2")),
+            "snimpyComplexFirstIP":
+            ((15, 15, 16, 100, 23, 74, 87), (4, "15.15.16.100")),
             "snimpySimpleIndex": ((17, 19, 20), (1, 17)),
             "snimpyIndexOidVarLen": ((3, 247, 145, 475568, 475, 263),
                                      (4, (247, 145, 475568))),
-            }
+        }
         for t in tt:
             self.assertEqual(mib.get("SNIMPY-MIB", t).type.fromOid(
-                    mib.get("SNIMPY-MIB", t), tt[t][0]),
-                             tt[t][1])
+                mib.get("SNIMPY-MIB", t), tt[t][0]),
+                tt[t][1])
         # Test if too short
         tt = {"snimpyComplexFirstIP": (17, 19, 20),
               "snimpyIndexFixedLen": (104, 101, 108),
@@ -352,10 +376,10 @@ class TestBasicTypes(unittest.TestCase):
                                               "snimpyOctetString",
                                               b"tes\x05")), str(b"tes\x05"))
 
-
     def testDisplayFormat(self):
         """Test display some with some formats"""
-        with mock.patch("snimpy.mib.Entity.fmt", new_callable=mock.PropertyMock) as e:
+        with mock.patch("snimpy.mib.Entity.fmt",
+                        new_callable=mock.PropertyMock) as e:
             e.return_value = "255a"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(str(a), "test")
@@ -392,7 +416,8 @@ class TestBasicTypes(unittest.TestCase):
 
     def testInputFormat(self):
         """Test we can input a string with a given format"""
-        with mock.patch("snimpy.mib.Entity.fmt", new_callable=mock.PropertyMock) as e:
+        with mock.patch("snimpy.mib.Entity.fmt",
+                        new_callable=mock.PropertyMock) as e:
             e.return_value = "255a"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", u"test")
             self.assertEqual(a.pack(), b"test")
@@ -415,7 +440,10 @@ class TestBasicTypes(unittest.TestCase):
             self.assertEqual(a.pack(), b"test")
 
             e.return_value = "*2a:+255a"
-            a = basictypes.build("SNIMPY-MIB", "snimpyString", u"te:st:te+st...")
+            a = basictypes.build(
+                "SNIMPY-MIB",
+                "snimpyString",
+                u"te:st:te+st...")
             self.assertEqual(a.pack(), b"\x03testtest...")
 
             e.return_value = "2a1x:"
@@ -435,39 +463,41 @@ class TestBasicTypes(unittest.TestCase):
                                                18)), "<Integer: 0.18>")
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
                                                "snimpyObjectId",
-                                               (1, 3, 6, 1, 4, 1, 45, 3, 52, 1))),
-                              "<Oid: 1.3.6.1.4.1.45.3.52.1>")
+                                               (1, 3, 6, 1, 4, 1,
+                                                45, 3, 52, 1))),
+                         "<Oid: 1.3.6.1.4.1.45.3.52.1>")
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
                                                "snimpyIpAddress",
                                                "124.24.14.3")),
-                              "<IpAddress: 124.24.14.3>")
+                         "<IpAddress: 124.24.14.3>")
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
                                                "snimpyString",
                                                "45754dfgf")),
-                              "<String: 45754dfgf>")
+                         "<String: 45754dfgf>")
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
                                                "snimpyEnum",
                                                2)),
-                              "<Enum: down(2)>")
+                         "<Enum: down(2)>")
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
                                                "snimpyBoolean",
                                                False)),
-                              "<Boolean: false(2)>")
+                         "<Boolean: false(2)>")
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
                                                "snimpyCounter",
                                                4547)),
-                              "<Unsigned32: 4547>")
+                         "<Unsigned32: 4547>")
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",
                                                "snimpyBits",
                                                ["first", "second"])),
-                              "<Bits: first(0), second(1)>")
+                         "<Bits: first(0), second(1)>")
 
     def testEqualityWithDisplay(self):
         """Test we can check for equality with displayed form"""
         a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
         self.assertEqual(a, "test")
 
-        with mock.patch("snimpy.mib.Entity.fmt", new_callable=mock.PropertyMock) as e:
+        with mock.patch("snimpy.mib.Entity.fmt",
+                        new_callable=mock.PropertyMock) as e:
             e.return_value = "255a"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(a, "test")

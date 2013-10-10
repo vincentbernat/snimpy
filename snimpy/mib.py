@@ -147,10 +147,14 @@ _smi = ffi.verify("""
 #include <smi.h>
 """, libraries=["smi"])
 
+
 class SMIException(Exception):
+
     """SMI related exception"""
 
+
 class Entity(object):
+
     """MIB entity"""
 
     def __init__(self, node):
@@ -167,21 +171,22 @@ class Entity(object):
         target = {
             _smi.SMI_BASETYPE_INTEGER32: basictypes.Integer,
             _smi.SMI_BASETYPE_INTEGER64: basictypes.Integer,
-            _smi.SMI_BASETYPE_UNSIGNED32: { b"TimeTicks": basictypes.Timeticks,
-                                            None: basictypes.Unsigned32 },
+            _smi.SMI_BASETYPE_UNSIGNED32: {b"TimeTicks": basictypes.Timeticks,
+                                           None: basictypes.Unsigned32},
             _smi.SMI_BASETYPE_UNSIGNED64: basictypes.Unsigned64,
-            _smi.SMI_BASETYPE_OCTETSTRING: { b"IpAddress": basictypes.IpAddress,
-                                             None: basictypes.OctetString },
+            _smi.SMI_BASETYPE_OCTETSTRING: {b"IpAddress": basictypes.IpAddress,
+                                            None: basictypes.OctetString},
             _smi.SMI_BASETYPE_OBJECTIDENTIFIER: basictypes.Oid,
-            _smi.SMI_BASETYPE_ENUM: { b"TruthValue": basictypes.Boolean,
-                                      None: basictypes.Enum },
+            _smi.SMI_BASETYPE_ENUM: {b"TruthValue": basictypes.Boolean,
+                                     None: basictypes.Enum},
             _smi.SMI_BASETYPE_BITS: basictypes.Bits
         }.get(t.basetype, None)
         if isinstance(target, dict):
-            tt = _smi.smiGetParentType(t);
+            tt = _smi.smiGetParentType(t)
             target = target.get((t.name != ffi.NULL and ffi.string(t.name)) or
-                                (tt.name != ffi.NULL and ffi.string(tt.name)) or None,
-                                           target.get(None, None))
+                                (tt.name != ffi.NULL and ffi.string(
+                                    tt.name)) or None,
+                                target.get(None, None))
 
         if target is None:
             raise SMIException("unable to retrieve type of entity")
@@ -196,7 +201,8 @@ class Entity(object):
         t = _smi.smiGetNodeType(self.node)
         tt = _smi.smiGetParentType(t)
         f = (t != ffi.NULL and t.format != ffi.NULL and ffi.string(t.format) or
-             tt != ffi.NULL and tt.format != ffi.NULL and ffi.string(tt.format)) or None
+             tt != ffi.NULL and tt.format != ffi.NULL and
+             ffi.string(tt.format)) or None
         if f is None:
             return None
         return f.decode("ascii")
@@ -231,7 +237,7 @@ class Entity(object):
             if m1 == m2:
                 ranges.append(m1)
             else:
-                ranges.append((m1,m2))
+                ranges.append((m1, m2))
             range = _smi.smiGetNextRange(range)
         if len(ranges) == 0:
             return None
@@ -253,8 +259,9 @@ class Entity(object):
         result = {}
         element = _smi.smiGetFirstNamedNumber(t)
         while element != ffi.NULL:
-            result[self._convert(element.value)] = ffi.string(element.name).decode("ascii")
-            element = _smi.smiGetNextNamedNumber(element);
+            result[self._convert(element.value)] = ffi.string(
+                element.name).decode("ascii")
+            element = _smi.smiGetNextNamedNumber(element)
         return result
 
     def __str__(self):
@@ -263,8 +270,8 @@ class Entity(object):
     def __repr__(self):
         r = _smi.smiRenderNode(self.node, _smi.SMI_RENDER_ALL)
         if r == ffi.NULL:
-            return "<uninitialized {0} object at {1}>".format(self.__class__.__name__,
-                                                              hex(id(self)))
+            return "<uninitialized {0} object at {1}>".format(
+                self.__class__.__name__, hex(id(self)))
         module = _smi.smiGetNodeModule(self.node)
         if module == ffi.NULL:
             raise SMIException("unable to get module for {0}".format(
@@ -274,18 +281,23 @@ class Entity(object):
                                              ffi.string(module.name))
 
     def _convert(self, value):
-        attr = { _smi.SMI_BASETYPE_INTEGER32: "integer32",
-                 _smi.SMI_BASETYPE_UNSIGNED32: "unsigned32",
-                 _smi.SMI_BASETYPE_INTEGER64: "integer64",
-                 _smi.SMI_BASETYPE_UNSIGNED64: "unsigned64" }.get(value.basetype, None)
+        attr = {_smi.SMI_BASETYPE_INTEGER32: "integer32",
+                _smi.SMI_BASETYPE_UNSIGNED32: "unsigned32",
+                _smi.SMI_BASETYPE_INTEGER64: "integer64",
+                _smi.SMI_BASETYPE_UNSIGNED64: "unsigned64"}.get(value.basetype,
+                                                                None)
         if attr is None:
             raise SMIException("unexpected type found in range")
         return getattr(value.value, attr)
 
+
 class Scalar(Entity):
+
     """MIB scalar entity"""
 
+
 class Table(Entity):
+
     """MIB table entity"""
 
     @property
@@ -322,8 +334,9 @@ class Table(Entity):
         if child != ffi.NULL and child.indexkind == _smi.SMI_INDEX_AUGMENT:
             child = _smi.smiGetRelatedNode(child)
             if child == ffi.NULL:
-                raise SMIException("AUGMENT index for {0} but unable to retrieve it".format(
-                    ffi.string(self.node.name)))
+                raise SMIException("AUGMENT index for {0} but "
+                                   "unable to retrieve it".format(
+                                       ffi.string(self.node.name)))
         if child == ffi.NULL:
             raise SMIException("{0} does not have a row".format(
                 ffi.string(self.node.name)))
@@ -332,9 +345,10 @@ class Table(Entity):
                 ffi.string(child.name),
                 ffi.string(self.node.name)))
         if child.indexkind != _smi.SMI_INDEX_INDEX:
-            raise SMIException("child {0} of {1} has an unhandled kind of index".format(
-                ffi.string(child.name),
-                ffi.string(self.node.name)))
+            raise SMIException("child {0} of {1} has an unhandled "
+                               "kind of index".format(
+                                   ffi.string(child.name),
+                                   ffi.string(self.node.name)))
         return child
 
     @property
@@ -360,17 +374,21 @@ class Table(Entity):
         while element != ffi.NULL:
             nelement = _smi.smiGetElementNode(element)
             if nelement == ffi.NULL:
-                raise SMIException("cannot get index associated with {0}".format(
-                    ffi.string(self.node.name)))
+                raise SMIException("cannot get index "
+                                   "associated with {0}".format(
+                                       ffi.string(self.node.name)))
             if nelement.nodekind != _smi.SMI_NODEKIND_COLUMN:
-                raise SMIException("index {0} for {1} is not a column".format(
-                    ffi.string(nelement.name),
-                    ffi.string(self.node.name)))
+                raise SMIException("index {0} for {1} is "
+                                   "not a column".format(
+                                       ffi.string(nelement.name),
+                                       ffi.string(self.node.name)))
             lindex.append(Column(nelement))
             element = _smi.smiGetNextElement(element)
         return lindex
 
+
 class Column(Entity):
+
     """MIB column entity"""
 
     @property
@@ -398,16 +416,20 @@ class Column(Entity):
         t = Table(parent)
         return t
 
+
 class Node(Entity):
+
     """MIB node entity"""
+
 
 def reset():
     """Reset libsmi to its initial state"""
-    _smi.smiExit();
+    _smi.smiExit()
     if _smi.smiInit(b"snimpy") != 0:
             raise SMIException("unable to init libsmi")
-    _smi.smiSetErrorLevel(0);
-    _smi.smiSetFlags(_smi.SMI_FLAG_ERRORS | _smi.SMI_FLAG_RECURSIVE);
+    _smi.smiSetErrorLevel(0)
+    _smi.smiSetFlags(_smi.SMI_FLAG_ERRORS | _smi.SMI_FLAG_RECURSIVE)
+
 
 def _get_module(name):
     """Get the SMI module from its name.
@@ -415,13 +437,15 @@ def _get_module(name):
     @param name: name of the module
     @return: SMI module or None if not found (not loaded)
     """
-    if not isinstance(name, bytes): name = name.encode("ascii")
+    if not isinstance(name, bytes):
+        name = name.encode("ascii")
     m = _smi.smiGetModule(name)
     if m == ffi.NULL:
         return None
     if m.conformance and m.conformance <= 1:
         return None
     return m
+
 
 def _kind2object(kind):
     return {
@@ -431,6 +455,7 @@ def _kind2object(kind):
         _smi.SMI_NODEKIND_COLUMN: Column
     }.get(kind, Entity)
 
+
 def get(mib, name):
     """Get a node by its name.
 
@@ -438,16 +463,18 @@ def get(mib, name):
     @param name: object name to get from the MIB
     @return: the requested MIB entity
     """
-    if not isinstance(mib, bytes): mib = mib.encode("ascii")
+    if not isinstance(mib, bytes):
+        mib = mib.encode("ascii")
     module = _get_module(mib)
     if module is None:
         raise SMIException("no module named {0}".format(mib))
     node = _smi.smiGetNode(module, name.encode("ascii"))
     if node == ffi.NULL:
         raise SMIException("in {0}, no node named {1}".format(
-            mib,name))
+            mib, name))
     pnode = _kind2object(node.nodekind)
     return pnode(node)
+
 
 def _get_kind(mib, kind):
     """Get nodes of a given kind from a MIB.
@@ -456,7 +483,8 @@ def _get_kind(mib, kind):
     @param kind: SMI kind of object
     @return: list of matched MIB entities for the MIB
     """
-    if not isinstance(mib, bytes): mib = mib.encode("ascii")
+    if not isinstance(mib, bytes):
+        mib = mib.encode("ascii")
     module = _get_module(mib)
     if module is None:
         raise SMIException("no module named {0}".format(mib))
@@ -467,6 +495,7 @@ def _get_kind(mib, kind):
         node = _smi.smiGetNextNode(node, kind)
     return lnode
 
+
 def getNodes(mib):
     """Return all nodes from a given MIB.
 
@@ -474,6 +503,7 @@ def getNodes(mib):
     @return: list of all MIB entities for the MIB
     """
     return _get_kind(mib, _smi.SMI_NODEKIND_NODE)
+
 
 def getScalars(mib):
     """Return all scalars from a given MIB.
@@ -483,6 +513,7 @@ def getScalars(mib):
     """
     return _get_kind(mib, _smi.SMI_NODEKIND_SCALAR)
 
+
 def getTables(mib):
     """Return all tables from a given MIB.
 
@@ -490,6 +521,7 @@ def getTables(mib):
     @return: list of all tables for the MIB
     """
     return _get_kind(mib, _smi.SMI_NODEKIND_TABLE)
+
 
 def getColumns(mib):
     """Return all columns from a givem MIB.
@@ -499,20 +531,22 @@ def getColumns(mib):
     """
     return _get_kind(mib, _smi.SMI_NODEKIND_COLUMN)
 
+
 def load(mib):
     """Load a MIB into the library.
 
     @param mib: MIB to load, either a filename or a MIB name
     @return: MIB name that has been loaded
     """
-    if not isinstance(mib, bytes): mib = mib.encode("ascii")
+    if not isinstance(mib, bytes):
+        mib = mib.encode("ascii")
     modulename = _smi.smiLoadModule(mib)
     if modulename == ffi.NULL:
         raise SMIException("unable to load {0}".format(mib))
     modulename = ffi.string(modulename)
     if not _get_module(modulename.decode("ascii")):
-        raise SMIException("{0} contains major SMI error (check with smilint -s -l1)".format(
-            mib))
+        raise SMIException("{0} contains major SMI error "
+                           "(check with smilint -s -l1)".format(mib))
     return modulename
 
 reset()

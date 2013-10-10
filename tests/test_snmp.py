@@ -1,17 +1,19 @@
 import unittest
 import os
-import time
 from datetime import timedelta
 from snimpy import basictypes, snmp, mib
 import agent
 
+
 class TestSnmpRetriesTimeout(unittest.TestCase):
+
     """Live modification of retry and timeout values for a session"""
 
     def setUp(self):
         self.session = snmp.Session(host="localhost",
                                     community="public",
                                     version=2)
+
     def testGetRetries(self):
         """Get default retries value"""
         self.assertEqual(self.session.retries, 5)
@@ -38,7 +40,9 @@ class TestSnmpRetriesTimeout(unittest.TestCase):
         self.assertRaises(ValueError, setattr, self.session, "timeout", -30)
         self.assertRaises(ValueError, setattr, self.session, "retries", -5)
 
+
 class TestSnmpSession(unittest.TestCase):
+
     """Test for session creation using SNMPv1/v2c/v3"""
 
     def testSnmpV1(self):
@@ -107,6 +111,7 @@ class TestSnmpSession(unittest.TestCase):
 
 
 class TestSnmp1(unittest.TestCase):
+
     """
     Test communication with an agent with SNMPv1.
     """
@@ -119,9 +124,10 @@ class TestSnmp1(unittest.TestCase):
         cls.agent = agent.TestAgent()
 
     def setUp(self):
-        self.session = snmp.Session(host="127.0.0.1:{0}".format(self.agent.port),
-                                    community="public",
-                                    version=self.version)
+        self.session = snmp.Session(
+            host="127.0.0.1:{0}".format(self.agent.port),
+            community="public",
+            version=self.version)
 
     @classmethod
     def tearDownClass(cls):
@@ -142,7 +148,7 @@ class TestSnmp1(unittest.TestCase):
     def testGetEnum(self):
         """Get an enum value"""
         oid, a = self.session.get(mib.get('IF-MIB', 'ifType').oid + (1,))[0]
-        self.assertEqual(a, 24) # This is software loopback
+        self.assertEqual(a, 24)  # This is software loopback
         b = basictypes.build('IF-MIB', 'ifType', a)
         self.assertEqual(b, "softwareLoopback")
 
@@ -157,55 +163,57 @@ class TestSnmp1(unittest.TestCase):
 
     def testInexistant(self):
         """Get an inexistant value"""
-        self.assertRaises(self.version == 1 and snmp.SNMPNoSuchName or snmp.SNMPNoSuchObject,
-                          self.session.get,
-                          (1,2,3))
+        self.assertRaises(
+            self.version == 1 and snmp.SNMPNoSuchName or snmp.SNMPNoSuchObject,
+            self.session.get,
+            (1, 2, 3))
 
     def testSetIpAddress(self):
         """Set IpAddress."""
-        self.setAndCheck('snimpyIpAddress',  '10.14.12.12')
+        self.setAndCheck('snimpyIpAddress', '10.14.12.12')
 
     def testSetString(self):
         """Set String."""
-        self.setAndCheck('snimpyString',  'hello')
+        self.setAndCheck('snimpyString', 'hello')
 
     def testSetInteger(self):
         """Set Integer."""
-        self.setAndCheck('snimpyInteger',  1574512)
+        self.setAndCheck('snimpyInteger', 1574512)
 
     def testSetEnum(self):
         """Set Enum."""
-        self.setAndCheck('snimpyEnum',  'testing')
+        self.setAndCheck('snimpyEnum', 'testing')
 
     def testSetObjectId(self):
         """Set ObjectId."""
-        self.setAndCheck('snimpyObjectId',  (1,2,3,4,5,6))
+        self.setAndCheck('snimpyObjectId', (1, 2, 3, 4, 5, 6))
 
     def testSetCounter(self):
         """Set Counter."""
-        self.setAndCheck('snimpyCounter',  545424)
+        self.setAndCheck('snimpyCounter', 545424)
 
     def testSetGauge(self):
         """Set Gauge."""
-        self.setAndCheck('snimpyGauge',  4857544)
+        self.setAndCheck('snimpyGauge', 4857544)
 
     def testSetBoolean(self):
         """Set Boolean."""
-        self.setAndCheck('snimpyBoolean',  True)
+        self.setAndCheck('snimpyBoolean', True)
 
     def testSetTimeticks(self):
         """Set Timeticks."""
-        self.setAndCheck('snimpyTimeticks',  timedelta(3, 18))
+        self.setAndCheck('snimpyTimeticks', timedelta(3, 18))
 
     def testSetBits(self):
         """Set Bits."""
-        self.setAndCheck('snimpyBits',  ["third", "last"])
+        self.setAndCheck('snimpyBits', ["third", "last"])
 
     def testSetMacAddress(self):
         """Set a MAC address."""
         self.setAndCheck('snimpyMacAddress', u"a0:b0:c0:d0:e:ff")
         oid, a = self.session.get((1, 3, 6, 1, 2, 1, 45121, 1, 15, 0))[0]
-        self.assertEqual(a, b"\xa0\xb0\xc0\xd0\x0e\xff") # This is software loopback
+        # This is software loopback
+        self.assertEqual(a, b"\xa0\xb0\xc0\xd0\x0e\xff")
 
     def setAndCheck(self, oid, value):
         """Set and check a value"""
@@ -214,8 +222,9 @@ class TestSnmp1(unittest.TestCase):
         ooid = mib.get('SNIMPY-MIB', oid).oid + (0,)
         self.session.set(ooid,
                          basictypes.build('SNIMPY-MIB', oid, value))
-        self.assertEqual(basictypes.build('SNIMPY-MIB', oid, self.session.get(ooid)[0][1]),
-                         basictypes.build('SNIMPY-MIB', oid, value))
+        self.assertEqual(
+            basictypes.build('SNIMPY-MIB', oid, self.session.get(ooid)[0][1]),
+            basictypes.build('SNIMPY-MIB', oid, value))
 
     def testMultipleGet(self):
         """Get multiple values at once"""
@@ -256,13 +265,15 @@ class TestSnmp1(unittest.TestCase):
                           (ooid + (2,), b"eth0"),
                           (ooid + (3,), b"eth1")))
 
+
 class TestSnmp2(TestSnmp1):
+
     """Test communication with an agent with SNMPv2."""
     version = 2
 
     def testSetCounter64(self):
         """Set Counter64."""
-        self.setAndCheck('snimpyCounter64',  2**47+1)
+        self.setAndCheck('snimpyCounter64', 2 ** 47 + 1)
 
     def testWalk(self):
         """Check if we can walk"""
@@ -280,13 +291,16 @@ class TestSnmp2(TestSnmp1):
                          ((ooid + (1,), b"lo"),
                           (ooid + (2,), b"eth0")))
 
+
 class TestSnmp3(TestSnmp2):
+
     """Test communicaton with an agent with SNMPv3."""
     version = 3
 
     def setUp(self):
-        self.session = snmp.Session(host="127.0.0.1:{0}".format(self.agent.port),
-                                    version=3,
-                                    secname="read-write",
-                                    authprotocol="MD5", authpassword="authpass",
-                                    privprotocol="AES", privpassword="privpass")
+        self.session = snmp.Session(
+            host="127.0.0.1:{0}".format(self.agent.port),
+            version=3,
+            secname="read-write",
+            authprotocol="MD5", authpassword="authpass",
+            privprotocol="AES", privpassword="privpass")

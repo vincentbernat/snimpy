@@ -5,7 +5,9 @@ from snimpy.main import interact
 from multiprocessing import Process
 import agent
 
+
 class TestMain(unittest.TestCase):
+
     """Test the main shell"""
 
     @classmethod

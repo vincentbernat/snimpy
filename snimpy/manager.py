@@ -24,16 +24,23 @@ from time import time
 from collections import MutableMapping
 from snimpy import snmp, mib, basictypes
 
+
 class DelegatedSession(object):
+
     """General class for SNMP session for delegation"""
+
     def __init__(self, session):
         self._session = session
+
     def __getattr__(self, attr):
         return getattr(self._session, attr)
+
     def __setattribute__(self, attr, value):
         return setattr(self._session, attr, value)
 
+
 class DelayedSetSession(DelegatedSession):
+
     """SNMP session that is able to delay SET requests.
 
     This is an adapter. The constructor takes the original (not
@@ -51,7 +58,9 @@ class DelayedSetSession(DelegatedSession):
         if self.setters:
             self._session.set(*self.setters)
 
+
 class NoneSession(DelegatedSession):
+
     """SNMP session that will return None on unsucessful GET requests.
 
     In a normal session, a GET request returning `No such instance`
@@ -71,7 +80,9 @@ class NoneSession(DelegatedSession):
                 raise
             return ((args[0], None),)
 
+
 class CachedSession(DelegatedSession):
+
     """SNMP session using a cache.
 
     This is an adapter. The constructor takes the original session.
@@ -96,6 +107,7 @@ class CachedSession(DelegatedSession):
 
     def get(self, *args):
         return self.getorgetnext("get", *args)
+
     def getnext(self, *args):
         return self.getorgetnext("getnext", *args)
 
@@ -107,6 +119,7 @@ class CachedSession(DelegatedSession):
             if time() - self.cache[k][0] > self.timeout:
                 del self.cache[k]
         self.count = 0
+
 
 class Manager(object):
 
@@ -130,7 +143,7 @@ class Manager(object):
                                      authprotocol, authpassword,
                                      privprotocol, privpassword)
         if timeout is not None:
-            self._session.timeout = int(timeout*1000000)
+            self._session.timeout = int(timeout * 1000000)
         if retries is not None:
             self._session.retries = retries
         if cache:
@@ -145,11 +158,10 @@ class Manager(object):
         for m in loaded:
             try:
                 a = mib.get(m, attribute)
-                return (m,a)
+                return (m, a)
             except mib.SMIException:
                 pass
         raise AttributeError("{0} is not an attribute".format(attribute))
-
 
     def __getattribute__(self, attribute):
         if attribute.startswith("_"):
@@ -193,13 +205,16 @@ class Manager(object):
             self._session = self._osession
             del self._osession
 
+
 class Proxy:
 
     def __repr__(self):
         return "<{0} for {1}>".format(self.__class__.__name__,
                                       repr(self.proxy)[1:-1])
 
+
 class ProxyColumn(Proxy, MutableMapping):
+
     """Proxy for column access"""
 
     def __init__(self, session, column):
@@ -207,19 +222,22 @@ class ProxyColumn(Proxy, MutableMapping):
         self.session = session
 
     def _op(self, op, index, *args):
-        if type(index) is not tuple:
+        if not isinstance(index, tuple):
             index = (index,)
         indextype = self.proxy.table.index
         if len(indextype) != len(index):
             raise ValueError(
-                "{0} column uses the following indexes: {1!r}".format(self.proxy,
-                                                                      indextype))
+                "{0} column uses the following "
+                "indexes: {1!r}".format(self.proxy, indextype))
         oidindex = []
         for i, ind in enumerate(index):
             # Cast to the correct type since we need "toOid()"
             ind = indextype[i].type(indextype[i], ind, raw=False)
             oidindex.extend(ind.toOid())
-        result = getattr(self.session, op)(self.proxy.oid + tuple(oidindex), *args)
+        result = getattr(
+            self.session,
+            op)(self.proxy.oid + tuple(oidindex),
+                *args)
         if op != "set":
             oid, result = result[0]
             if result is not None:
@@ -265,7 +283,8 @@ class ProxyColumn(Proxy, MutableMapping):
                 break
             oid = noid
             if not((len(oid) >= len(self.proxy.oid) and
-                oid[:len(self.proxy.oid)] == self.proxy.oid[:len(self.proxy.oid)])):
+                    oid[:len(self.proxy.oid)] ==
+                    self.proxy.oid[:len(self.proxy.oid)])):
                 noid = None
                 break
 
@@ -306,6 +325,8 @@ class ProxyColumn(Proxy, MutableMapping):
 
 
 loaded = []
+
+
 def load(mibname):
     """Load a MIB"""
     m = mib.load(mibname)
@@ -315,4 +336,3 @@ def load(mibname):
             for o in mib.getScalars(m) + \
                     mib.getColumns(m):
                 setattr(Manager, str(o), 1)
-

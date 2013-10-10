@@ -26,16 +26,27 @@ from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902, rfc1905
 from pysnmp.smi import error
 
+
 class SNMPException(Exception):
     """SNMP related base exception"""
 
-# v1 exceptions
-class SNMPTooBig(SNMPException): pass
-class SNMPNoSuchName(SNMPException): pass
-class SNMPBadValue(SNMPException): pass
-class SNMPReadOnly(SNMPException): pass
 
-# Dynamically build exceptions
+class SNMPTooBig(SNMPException):
+    pass
+
+
+class SNMPNoSuchName(SNMPException):
+    pass
+
+
+class SNMPBadValue(SNMPException):
+    pass
+
+
+class SNMPReadOnly(SNMPException):
+    pass
+
+# Dynamically build remaining (v2) exceptions
 for name, obj in inspect.getmembers(error):
     if name.endswith("Error") and \
        inspect.isclass(obj) and \
@@ -46,7 +57,9 @@ for name, obj in inspect.getmembers(error):
 del name
 del obj
 
+
 class Session(object):
+
     """SNMP session"""
 
     def __init__(self, host,
@@ -62,7 +75,8 @@ class Session(object):
 
         # Put authentication stuff in self._auth
         if version in [1, 2]:
-            self._auth = cmdgen.CommunityData(community, community, version - 1)
+            self._auth = cmdgen.CommunityData(
+                community, community, version - 1)
         elif version == 3:
             if secname is None:
                 secname = community
@@ -74,8 +88,8 @@ class Session(object):
                     "SHA1": cmdgen.usmHMACSHAAuthProtocol
                 }[authprotocol]
             except KeyError:
-                raise ValueError("{0} is not an acceptable authentication protocol".format(
-                    authprotocol))
+                raise ValueError("{0} is not an acceptable authentication "
+                                 "protocol".format(authprotocol))
             try:
                 privprotocol = {
                     None: cmdgen.usmNoPrivProtocol,
@@ -87,8 +101,8 @@ class Session(object):
                     "AES256": cmdgen.usmAesCfb256Protocol,
                 }[privprotocol]
             except KeyError:
-                raise ValueError("{0} is not an acceptable privacy protocol".format(
-                    privprotocol))
+                raise ValueError("{0} is not an acceptable privacy "
+                                 "protocol".format(privprotocol))
             self._auth = cmdgen.UsmUserData(secname,
                                             authpassword,
                                             privpassword,
@@ -109,25 +123,25 @@ class Session(object):
     def _check_exception(self, value):
         """Check if the given ASN1 value is an exception"""
         if isinstance(value, rfc1905.NoSuchObject):
-            raise SNMPNoSuchObject("No such object was found")
+            raise SNMPNoSuchObject("No such object was found")  # nopep8
         if isinstance(value, rfc1905.NoSuchInstance):
-            raise SNMPNoSuchInstance("No such instance exists")
+            raise SNMPNoSuchInstance("No such instance exists")  # nopep8
         if isinstance(value, rfc1905.EndOfMibView):
-            raise SNMPEndOfMibView("End of MIB was reached")
+            raise SNMPEndOfMibView("End of MIB was reached")  # nopep8
 
     def _convert(self, value):
         """Convert a PySNMP value to some native Python type"""
-        for cl, fn in { rfc1902.Integer: int,
-                        rfc1902.Integer32: int,
-                        rfc1902.OctetString: bytes,
-                        rfc1902.IpAddress: value.prettyOut,
-                        rfc1902.Counter32: int,
-                        rfc1902.Counter64: int,
-                        rfc1902.Gauge32: int,
-                        rfc1902.Unsigned32: int,
-                        rfc1902.TimeTicks: int,
-                        rfc1902.Bits: str,
-                        rfc1902.univ.ObjectIdentifier: tuple }.items():
+        for cl, fn in {rfc1902.Integer: int,
+                       rfc1902.Integer32: int,
+                       rfc1902.OctetString: bytes,
+                       rfc1902.IpAddress: value.prettyOut,
+                       rfc1902.Counter32: int,
+                       rfc1902.Counter64: int,
+                       rfc1902.Gauge32: int,
+                       rfc1902.Unsigned32: int,
+                       rfc1902.TimeTicks: int,
+                       rfc1902.Bits: str,
+                       rfc1902.univ.ObjectIdentifier: tuple}.items():
             if isinstance(value, cl):
                 return fn(value)
         self._check_exception(value)
@@ -148,15 +162,16 @@ class Session(object):
             if str(exc) in globals():
                 raise globals()[exc]
             raise SNMPException(errorStatus.prettyPrint())
-        if cmd in [self._cmdgen.getCmd, self._cmdgen.setCmd] :
+        if cmd in [self._cmdgen.getCmd, self._cmdgen.setCmd]:
             results = [(tuple(name), val) for name, val in varBinds]
         else:
-            results = [(tuple(name), val) for row in varBinds for name, val in row]
+            results = [(tuple(name), val)
+                       for row in varBinds for name, val in row]
         if len(results) == 0:
             if cmd not in [self._cmdgen.nextCmd, self._cmdgen.bulkCmd]:
                 raise SNMPException("empty answer")
             # This seems to be filtered
-            raise SNMPEndOfMibView("no more stuff after this OID")
+            raise SNMPEndOfMibView("no more stuff after this OID")  # nopep8
         return tuple([(oid, self._convert(val)) for oid, val in results])
 
     def get(self, *oids):
@@ -236,6 +251,7 @@ class Session(object):
             return
         value = int(value)
         if value <= 0:
-            raise ValueError("{0} is not an appropriate value for max repeater parameter".format(
-                value))
+            raise ValueError("{0} is not an appropriate value "
+                             "for max repeater parameter".format(
+                                 value))
         self._bulk = value
