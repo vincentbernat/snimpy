@@ -1,5 +1,5 @@
-from snimpy.version import VERSION
 from setuptools import setup
+import snimpy
 
 try:
     import multiprocessing
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         ext_modules = []
 
     setup(name="snimpy",
-          version=VERSION,
+          version=snimpy.__version__,
           classifiers = [
             'Development Status :: 4 - Beta',
             'Environment :: Console',
@@ -52,9 +52,9 @@ if __name__ == "__main__":
             'Topic :: System :: Monitoring'
             ],
           url='https://github.com/vincentbernat/snimpy',
-          description="interactive SNMP tool",
-          author="Vincent Bernat",
-          author_email="bernat@luffy.cx",
+          description=snimpy.__doc__,
+          author=snimpy.__author__,
+          author_email=snimpy.__email__,
           packages=["snimpy"],
           entry_points = {
               'console_scripts': [
