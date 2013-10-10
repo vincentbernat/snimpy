@@ -1,6 +1,8 @@
 import unittest
 import os
 import tempfile
+import code  # nopep8
+import mock
 from snimpy.main import interact
 from multiprocessing import Process
 import agent
@@ -29,9 +31,10 @@ m = M(host="127.0.0.1:{0}",
 assert(m.ifDescr[1] == "lo")
 """.format(self.agent.port).encode("ascii"))
             script.close()
-            p = Process(target=interact, args=((script.name,),))
-            p.start()
-            p.join()
-            self.assertEqual(p.exitcode, 0)
+            with mock.patch("code.InteractiveInterpreter.write"):
+                p = Process(target=interact, args=((script.name,),))
+                p.start()
+                p.join()
+                self.assertEqual(p.exitcode, 0)
         finally:
             os.unlink(script.name)
