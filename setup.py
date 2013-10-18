@@ -24,7 +24,7 @@ if __name__ == "__main__":
             'Development Status :: 4 - Beta',
             'Environment :: Console',
             'Intended Audience :: System Administrators',
-            'License :: OSI Approved :: ISC License',
+            'License :: OSI Approved :: ISC License (ISCL)',
             'Operating System :: POSIX',
             'Programming Language :: Python :: 2',
             'Programming Language :: Python :: 3',
