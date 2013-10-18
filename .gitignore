@@ -10,6 +10,7 @@
 /htmlcov
 /.tox
 /.noseids
+/docs/_build
 __pycache__
 .index
 cscope.out

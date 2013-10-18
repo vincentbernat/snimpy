@@ -15,6 +15,9 @@ if __name__ == "__main__":
     except ImportError:
         ext_modules = []
 
+    readme = open('README.rst').read()
+    history = open('HISTORY.rst').read().replace('.. :changelog:', '')
+
     setup(name="snimpy",
           version=snimpy.__version__,
           classifiers = [
@@ -31,6 +34,7 @@ if __name__ == "__main__":
             ],
           url='https://github.com/vincentbernat/snimpy',
           description=snimpy.__doc__,
+          long_description=readme + '\n\n' + history,
           author=snimpy.__author__,
           author_email=snimpy.__email__,
           packages=["snimpy"],
