@@ -3,7 +3,7 @@
 History
 -------
 
-0.8.0 (not released)
+0.8.0 (2013-10-19)
 ++++++++++++++++++++
 
 * Python 3.3 support. Pypy support.
