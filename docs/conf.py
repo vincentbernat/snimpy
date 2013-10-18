@@ -30,9 +30,12 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-sys.path.append(os.path.abspath('_themes'))
-html_theme_path = ['_themes']
-html_theme = 'flask'
+if os.environ.get('READTHEDOCS', None) == 'True':
+    html_theme = "default"
+else:
+    sys.path.append(os.path.abspath('_themes'))
+    html_theme_path = ['_themes']
+    html_theme = 'flask'
 html_static_path = ['_static']
 html_use_modindex = False
 html_theme_options = {
