@@ -61,5 +61,5 @@ Contents:
    installation
    usage
    contributing
-   authors
+   license
    history
