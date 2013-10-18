@@ -3,10 +3,16 @@
 
 import sys, os
 
+rtd = os.environ.get('READTHEDOCS', None) == 'True'
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
 sys.path.insert(0, project_root)
 
+# -- Don't try to load CFFI (doesn't work on RTD) ------------------------------
+
+if rtd:
+    from mock import Mock
+    sys.modules['cffi'] = Mock()
 import snimpy
 
 # -- General configuration -----------------------------------------------------
@@ -30,7 +36,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-if os.environ.get('READTHEDOCS', None) == 'True':
+if rtd:
     html_theme = "default"
 else:
     sys.path.append(os.path.abspath('_themes'))

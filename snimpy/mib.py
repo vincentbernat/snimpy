@@ -461,10 +461,13 @@ class Column(Node):
 def reset():
     """Reset libsmi to its initial state."""
     _smi.smiExit()
-    if _smi.smiInit(b"snimpy") != 0:
+    if _smi.smiInit(b"snimpy") < 0:
             raise SMIException("unable to init libsmi")
     _smi.smiSetErrorLevel(0)
-    _smi.smiSetFlags(_smi.SMI_FLAG_ERRORS | _smi.SMI_FLAG_RECURSIVE)
+    try:
+        _smi.smiSetFlags(_smi.SMI_FLAG_ERRORS | _smi.SMI_FLAG_RECURSIVE)
+    except TypeError:
+        pass                    # We are being mocked
 
 
 def _get_module(name):
