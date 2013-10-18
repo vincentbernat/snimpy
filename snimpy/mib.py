@@ -16,8 +16,14 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-"""
-simple interface to libsmi
+"""This module is a low-level interface to manipulate and
+extract information from MIB files. It is a CFFI_ wrapper around
+libsmi_. You may find convenient to use it in other projects but the
+wrapper is merely here to serve *Snimpy* use and is therefore
+incomplete.
+
+.. _libsmi: http://www.ibr.cs.tu-bs.de/projects/libsmi/
+.. _CFFI: http://cffi.readthedocs.org/
 """
 
 from cffi import FFI
@@ -150,21 +156,32 @@ _smi = ffi.verify("""
 
 class SMIException(Exception):
 
-    """SMI related exception"""
+    """SMI related exception. Any exception thrown in this module is
+    inherited from this one."""
 
 
-class Entity(object):
+class Node(object):
 
-    """MIB entity"""
+    """MIB node. An instance of this class represents a MIB node. It
+    can be specialized by other classes, like :class:`Scalar`,
+    :class:`Table`, :class:`Column`, :class:`Node`.
+    """
 
     def __init__(self, node):
+        """Create a new MIB node.
+
+        :param node: libsmi node supporting this node.
+        """
         self.node = node
 
     @property
     def type(self):
-        """Get the basic type associated with this entity.
+        """Get the basic type associated with this node.
 
-        @return: class from basictypes module which can represent the entity.
+        :return: The class from :mod:`basictypes` module which can
+            represent the node. When retrieving a valid value for
+            this node, the returned class can be instanciated to get
+            an appropriate representation.
         """
         from snimpy import basictypes
         t = _smi.smiGetNodeType(self.node)
@@ -189,14 +206,19 @@ class Entity(object):
                                 target.get(None, None))
 
         if target is None:
-            raise SMIException("unable to retrieve type of entity")
+            raise SMIException("unable to retrieve type of node")
         return target
 
     @property
     def fmt(self):
-        """Get entity format
+        """Get node format. The node format is a string to use to display
+        a user-friendly version of the node. This is can be used for
+        both octet strings or integers (to make them appear as decimal
+        numbers).
 
-        @return: entity format or None if there is none
+        :return: The node format as a string or None if there is no
+            format available.
+
         """
         t = _smi.smiGetNodeType(self.node)
         tt = _smi.smiGetParentType(t)
@@ -209,21 +231,25 @@ class Entity(object):
 
     @property
     def oid(self):
-        """Get OID for the current entity
+        """Get OID for the current node. The OID can then be used to request
+        the node from an SNMP agent.
 
-        @return: OID as a tuple
+        :return: OID as a tuple
         """
         return tuple([self.node.oid[i] for i in range(self.node.oidlen)])
 
     @property
     def ranges(self):
-        """Get entity ranges.
+        """Get node ranges. An node can be restricted by a set of
+        ranges. For example, an integer can only be provided between
+        two values. For strings, the restriction is on the length of
+        the string.
 
-        The returned value can be C{None} if no restriction on range
-        exists for the current entity, a single value if the range is
+        The returned value can be `None` if no restriction on range
+        exists for the current node, a single value if the range is
         fixed or a list of tuples or fixed values otherwise.
 
-        @return: valid range for the entity.
+        :return: The valid range for this node.
         """
         t = _smi.smiGetNodeType(self.node)
         if t == ffi.NULL:
@@ -247,9 +273,11 @@ class Entity(object):
 
     @property
     def enum(self):
-        """Get possible enum values.
+        """Get possible enum values. When the node can only take a discrete
+        number of values, those values are defined in the MIB and can
+        be retrieved through this property.
 
-        @return: dictionary of possible values keyed by the integer value.
+        :return: The dictionary of possible values keyed by the integer value.
         """
         t = _smi.smiGetNodeType(self.node)
         if t == ffi.NULL or t.basetype not in (_smi.SMI_BASETYPE_ENUM,
@@ -291,20 +319,28 @@ class Entity(object):
         return getattr(value.value, attr)
 
 
-class Scalar(Entity):
+class Scalar(Node):
 
-    """MIB scalar entity"""
+    """MIB scalar node. This class represents a scalar value in the
+    MIB. A scalar value is a value not contained in a table.
+    """
 
 
-class Table(Entity):
+class Table(Node):
 
-    """MIB table entity"""
+    """MIB table node. This class represents a table. A table is an
+    ordered collection of objects consisting of zero or more
+    rows. Each object in the table is identified using an index. An
+    index can be a single value or a list of values.
+    """
 
     @property
     def columns(self):
-        """Get table columns.
+        """Get table columns. The columns are the different kind of objects
+        that can be retrieved in a table.
 
-        @return: list of table columns
+        :return: list of table columns (:class:`Column` instances)
+
         """
         child = _smi.smiGetFirstChildNode(self.node)
         if child == ffi.NULL:
@@ -326,9 +362,9 @@ class Table(Entity):
 
     @property
     def _row(self):
-        """Get table row.
+        """Get the table row.
 
-        @return: row object
+        :return: row object (as an opaque object)
         """
         child = _smi.smiGetFirstChildNode(self.node)
         if child != ffi.NULL and child.indexkind == _smi.SMI_INDEX_AUGMENT:
@@ -353,9 +389,11 @@ class Table(Entity):
 
     @property
     def implied(self):
-        """Is the last index implied?
+        """Is the last index implied? An implied index is an index whose size
+        is not fixed but who is not prefixed by its size because this
+        is the last index of a table.
 
-        @return: True iff this is the case
+        :return: `True` if and only if the last index is implied.
         """
         child = self._row
         if child.implied:
@@ -364,9 +402,11 @@ class Table(Entity):
 
     @property
     def index(self):
-        """Get indexes for a table.
+        """Get indexes for a table. The indexes are used to locate a precise
+        row in a table. They are a subset of the table columns.
 
-        @return: list of indexes (as columns) of the table
+        :return: The list of indexes (as :class:`Column` instances) of
+            the table.
         """
         child = self._row
         lindex = []
@@ -387,15 +427,16 @@ class Table(Entity):
         return lindex
 
 
-class Column(Entity):
+class Column(Node):
 
-    """MIB column entity"""
+    """MIB column node. This class represent a column of a table."""
 
     @property
     def table(self):
         """Get table associated with this column.
 
-        @return: a Table object
+        :return: The :class:`Table` instance associated to this
+            column.
         """
         parent = _smi.smiGetParentNode(self.node)
         if parent == ffi.NULL:
@@ -417,13 +458,8 @@ class Column(Entity):
         return t
 
 
-class Node(Entity):
-
-    """MIB node entity"""
-
-
 def reset():
-    """Reset libsmi to its initial state"""
+    """Reset libsmi to its initial state."""
     _smi.smiExit()
     if _smi.smiInit(b"snimpy") != 0:
             raise SMIException("unable to init libsmi")
@@ -434,8 +470,8 @@ def reset():
 def _get_module(name):
     """Get the SMI module from its name.
 
-    @param name: name of the module
-    @return: SMI module or None if not found (not loaded)
+    :param name: The name of the module
+    :return: The SMI module or `None` if not found (not loaded)
     """
     if not isinstance(name, bytes):
         name = name.encode("ascii")
@@ -453,15 +489,15 @@ def _kind2object(kind):
         _smi.SMI_NODEKIND_SCALAR: Scalar,
         _smi.SMI_NODEKIND_TABLE: Table,
         _smi.SMI_NODEKIND_COLUMN: Column
-    }.get(kind, Entity)
+    }.get(kind, Node)
 
 
 def get(mib, name):
     """Get a node by its name.
 
-    @param mib: MIB name to query
-    @param name: object name to get from the MIB
-    @return: the requested MIB entity
+    :param mib: The MIB name to query
+    :param name: The object name to get from the MIB
+    :return: the requested MIB node (:class:`Node`)
     """
     if not isinstance(mib, bytes):
         mib = mib.encode("ascii")
@@ -479,9 +515,9 @@ def get(mib, name):
 def _get_kind(mib, kind):
     """Get nodes of a given kind from a MIB.
 
-    @param mib: MIB name to search objects for
-    @param kind: SMI kind of object
-    @return: list of matched MIB entities for the MIB
+    :param mib: The MIB name to search objects for
+    :param kind: The SMI kind of object
+    :return: The list of matched MIB nodes for the MIB
     """
     if not isinstance(mib, bytes):
         mib = mib.encode("ascii")
@@ -499,8 +535,9 @@ def _get_kind(mib, kind):
 def getNodes(mib):
     """Return all nodes from a given MIB.
 
-    @param mib: MIB name
-    @return: list of all MIB entities for the MIB
+    :param mib: The MIB name
+    :return: The list of all MIB nodes for the MIB
+    :rtype: list of :class:`Node` instances
     """
     return _get_kind(mib, _smi.SMI_NODEKIND_NODE)
 
@@ -508,8 +545,9 @@ def getNodes(mib):
 def getScalars(mib):
     """Return all scalars from a given MIB.
 
-    @param mib: MIB name
-    @return: list of all scalars for the MIB
+    :param mib: The MIB name
+    :return: The list of all scalars for the MIB
+    :rtype: list of :class:`Scalar` instances
     """
     return _get_kind(mib, _smi.SMI_NODEKIND_SCALAR)
 
@@ -517,8 +555,9 @@ def getScalars(mib):
 def getTables(mib):
     """Return all tables from a given MIB.
 
-    @param mib: MIB name
-    @return: list of all tables for the MIB
+    :param mib: The MIB name
+    :return: The list of all tables for the MIB
+    :rtype: list of :class:`Table` instances
     """
     return _get_kind(mib, _smi.SMI_NODEKIND_TABLE)
 
@@ -526,8 +565,9 @@ def getTables(mib):
 def getColumns(mib):
     """Return all columns from a givem MIB.
 
-    @param mib: MIB name
-    @return: list of all columns for the MIB
+    :param mib: The MIB name
+    :return: The list of all columns for the MIB
+    :rtype: list of :class:`Column` instances
     """
     return _get_kind(mib, _smi.SMI_NODEKIND_COLUMN)
 
@@ -535,8 +575,9 @@ def getColumns(mib):
 def load(mib):
     """Load a MIB into the library.
 
-    @param mib: MIB to load, either a filename or a MIB name
-    @return: MIB name that has been loaded
+    :param mib: The MIB to load, either a filename or a MIB name.
+    :return: The MIB name that has been loaded.
+    :except SMIException: The requested MIB cannot be loaded.
     """
     if not isinstance(mib, bytes):
         mib = mib.encode("ascii")

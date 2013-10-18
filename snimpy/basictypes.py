@@ -17,8 +17,12 @@
 #
 
 """
-Snimpy will use the types defined in this module to make a bridge
-between the MIB and SNMP.
+This module is aimed at providing Pythonic representation of
+various SNMP types. Each SMIv2 type is mapped to a corresponding class
+which tries to mimic a basic type from Python. For example, display
+strings are like Python string while SMIv2 integers are just like
+Python integers. This module is some kind of a hack and its use
+outside of *Snimpy* seems convoluted.
 """
 
 import sys
@@ -57,15 +61,19 @@ def ordering_with_cmp(cls):
 
 class Type(object):
 
-    """Base class for all types"""
+    """Base class for all types."""
 
     def __new__(cls, entity, value, raw=True):
-        """Create a new typed value
+        """Create a new typed value.
 
-        @param entity: L{mib.Entity} instance
-        @param value: value to set
-        @param raw: raw value is provided (as opposed to a user-supplied value)
-        @return: an instance of the new typed value
+        :param entity: A :class:`mib.Node` instance
+        :param value: The value to set
+        :param raw: Whetever the raw value is provided (as opposed to
+            a user-supplied value). This parameter is important when
+            the provided input is ambiguous, for example when it is an
+            array of bytes.
+        :type raw: bool
+        :return: an instance of the new typed value
         """
         if entity.type != cls:
             raise ValueError("MIB node is {0}. We are {1}".format(entity.type,
@@ -117,13 +125,14 @@ class Type(object):
     def toOid(self):
         """Convert to an OID.
 
-        If this function is implemented, then class function fromOid
-        should also be implemented as the "invert" function of this one.
+        If this function is implemented, then class function
+        :meth:`fromOid` should also be implemented as the "invert"
+        function of this one.
 
         This function only works if the entity is used as an index!
         Otherwise, it should raises NotImplementedError.
 
-        @return: OID that can be used as index
+        :return: An OID that can be used as index
         """
         raise NotImplementedError  # pragma: no cover
 
@@ -131,12 +140,12 @@ class Type(object):
     def fromOid(cls, entity, oid):
         """Create instance from an OID.
 
-        This is the sister function of toOid.
+        This is the sister function of :meth:`toOid`.
 
-        @param oid: OID to use to create an instance
-        @param entity: MIB entity we want to instantiate
-        @return: a couple C{(l, v)} with C{l} the number of suboid
-           needed to create the instance and v the instance created from
+        :param oid: The OID to use to create an instance
+        :param entity: The MIB entity we want to instantiate
+        :return: A couple `(l, v)` with `l` the number of suboids
+           needed to create the instance and `v` the instance created from
            the OID
         """
         raise NotImplementedError  # pragma: no cover
@@ -149,9 +158,9 @@ class Type(object):
         Oid. When converting a variable-length type to an OID, we need
         to prefix it by its len or not depending of what the MIB say.
 
-        @param entity: entity to check
-        @return: C{fixed} if it is fixed-len, C{implied} if implied var-len,
-           C{False} otherwise
+        :param entity: entity to check
+        :return: "fixed" if it is fixed-len, "implied" if implied var-len,
+           `False` otherwise
         """
         if entity.ranges and not isinstance(entity.ranges, (tuple, list)):
             # Fixed length
@@ -186,7 +195,7 @@ class Type(object):
 @ordering_with_cmp
 class IpAddress(Type):
 
-    """Class for IP address"""
+    """Class representing an IP address/"""
 
     @classmethod
     def _internal(cls, entity, value):
@@ -283,7 +292,11 @@ class StringOrOctetString(Type):
 
 class OctetString(StringOrOctetString, bytes):
 
-    """Class for a generic octet string"""
+    """Class for a generic octet string. This class should be compared to
+    :class:`String` which is used to represent a display string. This
+    class is usually used to store raw bytes, like a bitmask of
+    VLANs.
+    """
 
     @classmethod
     def _internal(cls, entity, value):
@@ -341,7 +354,15 @@ class OctetString(StringOrOctetString, bytes):
 
 class String(StringOrOctetString, unicode):
 
-    """Class for a display string"""
+    """Class for a display string. Such a string is an unicode string and
+    it is therefore expected that only printable characters are
+    used. This is usually the case if the corresponding MIB node comes
+    with a format string.
+
+    With such an instance, the user is expected to be able to provide
+    a formatted. For example, a MAC address could be written
+    `00:11:22:33:44:55`.
+    """
 
     @classmethod
     def _parseOctetFormat(cls, fmt, j):
@@ -518,7 +539,7 @@ class String(StringOrOctetString, unicode):
 
 class Integer(Type, long):
 
-    """Class for any integer"""
+    """Class for any integer."""
 
     @classmethod
     def _internal(cls, entity, value):
@@ -573,6 +594,8 @@ class Integer(Type, long):
 
 class Unsigned32(Integer):
 
+    """Class to represent an unsigned 32bits integer."""
+
     def pack(self):
         if self._value >= (1 << 32):
             raise OverflowError("too large to be packed")
@@ -582,6 +605,8 @@ class Unsigned32(Integer):
 
 
 class Unsigned64(Integer):
+
+    """Class to represent an unsigned 64bits integer."""
 
     def pack(self):
         if self._value >= (1 << 64):
@@ -593,7 +618,8 @@ class Unsigned64(Integer):
 
 class Enum(Integer):
 
-    """Class for enumeration"""
+    """Class for an enumeration. An enumaration is an integer but labels
+    are attached to some values for a more user-friendly display."""
 
     @classmethod
     def _internal(cls, entity, value):
@@ -642,7 +668,7 @@ class Enum(Integer):
 @ordering_with_cmp
 class Oid(Type):
 
-    """Class for OID"""
+    """Class to represent and OID."""
 
     @classmethod
     def _internal(cls, entity, value):
@@ -650,7 +676,7 @@ class Oid(Type):
             return tuple([int(v) for v in value])
         elif isinstance(value, str):
             return tuple([ord2(i) for i in value.split(".") if i])
-        elif isinstance(value, mib.Entity):
+        elif isinstance(value, mib.Node):
             return tuple(value.oid)
         else:
             raise TypeError(
@@ -708,7 +734,7 @@ class Oid(Type):
 
 class Boolean(Enum):
 
-    """Class for boolean"""
+    """Class for a boolean."""
 
     @classmethod
     def _internal(cls, entity, value):
@@ -733,7 +759,7 @@ class Boolean(Enum):
 @ordering_with_cmp
 class Timeticks(Type):
 
-    """Class for timeticks"""
+    """Class for timeticks."""
 
     @classmethod
     def _internal(cls, entity, value):
@@ -784,7 +810,7 @@ class Timeticks(Type):
 
 class Bits(Type):
 
-    """Class for bits"""
+    """Class for bits."""
 
     @classmethod
     def _internal(cls, entity, value):
@@ -871,14 +897,14 @@ class Bits(Type):
         return self
 
 
-def build(mibname, entity, value):
+def build(mibname, node, value):
     """Build a new basic type with the given value.
 
-    @param mibname: MIB to use to locate the entity
-    @param entity: entity that will be attached to this type
-    @param value: initial value to set for the type
-    @return: a Type instance
+    :param mibname: The MIB to use to locate the entity.
+    :param node: The node that will be attached to this type.
+    :param value: The initial value to set for the type.
+    :return: A :class:`Type` instance
     """
-    m = mib.get(mibname, entity)
+    m = mib.get(mibname, node)
     t = m.type(m, value)
     return t

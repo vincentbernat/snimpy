@@ -16,8 +16,16 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-"""
-Very high level interface to SNMP and MIB for Snimpy
+"""This module is the high-level interface to *Snimpy*. It exposes
+:class:`Manager` class to instantiate a new manager (which is an SNMP
+client). This is the preferred interface for *Snimpy*.
+
+Here is a simple example of use of this module::
+
+    >>> load("IF-MIB")
+    >>> m = Manager("localhost")
+    >>> m.ifDescr[1]
+    <String: lo>
 """
 
 from time import time
@@ -123,6 +131,61 @@ class CachedSession(DelegatedSession):
 
 class Manager(object):
 
+    """SNMP manager. An instance of this class will represent an SNMP
+    manager (client).
+
+    When a MIB is loaded with :func:`load`, scalars and row names from
+    it will be made available as an instance attribute. For a scalar,
+    reading the corresponding attribute will get its value while
+    setting it will allow to modify it:
+
+        >>> load("SNMPv2-MIB")
+        >>> m = Manager("localhost", "private")
+        >>> m.sysContact
+        <String: root>
+        >>> m.sysContact = "Brian Jones"
+        >>> m.sysContact
+        <String: Brian Jones>
+
+    For a row name, the provided interface is like a Python
+    dictionary. Requesting an item using its index will retrieve the
+    value from the agent (the server)::
+
+        >>> load("IF-MIB")
+        >>> m = Manager("localhost", "private")
+        >>> m.ifDescr[1]
+        <String: lo>
+        >>> m.ifName[1] = "Loopback interface"
+
+    Also, it is possible to iterate on a row name to get all available
+    values for index::
+
+        >>> load("IF-MIB")
+        >>> m = Manager("localhost", "private")
+        >>> for idx in m.ifDescr:
+        ...     print(m.ifDescr[idx])
+
+    A context manager is also provided. Any modification issued inside
+    the context will be delayed until the end of the context and then
+    grouped into a single SNMP PDU to be executed atomically::
+
+        >>> load("IF-MIB")
+        >>> m = Manager("localhost", "private")
+        >>> with m:
+        ...     m.ifName[1] = "Loopback interface"
+        ...     m.ifName[2] = "First interface"
+
+    Any error will be turned into an exception::
+
+        >>> load("IF-MIB")
+        >>> m = Manager("localhost", "private")
+        >>> m.ifDescr[999]
+        Traceback (most recent call last):
+            ...
+        SNMPNoSuchName: There is no such variable name in this MIB.
+
+    """
+
     # do we want this object to be populated with all nodes?
     _complete = False
 
@@ -135,6 +198,35 @@ class Manager(object):
                  secname=None,
                  authprotocol=None, authpassword=None,
                  privprotocol=None, privpassword=None):
+        """Create a new SNMP manager. Some of the parameters are explained in
+        :meth:`snmp.Session.__init__`.
+
+        :param host: The hostname or IP address of the agent to
+            connect to. Optionally, the port can be specified
+            separated with a double colon.
+        :type host: str
+        :param community: The community to transmit to the agent for
+            authorization purpose. This parameter is ignored if the
+            specified version is 3.
+        :type community: str
+        :param version: The SNMP version to use to talk with the
+            agent. Possible values are `1`, `2` (community-based) or
+            `3`.
+        :type version: int
+        :param cache: Should caching be enabled? This can be either a
+            boolean or an integer to specify the cache timeout in
+            seconds. If `True`, the default timeout is 5 seconds.
+        :type cache: bool or int
+        :param none: Should `None` be returned when the agent does not
+            know the requested OID? If `True`, `None` will be returned
+            when requesting an inexisting scalar or column.
+        :type none: bool
+        :param timeout: Use the specified value in seconds as timeout.
+        :type timeout: int
+        :param retries: How many times the request should be retried?
+        :type retries: int
+
+        """
         if host is None:
             host = Manager._host
         self._host = host
@@ -191,6 +283,7 @@ class Manager(object):
         return "<Manager for {0}>".format(self._host)
 
     def __enter__(self):
+
         """In a context, we group all "set" into a single request"""
         self._osession = self._session
         self._session = DelayedSetSession(self._session)
@@ -328,7 +421,11 @@ loaded = []
 
 
 def load(mibname):
-    """Load a MIB"""
+    """Load a MIB in memory.
+
+    :param mibname: MIB name or filename
+    :type mibname: str
+    """
     m = mib.load(mibname)
     if m not in loaded:
         loaded.append(m)

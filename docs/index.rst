@@ -60,6 +60,7 @@ Contents:
 
    installation
    usage
+   api
    contributing
    license
    history

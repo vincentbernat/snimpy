@@ -378,7 +378,7 @@ class TestBasicTypes(unittest.TestCase):
 
     def testDisplayFormat(self):
         """Test display some with some formats"""
-        with mock.patch("snimpy.mib.Entity.fmt",
+        with mock.patch("snimpy.mib.Node.fmt",
                         new_callable=mock.PropertyMock) as e:
             e.return_value = "255a"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
@@ -416,7 +416,7 @@ class TestBasicTypes(unittest.TestCase):
 
     def testInputFormat(self):
         """Test we can input a string with a given format"""
-        with mock.patch("snimpy.mib.Entity.fmt",
+        with mock.patch("snimpy.mib.Node.fmt",
                         new_callable=mock.PropertyMock) as e:
             e.return_value = "255a"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", u"test")
@@ -496,7 +496,7 @@ class TestBasicTypes(unittest.TestCase):
         a = basictypes.build("SNIMPY-MIB", "snimpyString", "test")
         self.assertEqual(a, "test")
 
-        with mock.patch("snimpy.mib.Entity.fmt",
+        with mock.patch("snimpy.mib.Node.fmt",
                         new_callable=mock.PropertyMock) as e:
             e.return_value = "255a"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")

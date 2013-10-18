@@ -17,7 +17,13 @@
 #
 
 """
-simple interface to PySNMP
+This module is a low-level interface to build SNMP requests, send
+them and receive answers. It is built on top of pysnmp_ but the
+exposed interface is far simpler. It is also far less complete and
+there is an important dependency to the :mod:`basictypes` module for
+type coercing.
+
+.. _pysnmp: http://pysnmp.sourceforge.net/
 """
 
 import re
@@ -28,7 +34,10 @@ from pysnmp.smi import error
 
 
 class SNMPException(Exception):
-    """SNMP related base exception"""
+    """SNMP related base exception. All SNMP exceptions are inherited from
+    this one. The inherited exceptions are named after the name of the
+    corresponding SNMP error.
+    """
 
 
 class SNMPTooBig(SNMPException):
@@ -60,7 +69,9 @@ del obj
 
 class Session(object):
 
-    """SNMP session"""
+    """SNMP session. An instance of this object will represent an SNMP
+    session. From such an instance, one can get information from the
+    associated agent."""
 
     def __init__(self, host,
                  community="public", version=2,
@@ -69,6 +80,37 @@ class Session(object):
                  authpassword=None,
                  privprotocol=None,
                  privpassword=None):
+        """Create a new SNMP session.
+
+        :param host: The hostname or IP address of the agent to
+            connect to. Optionally, the port can be specified
+            separated with a double colon.
+        :type host: str
+        :param community: The community to transmit to the agent for
+            authorization purpose. This parameter is ignored if the
+            specified version is 3.
+        :type community: str
+        :param version: The SNMP version to use to talk with the
+            agent. Possible values are `1`, `2` (community-based) or
+            `3`.
+        :type version: int
+        :param secname: Security name to use for SNMPv3 only.
+        :type secname: str
+        :param authprotocol: Authorization protocol to use for
+            SNMPv3. This can be `None` or either the string `SHA` or
+            `MD5`.
+        :type authprotocol: None or str
+        :param authpassword: Authorization password if authorization
+            protocol is not `None`.
+        :type authpassword: str
+        :param privprotocol: Privacy protocol to use for SNMPv3. This
+            can be `None` or either the string `AES`, `AES128`,
+            `AES192`, `AES256` or `3DES`.
+        :type privprotocol: None or str
+        :param privpassword: Privacy password if privacy protocol is
+            not `None`.
+        :type privpassword: str
+        """
         self._host = host
         self._version = version
         self._cmdgen = cmdgen.CommandGenerator()
@@ -175,18 +217,37 @@ class Session(object):
         return tuple([(oid, self._convert(val)) for oid, val in results])
 
     def get(self, *oids):
-        """Retrieve an OID value using GET."""
+        """Retrieve an OID value using GET.
+
+        :param oids: a list of OID to retrieve. An OID is a tuple.
+        :return: a list of tuples with the retrieved OID and the raw value.
+        """
         return self._op(self._cmdgen.getCmd, *oids)
 
     def walk(self, *oids):
-        """Retrieve OIDs values using GETBULK or GETNEXT."""
+        """Retrieve OIDs values using GETBULK or GETNEXT. The method is called
+        "walk" but this is either a GETBULK or a GETNEXT. The later is
+        only used for SNMPv1 or if bulk has been disabled using
+        :meth:`bulk` property.
+
+        :param oids: a list of OID to retrieve. An OID is a tuple.
+        :return: a list of tuples with the retrieved OID and the raw value.
+
+        """
         if self._version == 1 or not self.bulk:
             return self._op(self._cmdgen.nextCmd, *oids)
         args = [0, self.bulk] + list(oids)
         return self._op(self._cmdgen.bulkCmd, *args)
 
     def set(self, *args):
-        """Set an OID value using SET."""
+        """Set an OID value using SET. This function takes an odd number of
+        arguments. They are working by pair. The first member is an
+        OID and the second one is :class:`basictypes.Type` instace
+        whose `pack()` method will be used to transform into the
+        appropriate form.
+
+        :return: a list of tuples with the retrieved OID and the raw value.
+        """
         if len(args) % 2 != 0:
             raise ValueError("expect an even number of arguments for SET")
         varbinds = zip(*[args[0::2], [v.pack() for v in args[1::2]]])
@@ -202,13 +263,16 @@ class Session(object):
     def timeout(self):
         """Get timeout value for the current session.
 
-        @return: timeout value in microseconds
+        :return: Timeout value in microseconds.
         """
         return self._transport.timeout * 1000000
 
     @timeout.setter
     def timeout(self, value):
-        """Set timeout value for the current session."""
+        """Set timeout value for the current session.
+
+        :param value: Timeout value in microseconds.
+        """
         value = int(value)
         if value <= 0:
             raise ValueError("timeout is a positive integer")
@@ -218,13 +282,16 @@ class Session(object):
     def retries(self):
         """Get number of times a request is retried.
 
-        @return: number of retries for each request
+        :return: Number of retries for each request.
         """
         return self._transport.retries
 
     @retries.setter
     def retries(self, value):
-        """Set number of times a request is retried."""
+        """Set number of times a request is retried.
+
+        :param value: Number of retries for each request.
+        """
         value = int(value)
         if value < 0:
             raise ValueError("retries is a non-negative integer")
@@ -234,8 +301,8 @@ class Session(object):
     def bulk(self):
         """Get bulk settings.
 
-        @return: C{False} if bulk is disabled or a non-negative integer
-                 for the number of repetitions.
+        :return: `False` if bulk is disabled or a non-negative integer
+            for the number of repetitions.
         """
         return self._bulk
 
@@ -243,8 +310,8 @@ class Session(object):
     def bulk(self, value):
         """Set bulk settings.
 
-        @param value: C{False} to disable bulk or a non-negative
-                      integer for the number of allowed repetitions.
+        :param value: `False` to disable bulk or a non-negative
+            integer for the number of allowed repetitions.
         """
         if value is False:
             self._bulk = False
