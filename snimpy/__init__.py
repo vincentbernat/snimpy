@@ -2,4 +2,4 @@
 
 __author__ = 'Vincent Bernat'
 __email__ = 'bernat@luffy.cx'
-__version__ = '0.7.0'
+__version__ = '0.8.0'
