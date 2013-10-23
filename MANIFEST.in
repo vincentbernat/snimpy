@@ -5,3 +5,6 @@ include AUTHORS.rst
 include CONTRIBUTING.rst
 include HISTORY.rst
 include README.rst
+
+# Remove CFFI files
+global-exclude __pycache__/*
