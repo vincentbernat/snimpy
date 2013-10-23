@@ -1,5 +1,5 @@
 recursive-include examples *.py
-recursive-include tests *.py SNIMPY-MIB.mib
+recursive-include tests *.py SNIMPY-MIB.mib SNIMPY-INVALID-MIB.mib
 include man/snimpy.1
 include AUTHORS.rst
 include CONTRIBUTING.rst
