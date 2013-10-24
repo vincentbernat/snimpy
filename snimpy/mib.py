@@ -26,6 +26,7 @@ incomplete.
 .. _CFFI: http://cffi.readthedocs.org/
 """
 
+from snimpy import cffi_fix  # nopep8
 from cffi import FFI
 
 ffi = FFI()
