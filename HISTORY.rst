@@ -3,7 +3,7 @@
 History
 -------
 
-0.8.0 (2013-10-25)
+0.8.1 (2013-10-25)
 ++++++++++++++++++
 
 * Workaround a problem with CFFI extension installation.
