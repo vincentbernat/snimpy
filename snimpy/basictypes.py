@@ -407,6 +407,8 @@ class String(StringOrOctetString, unicode):
         i = 0               # Position in value
         j = 0               # Position in fmt
         result = ""
+        term = None
+        sep = None
         while i < len(value):
             if j < len(fmt):
                 j, dorepeat, length, format, sep, term = cls._parseOctetFormat(

@@ -383,6 +383,8 @@ class TestBasicTypes(unittest.TestCase):
             e.return_value = "255a"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(str(a), "test")
+            a = basictypes.build("SNIMPY-MIB", "snimpyString", b"")
+            self.assertEqual(str(a), "")
             e.return_value = "1x:"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", b"test")
             self.assertEqual(str(a), "74:65:73:74")
@@ -421,6 +423,8 @@ class TestBasicTypes(unittest.TestCase):
             e.return_value = "255a"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", u"test")
             self.assertEqual(a.pack(), b"test")
+            a = basictypes.build("SNIMPY-MIB", "snimpyString", b"")
+            self.assertEqual(a.pack(), b"")
             e.return_value = "1x:"
             a = basictypes.build("SNIMPY-MIB", "snimpyString", u"74:65:73:74")
             self.assertEqual(a.pack(), b"test")
