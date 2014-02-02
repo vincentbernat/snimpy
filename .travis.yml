@@ -10,10 +10,8 @@ install:
   - "sudo apt-get -y install pkg-config libsmi2-dev libsnmp-dev snmp-mibs-downloader"
   # Solution to travis issue #155
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
-  - pip install tox coverage coveralls
-script: tox -e $TOX_ENV
-berfore_success:
-  - coverage erase
+  - pip install tox coveralls
+script:
+  - tox -e $TOX_ENV
 after_success:
-  - coverage combine
   - coveralls
