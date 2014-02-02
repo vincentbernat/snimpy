@@ -98,11 +98,11 @@ class CachedSession(DelegatedSession):
 
     def __init__(self, session, timeout=5):
         DelegatedSession.__init__(self, session)
-        self.cache = {}
+        self.cache = {}  # contains (operation, oid) -> [time, result] entries
         self.timeout = timeout
         self.count = 0
 
-    def getorgetnext(self, op, *args):
+    def getorwalk(self, op, *args):
         self.count += 1
         if (op, args) in self.cache:
             t, v = self.cache[op, args]
@@ -110,14 +110,20 @@ class CachedSession(DelegatedSession):
                 return v
         value = getattr(self._session, op)(*args)
         self.cache[op, args] = [time(), value]
+        if op == "walk":
+            # also cache all the get requests we got for free
+            for oid, get_value in value:
+                self.count += 1
+                self.cache["get", (oid, )] = [time(), ((oid, get_value), )]
         self.flush()
         return value
 
     def get(self, *args):
-        return self.getorgetnext("get", *args)
+        return self.getorwalk("get", *args)
 
-    def getnext(self, *args):
-        return self.getorgetnext("getnext", *args)
+    def walk(self, *args):
+        assert(len(args) == 1)  # we should ony walk one oid at a time
+        return self.getorwalk("walk", *args)
 
     def flush(self):
         if self.count < 1000:
