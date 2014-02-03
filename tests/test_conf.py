@@ -29,7 +29,7 @@ class TestConf(unittest.TestCase):
 mibs = [ "IF-MIB", "LLDP-MIB" ]
 ipython = False
 unknown = "hey!"
-""")
+""".encode("ascii"))
             conffile.close()
             conf = Conf().load(conffile.name)
             self.assertEqual(conf.mibs, [ "IF-MIB", "LLDP-MIB" ])
