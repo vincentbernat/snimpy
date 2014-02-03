@@ -28,21 +28,22 @@ class Conf:
     ipythonprofile = None  # Set for example to "snimpy"
     mibs = []
 
-conf = Conf()
-
-# Load user configuration file
-if conf.userconf:
-    try:
-        conffile = open(os.path.expanduser(conf.userconf))
-    except (OSError, IOError):
-        pass
-    else:
+    def load(self, userconf=None):
+        if userconf is None:
+            userconf = self.userconf
         try:
-            confuser = imp.load_module("confuser", conffile,
-                                       os.path.expanduser(conf.userconf),
-                                       ("conf", 'r', imp.PY_SOURCE))
-            for k in confuser.__dict__:
-                if not k.startswith("__"):
-                    conf.__dict__[k] = confuser.__dict__[k]
-        finally:
-            conffile.close()
+            conffile = open(os.path.expanduser(userconf))
+        except (OSError, IOError):
+            pass
+        else:
+            try:
+                confuser = imp.load_module("confuser", conffile,
+                                           os.path.expanduser(userconf),
+                                           ("conf", 'r', imp.PY_SOURCE))
+                for k in confuser.__dict__:
+                    if not k.startswith("__"):
+                        setattr(self, k, confuser.__dict__[k])
+            finally:
+                conffile.close()
+
+        return self

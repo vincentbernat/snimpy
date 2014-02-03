@@ -39,10 +39,12 @@ from datetime import timedelta
 
 import snimpy
 from snimpy import manager
-from snimpy.config import conf
+from snimpy.config import Conf
 
 
 def interact(argv=sys.argv):  # pragma: no cover
+    conf = Conf().load()
+
     banner = "\033[1mSnimpy\033[0m ({0}) -- {1}.\n".format(
         snimpy.__version__, snimpy.__doc__)
     banner += "  load        -> load an additional MIB\n"
