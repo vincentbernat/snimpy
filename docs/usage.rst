@@ -80,7 +80,7 @@ It's also possible to set a custom timeout and a custom value for the
 number of retries. For example, to wait 2.5 seconds before timeout
 occurs and retry 10 times, you can use::
 
-    m = M("localhost", timeout=2.5, retry=10)
+    m = M("localhost", timeout=2.5, retries=10)
 
 *Snimpy* will stop on any error with an exception. This allows you to
 not check the result at each step. Your script can't go awry. If this
