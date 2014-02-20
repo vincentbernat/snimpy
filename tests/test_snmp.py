@@ -89,6 +89,13 @@ class TestSnmpSession(unittest.TestCase):
                           authprotocol="MD5", authpassword="authpass",
                           privprotocol="NOEXIST", privpassword="privpass")
 
+    def testRepresentation(self):
+        """Test session representation"""
+        s = snmp.Session(host="localhost",
+                         community="public",
+                         version=1)
+        self.assertEqual(repr(s), "Session(host=localhost,version=1)")
+
     def testSnmpV3SecLevels(self):
         """Check accepted security levels"""
         auth = "MD5"

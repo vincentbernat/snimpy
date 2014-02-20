@@ -256,8 +256,8 @@ class Session(object):
     def __repr__(self):
         return "{0}(host={1},version={2})".format(
             self.__class__.__name__,
-            self.host,
-            self.version)
+            self._host,
+            self._version)
 
     @property
     def timeout(self):
