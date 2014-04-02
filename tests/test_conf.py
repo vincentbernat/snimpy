@@ -4,6 +4,7 @@ import tempfile
 
 from snimpy.config import Conf
 
+
 class TestConf(unittest.TestCase):
 
     """Test configuration loading"""
@@ -32,7 +33,7 @@ unknown = "hey!"
 """.encode("ascii"))
             conffile.close()
             conf = Conf().load(conffile.name)
-            self.assertEqual(conf.mibs, [ "IF-MIB", "LLDP-MIB" ])
+            self.assertEqual(conf.mibs, ["IF-MIB", "LLDP-MIB"])
             self.assertEqual(conf.unknown, "hey!")
             self.assertEqual(conf.ipython, False)
             self.assertEqual(conf.ipythonprofile, None)

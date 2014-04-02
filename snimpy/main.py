@@ -79,10 +79,12 @@ def interact(argv=sys.argv):  # pragma: no cover
         try:
             try:
                 # ipython >= 1.0
-                from IPython.terminal.embed import InteractiveShellEmbed
+                from IPython.terminal.embed import \
+                    InteractiveShellEmbed
             except ImportError:
                 # ipython >= 0.11
-                from IPython.frontend.terminal.embed import InteractiveShellEmbed
+                from IPython.frontend.terminal.embed import \
+                    InteractiveShellEmbed
             # ipython >= 0.11
             from IPython.config.loader import Config
             cfg = Config()
