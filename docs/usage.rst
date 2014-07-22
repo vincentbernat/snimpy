@@ -50,7 +50,7 @@ entities. For a scalar, getting and setting a value is a simple as::
 
 For a column, you get a dictionary-like interface::
 
-    for index in m.ifDescr: print repr(m.ifDescr[i])
+    for index in m.ifDescr: print repr(m.ifDescr[index])
     m.ifAdminStatus[3] = "down"
 
 If you want to group several write into a single request, you can do
