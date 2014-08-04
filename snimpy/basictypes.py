@@ -37,7 +37,7 @@ from snimpy import mib
 PYTHON3 = sys.version_info >= (3, 0)
 if PYTHON3:
     ord2 = lambda x: x
-    chr2 = lambda x: bytes([x])
+    chr2 = lambda x: bytes([x & 0xff])
     unicode = str
     long = int
 else:
