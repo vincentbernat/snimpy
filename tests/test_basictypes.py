@@ -322,6 +322,20 @@ class TestBasicTypes(unittest.TestCase):
                 mib.get("SNIMPY-MIB", t), oid),
                 (len(tt[t, v]), v))
 
+    def testTooLargeOid(self):
+        """Handle the special case of octet string as OID with too large octets.
+
+        See: https://github.com/vincentbernat/snimpy/pull/14
+        """
+        self.assertEqual(mib.get("SNIMPY-MIB",
+                                 "snimpyIndexImplied").type.fromOid(
+                                     mib.get("SNIMPY-MIB",
+                                             "snimpyIndexImplied"),
+                                     (104, 0xff00 | 101, 108, 108, 111)),
+                         (5, basictypes.build("SNIMPY-MIB",
+                                              "snimpyIndexImplied",
+                                              "hello")))
+
     def testOidGreedy(self):
         """Test greediness of fromOid."""
         tt = {

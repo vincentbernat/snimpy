@@ -42,7 +42,7 @@ if PYTHON3:
     long = int
 else:
     ord2 = ord
-    chr2 = chr
+    chr2 = lambda x: chr(x & 0xff)
 
 
 def ordering_with_cmp(cls):
