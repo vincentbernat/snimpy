@@ -123,16 +123,21 @@ class TestSnmp1(unittest.TestCase):
     Test communication with an agent with SNMPv1.
     """
     version = 1
+    ipv6 = False
 
     @classmethod
     def setUpClass(cls):
         mib.load('IF-MIB')
         mib.load('SNMPv2-MIB')
-        cls.agent = agent.TestAgent()
+        cls.agent = agent.TestAgent(cls.ipv6)
 
     def setUp(self):
+        if self.ipv6:
+            host = "[::1]"
+        else:
+            host = "127.0.0.1"
         self.session = snmp.Session(
-            host="127.0.0.1:{0}".format(self.agent.port),
+            host="{0}:{1}".format(host, self.agent.port),
             community="public",
             version=self.version)
 
@@ -311,3 +316,9 @@ class TestSnmp3(TestSnmp2):
             secname="read-write",
             authprotocol="MD5", authpassword="authpass",
             privprotocol="AES", privpassword="privpass")
+
+
+class TestSnmpIpv6(TestSnmp2):
+
+    """Test communication using IPv6."""
+    ipv6 = True

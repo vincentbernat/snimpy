@@ -3,7 +3,7 @@ import random
 
 from pysnmp.entity import engine, config
 from pysnmp.entity.rfc3413 import cmdrsp, context
-from pysnmp.carrier.asynsock.dgram import udp
+from pysnmp.carrier.asynsock.dgram import udp, udp6
 from pysnmp.proto.api import v2c
 
 
@@ -11,8 +11,9 @@ class TestAgent(object):
 
     """Agent for testing purpose"""
 
-    def __init__(self):
+    def __init__(self, ipv6=False):
         q = Queue()
+        self.ipv6 = ipv6
         self._process = Process(target=self._setup, args=(q,))
         self._process.start()
         self.port = q.get()
@@ -28,10 +29,16 @@ class TestAgent(object):
         """
         port = random.randrange(22000, 22989)
         snmpEngine = engine.SnmpEngine()
-        config.addSocketTransport(
-            snmpEngine,
-            udp.domainName,
-            udp.UdpTransport().openServerMode(('127.0.0.1', port)))
+        if self.ipv6:
+            config.addSocketTransport(
+                snmpEngine,
+                udp6.domainName,
+                udp6.Udp6Transport().openServerMode(('::1', port)))
+        else:
+            config.addSocketTransport(
+                snmpEngine,
+                udp.domainName,
+                udp.UdpTransport().openServerMode(('127.0.0.1', port)))
         # Community is public and MIB is writable
         config.addV1System(snmpEngine, 'read-write', 'public')
         config.addVacmUser(snmpEngine, 1, 'read-write', 'noAuthNoPriv',
