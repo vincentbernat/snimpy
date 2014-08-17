@@ -123,21 +123,16 @@ class TestSnmp1(unittest.TestCase):
     Test communication with an agent with SNMPv1.
     """
     version = 1
-    ipv6 = False
 
     @classmethod
     def setUpClass(cls):
         mib.load('IF-MIB')
         mib.load('SNMPv2-MIB')
-        cls.agent = agent.TestAgent(cls.ipv6)
+        cls.agent = agent.TestAgent()
 
     def setUp(self):
-        if self.ipv6:
-            host = "[::1]"
-        else:
-            host = "127.0.0.1"
         self.session = snmp.Session(
-            host="{0}:{1}".format(host, self.agent.port),
+            host="127.0.0.1:{0}".format(self.agent.port),
             community="public",
             version=self.version)
 
@@ -318,7 +313,43 @@ class TestSnmp3(TestSnmp2):
             privprotocol="AES", privpassword="privpass")
 
 
-class TestSnmpIpv6(TestSnmp2):
+class TestSnmpTransports(unittest.TestCase):
 
     """Test communication using IPv6."""
     ipv6 = True
+
+    @classmethod
+    def setUpClass(cls):
+        mib.load('IF-MIB')
+        mib.load('SNMPv2-MIB')
+
+    def _test(self, ipv6, host):
+        m = agent.TestAgent(ipv6)
+        session = snmp.Session(
+            host="{0}:{1}".format(host, m.port),
+            community="public",
+            version=2)
+        try:
+            ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
+            oid, a = session.get(ooid)[0]
+            self.assertEqual(a, b"Snimpy Test Agent")
+        finally:
+            m.terminate()
+
+
+    def testIpv4(self):
+        """Test IPv4 transport"""
+        self._test(False, "127.0.0.1")
+
+    def testIpv4WithDNS(self):
+        """Test IPv4 transport with name resolution"""
+        self._test(False, "localhost")
+
+    def testIpv6(self):
+        """Test IPv6 transport"""
+        self._test(True, "[::1]")
+
+    @unittest.skip("not handled yet")
+    def testIpv6WithDNS(self):
+        """Test IPv6 transport with name resolution"""
+        self._test(True, "ip6-localhost")
