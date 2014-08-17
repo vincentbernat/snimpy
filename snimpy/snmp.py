@@ -154,21 +154,22 @@ class Session(object):
             raise ValueError("unsupported SNMP version {0}".format(version))
 
         # Put transport stuff into self._transport
-        if "[" in host and "]" in host:
-            fields = host.split("]")
-            host = fields[0].strip("[")
-            if len(fields) > 1 and ":" in fields[1]:
-                port = fields[1].strip(":")
-            else:
-                port = 161
-
-            self._transport = cmdgen.Udp6TransportTarget((host, int(port)))
+        mo = re.match(r'^(?:'
+                      r'\[(?P<ipv6>[\d:]+)\]|'
+                      r'(?P<ipv4>[\d\.]+)|'
+                      r'(?P<any>.*?))'
+                      r'(?::(?P<port>\d+))?$',
+                      host)
+        if mo.group("port"):
+            port = int(mo.group("port"))
         else:
-            host, port = host.partition(":")[::2]
-            if not port:
-                port = 161
-
-            self._transport = cmdgen.UdpTransportTarget((host, int(port)))
+            port = 161
+        if mo.group("ipv6"):
+            self._transport = cmdgen.Udp6TransportTarget((mo.group("ipv6"),
+                                                          port))
+        else:
+            self._transport = cmdgen.UdpTransportTarget((mo.group("ipv4"),
+                                                         port))
 
         # Bulk stuff
         self.bulk = 40
