@@ -336,7 +336,6 @@ class TestSnmpTransports(unittest.TestCase):
         finally:
             m.terminate()
 
-
     def testIpv4(self):
         """Test IPv4 transport"""
         self._test(False, "127.0.0.1")
