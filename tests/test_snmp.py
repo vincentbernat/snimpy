@@ -349,7 +349,6 @@ class TestSnmpTransports(unittest.TestCase):
         """Test IPv6 transport"""
         self._test(True, "[::1]")
 
-    @unittest.skip("not handled yet")
     def testIpv6WithDNS(self):
         """Test IPv6 transport with name resolution"""
         self._test(True, "ip6-localhost")

@@ -27,6 +27,7 @@ type coercing.
 """
 
 import re
+import socket
 import inspect
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902, rfc1905
@@ -167,9 +168,26 @@ class Session(object):
         if mo.group("ipv6"):
             self._transport = cmdgen.Udp6TransportTarget((mo.group("ipv6"),
                                                           port))
-        else:
+        elif mo.group("ipv4"):
             self._transport = cmdgen.UdpTransportTarget((mo.group("ipv4"),
                                                          port))
+        else:
+            results = socket.getaddrinfo(mo.group("any"),
+                                         port,
+                                         0,
+                                         socket.SOCK_DGRAM,
+                                         socket.IPPROTO_UDP)
+            # We should try to connect to each result to determine if
+            # the given family is available. However, we cannot do
+            # that over UDP. Let's implement a safe choice. If we have
+            # an IPv4 address, use that. If not, use IPv6. If we want
+            # to add an option to force IPv6, it is a good place.
+            if [x for x in results if x[0] == socket.AF_INET]:
+                self._transport = cmdgen.UdpTransportTarget((mo.group("any"),
+                                                             port))
+            else:
+                self._transport = cmdgen.Udp6TransportTarget((mo.group("any"),
+                                                              port))
 
         # Bulk stuff
         self.bulk = 40
