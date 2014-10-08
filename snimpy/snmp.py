@@ -213,6 +213,7 @@ class Session(object):
                        rfc1902.Unsigned32: int,
                        rfc1902.TimeTicks: int,
                        rfc1902.Bits: str,
+                       rfc1902.Opaque: str,
                        rfc1902.univ.ObjectIdentifier: tuple}.items():
             if isinstance(value, cl):
                 return fn(value)
