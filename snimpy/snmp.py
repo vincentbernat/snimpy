@@ -268,7 +268,18 @@ class Session(object):
         if self._version == 1 or not self.bulk:
             return self._op(self._cmdgen.nextCmd, *oids)
         args = [0, self.bulk] + list(oids)
-        return self._op(self._cmdgen.bulkCmd, *args)
+        try:
+            return self._op(self._cmdgen.bulkCmd, *args)
+        except SNMPTooBig:
+            # Let's try to ask for less values. We will never increase
+            # bulk again. We cannot increase it just after the walk
+            # because we may end up requesting everything twice (or
+            # more).
+            nbulk = self.bulk / 2 or False
+            if nbulk != self.bulk:
+                self.bulk = nbulk
+                return self.walk(*oids)
+            raise
 
     def set(self, *args):
         """Set an OID value using SET. This function takes an odd number of
