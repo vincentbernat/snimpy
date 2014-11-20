@@ -1,4 +1,6 @@
+from distutils.command.build import build
 from setuptools import setup
+from setuptools.command.install import install
 import snimpy
 
 try:
@@ -7,14 +9,24 @@ try:
 except ImportError:
     pass
 
-if __name__ == "__main__":
-    # MIB module
-    try:
-        import snimpy.mib
-        ext_modules = [snimpy.mib.ffi.verifier.get_extension()]
-    except ImportError:
-        ext_modules = []
 
+def get_ext_modules():
+    import snimpy.mib
+    return [snimpy.mib.ffi.verifier.get_extension()]
+
+
+class CFFIBuild(build):
+    def finalize_options(self):
+        self.distribution.ext_modules = get_ext_modules()
+        build.finalize_options(self)
+
+
+class CFFIInstall(install):
+    def finalize_options(self):
+        self.distribution.ext_modules = get_ext_modules()
+        install.finalize_options(self)
+
+if __name__ == "__main__":
     readme = open('README.rst').read()
     history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
@@ -44,7 +56,6 @@ if __name__ == "__main__":
               ],
           },
           data_files=[('share/man/man1', ['man/snimpy.1'])],
-          ext_modules=ext_modules,
           zip_safe=False,
           install_requires=["cffi", "pysnmp >= 4"],
           setup_requires=["cffi"],
