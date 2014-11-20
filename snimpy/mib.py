@@ -29,8 +29,7 @@ incomplete.
 from snimpy import cffi_fix  # nopep8
 from cffi import FFI
 
-ffi = FFI()
-ffi.cdef("""
+_CDEF = """
 
 typedef char *SmiIdentifier;
 typedef unsigned long SmiUnsigned32;
@@ -148,11 +147,18 @@ SmiNamedNumber *smiGetNextNamedNumber(SmiNamedNumber *);
 #define SMI_FLAG_ERRORS ...
 #define SMI_FLAG_RECURSIVE ...
 #define SMI_RENDER_ALL ...
-""")
+"""
 
-_smi = ffi.verify("""
+_SOURCE = """
 #include <smi.h>
-""", libraries=["smi"])
+"""
+
+ffi = FFI()
+ffi.cdef(_CDEF)
+_smi = ffi.verify(
+    _SOURCE,
+    libraries=["smi"],
+    modulename=cffi_fix.create_modulename("Mib", _CDEF, _SOURCE))
 
 
 class SMIException(Exception):

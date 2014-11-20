@@ -21,6 +21,7 @@
 
 import imp
 import sys
+import binascii
 import functools
 
 
@@ -56,6 +57,20 @@ def patch(cls):
         return None
 
     cls.find_module = find_more_modules
+
+
+def create_modulename(prefix, cdef_sources, source, sys_version=sys.version):
+    """
+    This is the same as CFFI's create modulename except we don't include the
+    CFFI version.
+    """
+    key = '\x00'.join([sys_version[:3], source, cdef_sources])
+    key = key.encode('utf-8')
+    k1 = hex(binascii.crc32(key[0::2]) & 0xffffffff)
+    k1 = k1.lstrip('0x').rstrip('L')
+    k2 = hex(binascii.crc32(key[1::2]) & 0xffffffff)
+    k2 = k2.lstrip('0').rstrip('L')
+    return '_{2}_cffi_{0}{1}'.format(k1, k2, prefix)
 
 
 import cffi.vengine_cpy
