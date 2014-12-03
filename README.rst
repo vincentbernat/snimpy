@@ -37,6 +37,9 @@ variables available.
 * Free software: ISC license
 * Documentation: http://snimpy.rtfd.org.
 
+*Snimpy* requires libsmi_ to work correctly. See the documentation for
+more information.
+
 Features
 --------
 
