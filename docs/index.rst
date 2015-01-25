@@ -52,7 +52,7 @@ The two main points of *Snimpy* are:
 * very high-level interface
 * raise exceptions when something goes wrong
 
-Contents:
+Contents
 ---------
 
 .. toctree::
