@@ -71,11 +71,6 @@ def interact(argv=sys.argv):  # pragma: no cover
         return
 
     try:
-        import rlcompleter
-        import readline
-    except ImportError:
-        readline = None
-    try:
         try:
             try:
                 # ipython >= 1.0
@@ -121,6 +116,11 @@ def interact(argv=sys.argv):  # pragma: no cover
     if shell and conf.ipython:
         shell()
     else:
+        try:
+            import rlcompleter
+            import readline
+        except ImportError:
+            readline = None
         if readline:
             if conf.histfile:
                 try:
