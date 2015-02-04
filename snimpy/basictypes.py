@@ -111,6 +111,12 @@ class Type(object):
             self._value = value
             self.entity = entity
 
+        if isinstance(self, String):
+            # Ensure that strings follow their format, if it is applied.
+            # This is safer and simpler than toOid, as it does not do
+            # additional validation.
+            self._toBytes()
+
         return self
 
     @classmethod
@@ -489,7 +495,7 @@ class String(StringOrOctetString, unicode):
                 if not mo:
                     raise ValueError("{0!r} cannot be parsed because it "
                                      "does not match format {1} at "
-                                     "index {i}".format(self._value, fmt, i))
+                                     "index {2}".format(self._value, fmt, i))
                 if format in ["o", "x", "d"]:
                     if format == "o":
                         r = int(mo.group("o"), 8)
