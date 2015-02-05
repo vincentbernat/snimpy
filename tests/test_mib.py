@@ -263,7 +263,7 @@ class TestMibSnimpy(unittest.TestCase):
         # Try overriding to IPv4 with a byte string name.
         addrtype = addrtype_attr.type(addrtype_attr, "ipv4")
         self.assertEqual(addrtype, "ipv4")
-        addr_attr.type = b"InetAddressIPv4"
+        addr_attr.typeName = b"InetAddressIPv4"
         ipv4 = u"127.0.0.1"
         ipv4_oid = (4, 127, 0, 0, 1)
 
@@ -279,7 +279,7 @@ class TestMibSnimpy(unittest.TestCase):
         # Try both IPv6 and non-bytes name.
         addrtype = addrtype_attr.type(addrtype_attr, "ipv6")
         self.assertEqual(addrtype, "ipv6")
-        addr_attr.type = u"InetAddressIPv6"
+        addr_attr.typeName = u"InetAddressIPv6"
         # Snimpy does not use leading zeroes.
         ipv6 = u'102:304:506:708:90a:b0c:d0e:f01'
         ipv6_oid = (16, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -295,7 +295,7 @@ class TestMibSnimpy(unittest.TestCase):
         self.assertEqual(addr.toOid(), ipv6_oid)
 
         # Try overriding back to the default.
-        del addr_attr.type
+        del addr_attr.typeName
         addr_len, addr = addr_attr.type.fromOid(addr_attr, ipv4_oid)
         self.assertEqual(bytes(addr), b"\x7f\0\0\1")
 
@@ -304,16 +304,29 @@ class TestMibSnimpy(unittest.TestCase):
         attr = table.index[1]
 
         # Value with the wrong type.
-        self.assertRaises(AttributeError, setattr, attr, "type", None)
+        self.assertRaises(AttributeError, setattr, attr, "typeName", None)
 
         # Unknown type.
-        self.assertRaises(mib.SMIException, setattr, attr, "type",
+        self.assertRaises(mib.SMIException, setattr, attr, "typeName",
                           "SomeUnknownType.kjgf")
 
         # Incompatible basetype.
-        self.assertRaises(mib.SMIException, setattr, attr, "type",
+        self.assertRaises(mib.SMIException, setattr, attr, "typeName",
                           "InetAddressType")
 
         # Parse error.
-        attr.type = "InetAddressIPv4"
+        attr.typeName = "InetAddressIPv4"
         self.assertRaises(ValueError, attr.type, attr, u"01:02:03:04")
+
+    def testTypeName(self):
+        """Check that we can get the current declared type name"""
+        table = mib.get("SNIMPY-MIB", "snimpyInetAddressTable")
+        attr = table.index[1]
+
+        self.assertEqual(attr.typeName, b"InetAddress")
+
+        attr.typeName = b"InetAddressIPv4"
+        self.assertEqual(attr.typeName, b"InetAddressIPv4")
+
+        attr.typeName = b"InetAddressIPv6"
+        self.assertEqual(attr.typeName, b"InetAddressIPv6")
