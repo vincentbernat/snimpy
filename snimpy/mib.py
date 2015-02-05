@@ -128,6 +128,8 @@ SmiModule   *smiGetModule(const char *);
 SmiModule   *smiGetNodeModule(SmiNode *);
 SmiType     *smiGetNodeType(SmiNode *);
 SmiType     *smiGetParentType(SmiType *);
+SmiType     *smiGetType(SmiModule *, char *);
+SmiModule   *smiGetTypeModule(SmiType *);
 char        *smiRenderNode(SmiNode *, int);
 SmiElement  *smiGetFirstElement(SmiNode *);
 SmiElement  *smiGetNextElement(SmiElement *);
@@ -180,6 +182,7 @@ class Node(object):
         :param node: libsmi node supporting this node.
         """
         self.node = node
+        self._override_type = None
 
     @property
     def type(self):
@@ -191,7 +194,10 @@ class Node(object):
             an appropriate representation.
         """
         from snimpy import basictypes
-        t = _smi.smiGetNodeType(self.node)
+        if self._override_type:
+            t = self._override_type
+        else:
+            t = _smi.smiGetNodeType(self.node)
         target = {
             _smi.SMI_BASETYPE_INTEGER32: basictypes.Integer,
             _smi.SMI_BASETYPE_INTEGER64: basictypes.Integer,
@@ -216,6 +222,47 @@ class Node(object):
             raise SMIException("unable to retrieve type of node")
         return target
 
+    @type.setter
+    def type(self, type_name):
+        """Override the node's type to type_name from the same module.
+        The new type must resolve to the same basictype.
+
+        :param type_name: string name of the type.
+        """
+        current_override = self._override_type
+
+        declared_type = _smi.smiGetNodeType(self.node)
+        declared_basetype = self.type
+
+        module = _smi.smiGetTypeModule(declared_type)
+        if module == ffi.NULL:
+            raise SMIException("unable to get module for {0}".format(
+                self.node.name))
+
+        if not isinstance(type_name, bytes):
+            type_name = type_name.encode("ascii")
+        new_type = _smi.smiGetType(module, type_name)
+        if new_type == ffi.NULL:
+            raise SMIException("no type named {1} in module {0}".format(
+                ffi.string(module.name), type_name))
+
+        # Easiest way to find the new basetype is to set the override
+        # and ask.
+        self._override_type = new_type
+        new_basetype = self.type
+
+        if declared_basetype != new_basetype:
+            self._override_type = current_override
+            raise SMIException("override type {1} not compatible with "
+                               "basetype of {0}".format(
+                                   ffi.string(declared_type.name),
+                                   ffi.string(new_type.name)))
+
+    @type.deleter
+    def type(self):
+        """Clears the type override."""
+        self._override_type = None
+
     @property
     def fmt(self):
         """Get node format. The node format is a string to use to display
@@ -227,7 +274,10 @@ class Node(object):
             format available.
 
         """
-        t = _smi.smiGetNodeType(self.node)
+        if self._override_type:
+            t = self._override_type
+        else:
+            t = _smi.smiGetNodeType(self.node)
         tt = _smi.smiGetParentType(t)
         f = (t != ffi.NULL and t.format != ffi.NULL and ffi.string(t.format) or
              tt != ffi.NULL and tt.format != ffi.NULL and

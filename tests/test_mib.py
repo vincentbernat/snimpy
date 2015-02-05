@@ -13,6 +13,7 @@ class TestMibSnimpy(unittest.TestCase):
                       "snimpyTables"]
         self.nodes.sort()
         self.tables = ["snimpyComplexTable",
+                       "snimpyInetAddressTable",
                        "snimpySimpleTable",
                        "snimpyIndexTable"]
         self.tables.sort()
@@ -20,6 +21,9 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyComplexSecondIP",
                         "snimpySimpleIndex",
                         "snimpyComplexState",
+                        "snimpyInetAddressType",
+                        "snimpyInetAddress",
+                        "snimpyInetAddressState",
                         "snimpySimpleDescr",
                         "snimpySimplePhys",
                         "snimpySimpleType",
@@ -189,6 +193,10 @@ class TestMibSnimpy(unittest.TestCase):
             [str(i)
              for i in mib.get("SNIMPY-MIB", "snimpyComplexTable").index],
             ["snimpyComplexFirstIP", "snimpyComplexSecondIP"])
+        self.assertEqual(
+            [str(i)
+             for i in mib.get("SNIMPY-MIB", "snimpyInetAddressTable").index],
+            ["snimpyInetAddressType", "snimpyInetAddress"])
 
     def testImplied(self):
         """Check that we can get implied attribute for a given table"""
@@ -245,3 +253,67 @@ class TestMibSnimpy(unittest.TestCase):
         """Check that we get FMT from types"""
         self.assertEqual(mib.get("SNIMPY-MIB", 'snimpySimplePhys').fmt, "1x:")
         self.assertEqual(mib.get("SNIMPY-MIB", 'snimpyInteger').fmt, "d-2")
+
+    def testTypeOverrides(self):
+        """Check that we can override a type"""
+        table = mib.get("SNIMPY-MIB", "snimpyInetAddressTable")
+        addrtype_attr = table.index[0]
+        addr_attr = table.index[1]
+
+        # Try overriding to IPv4 with a byte string name.
+        addrtype = addrtype_attr.type(addrtype_attr, "ipv4")
+        self.assertEqual(addrtype, "ipv4")
+        addr_attr.type = b"InetAddressIPv4"
+        ipv4 = u"127.0.0.1"
+        ipv4_oid = (4, 127, 0, 0, 1)
+
+        addr = addr_attr.type(addr_attr, ipv4)
+        self.assertEqual(str(addr), ipv4)
+        self.assertEqual(addr.toOid(), ipv4_oid)
+
+        addr_len, addr = addr_attr.type.fromOid(addr_attr, ipv4_oid)
+        self.assertEqual(addr_len, ipv4_oid[0] + 1)
+        self.assertEqual(str(addr), ipv4)
+        self.assertEqual(addr.toOid(), ipv4_oid)
+
+        # Try both IPv6 and non-bytes name.
+        addrtype = addrtype_attr.type(addrtype_attr, "ipv6")
+        self.assertEqual(addrtype, "ipv6")
+        addr_attr.type = u"InetAddressIPv6"
+        # Snimpy does not use leading zeroes.
+        ipv6 = u'102:304:506:708:90a:b0c:d0e:f01'
+        ipv6_oid = (16, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                    0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x01)
+
+        addr = addr_attr.type(addr_attr, ipv6)
+        self.assertEqual(str(addr), ipv6)
+        self.assertEqual(addr.toOid(), ipv6_oid)
+
+        addr_len, addr = addr_attr.type.fromOid(addr_attr, ipv6_oid)
+        self.assertEqual(addr_len, ipv6_oid[0] + 1)
+        self.assertEqual(str(addr), ipv6)
+        self.assertEqual(addr.toOid(), ipv6_oid)
+
+        # Try overriding back to the default.
+        del addr_attr.type
+        addr_len, addr = addr_attr.type.fromOid(addr_attr, ipv4_oid)
+        self.assertEqual(bytes(addr), b"\x7f\0\0\1")
+
+    def testTypeOverrides_Errors(self):
+        table = mib.get("SNIMPY-MIB", "snimpyInetAddressTable")
+        attr = table.index[1]
+
+        # Value with the wrong type.
+        self.assertRaises(AttributeError, setattr, attr, "type", None)
+
+        # Unknown type.
+        self.assertRaises(mib.SMIException, setattr, attr, "type",
+                          "SomeUnknownType.kjgf")
+
+        # Incompatible basetype.
+        self.assertRaises(mib.SMIException, setattr, attr, "type",
+                          "InetAddressType")
+
+        # Parse error.
+        attr.type = "InetAddressIPv4"
+        self.assertRaises(ValueError, attr.type, attr, u"01:02:03:04")

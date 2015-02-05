@@ -7,6 +7,8 @@ IMPORTS
     Counter32, mib-2                  FROM SNMPv2-SMI
     DisplayString, TEXTUAL-CONVENTION,
     PhysAddress, TruthValue           FROM SNMPv2-TC
+    InetAddressType, InetAddress,
+    InetAddressIPv4, InetAddressIPv6  FROM INET-ADDRESS-MIB
     IANAifType                        FROM IANAifType-MIB;
 
 
@@ -360,5 +362,59 @@ snimpyIndexInt OBJECT-TYPE
     DESCRIPTION
             "An integer of fixed size"
     ::= { snimpyIndexEntry 6 }
+
+-- A table indexed using InetAddresses
+
+snimpyInetAddressTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpyInetAddressEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A InetAddress table"
+    ::= { snimpyTables 4 }
+
+snimpyInetAddressEntry OBJECT-TYPE
+    SYNTAX      SnimpyInetAddressEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our complex table"
+    INDEX   { snimpyInetAddressType, snimpyInetAddress }
+    ::= { snimpyInetAddressTable 1 }
+
+SnimpyInetAddressEntry ::=
+    SEQUENCE {
+        snimpyInetAddressType        InetAddressType,
+        snimpyInetAddress            InetAddress,
+        snimpyInetAddressState       INTEGER
+    }
+
+snimpyInetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Address type identifier for snimpyInetAddress"
+    ::= { snimpyInetAddressEntry 1 }
+
+snimpyInetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Type dependent InetAddress"
+    ::= { snimpyInetAddressEntry 2 }
+
+snimpyInetAddressState OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  up(1),
+                  down(2),
+                  testing(3)
+		}
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "State for the IP"
+    ::= { snimpyInetAddressEntry 3 }
 
 END
