@@ -105,6 +105,29 @@ class TestMibSnimpy(unittest.TestCase):
             self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
             self.assert_(isinstance(mib.get('SNIMPY-MIB', i), mib.Node))
 
+    def testGetByOid(self):
+        """Test that we can get all named attributes by OID."""
+        for i in self.scalars:
+            nodebyname = mib.get('SNIMPY-MIB', i)
+            self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
+            self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Scalar))
+        for i in self.tables:
+            nodebyname = mib.get('SNIMPY-MIB', i)
+            self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
+            self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Table))
+        for i in self.columns:
+            nodebyname = mib.get('SNIMPY-MIB', i)
+            self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
+            self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Column))
+        for i in self.nodes:
+            nodebyname = mib.get('SNIMPY-MIB', i)
+            self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
+            self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Node))
+
+    def testGetByOid_UnknownOid(self):
+        """Test that unknown OIDs raise an exception."""
+        self.assertRaises(mib.SMIException, mib.getByOid, (255,))
+
     def testTableColumnRelation(self):
         """Test that we can get the column from the table and vice-versa"""
         for i in self.tables:

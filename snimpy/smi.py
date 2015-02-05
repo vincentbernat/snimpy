@@ -135,6 +135,7 @@ SmiNode     *smiGetElementNode(SmiElement *);
 SmiRange    *smiGetFirstRange(SmiType *);
 SmiRange    *smiGetNextRange(SmiRange *);
 SmiNode     *smiGetNode(SmiModule *, const char *);
+SmiNode     *smiGetNodeByOID(unsigned int oidlen, SmiSubid *);
 SmiNode     *smiGetFirstNode(SmiModule *, SmiNodekind);
 SmiNode     *smiGetNextNode(SmiNode *, SmiNodekind);
 SmiNode     *smiGetParentNode(SmiNode *);

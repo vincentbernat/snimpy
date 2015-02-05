@@ -458,6 +458,20 @@ def get(mib, name):
     return pnode(node)
 
 
+def getByOid(oid):
+    """Get a node by its OID.
+
+    :param oid: The OID as a tuple
+    :return: The requested MIB node (:class:`Node`)
+    """
+    node = _smi.smiGetNodeByOID(len(oid), oid)
+    if node == ffi.NULL:
+        raise SMIException("no node for {0}".format(
+            ".".join([str(o) for o in oid])))
+    pnode = _kind2object(node.nodekind)
+    return pnode(node)
+
+
 def _get_kind(mib, kind):
     """Get nodes of a given kind from a MIB.
 
