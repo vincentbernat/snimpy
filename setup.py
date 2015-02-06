@@ -17,8 +17,8 @@ class SnimpyTestCommand(test):
 
 
 def get_cffi_modules():
-    import snimpy.mib
-    return [snimpy.mib.ffi.verifier.get_extension()]
+    import snimpy.smi
+    return [snimpy.smi.ffi.verifier.get_extension()]
 
 
 class SnimpyBuildCommand(build):
