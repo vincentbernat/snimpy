@@ -52,6 +52,13 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyMacAddress"]
         self.scalars.sort()
 
+        self.expected_modules = ["SNMPv2-SMI",
+                                 "SNMPv2-TC",
+                                 "SNMPv2-CONF",
+                                 "SNIMPY-MIB",
+                                 "INET-ADDRESS-MIB",
+                                 "IANAifType-MIB"]
+
     def tearDown(self):
         mib.reset()
 
@@ -251,6 +258,10 @@ class TestMibSnimpy(unittest.TestCase):
                 }
         for o in oids:
             self.assertEqual(mib.get('SNIMPY-MIB', o).oid, oids[o])
+
+    def testLoadedMibNames(self):
+        """Check that only expected modules were loaded."""
+        self.assertEqual(list(mib.loadedMibNames()), self.expected_modules)
 
     def testLoadInexistantModule(self):
         """Check that we get an exception when loading an inexistant module"""

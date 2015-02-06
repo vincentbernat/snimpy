@@ -550,4 +550,26 @@ def load(mib):
                            "(check with smilint -s -l1)".format(mib))
     return modulename
 
+
+def _loadedModules():
+    """Generates the list of loaded modules.
+
+    :yield: The :class:`smi.SmiModule` of all currently loaded modules.
+    """
+    module = _smi.smiGetFirstModule()
+    while module != ffi.NULL:
+        yield module
+
+        module = _smi.smiGetNextModule(module)
+
+
+def loadedMibNames():
+    """Generates the list of loaded MIB names.
+
+    :yield: The names of all currently loaded MIBs.
+    """
+    for module in _loadedModules():
+        yield ffi.string(module.name).decode('utf-8')
+
+
 reset()
