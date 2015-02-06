@@ -1,12 +1,17 @@
 from setuptools import setup
+from setuptools.command.test import test
 import snimpy
 
-# Those are here to keep references to those modules when testing
-try:
-    import multiprocessing
-    import pysnmp
-except ImportError:
-    pass
+
+class SnimpyTestCommand(test):
+    def run_tests(self, *args, **kwds):
+        # Ensure we keep a reference to multiprocessing and pysnmp to
+        # avoid errors at the end of the test
+        import multiprocessing
+        import pysnmp
+        SnimpyTestCommand.multiprocessing = multiprocessing
+        SnimpyTestCommand.pysnmp = pysnmp
+        test.run_tests(self, *args, **kwds)
 
 if __name__ == "__main__":
     # MIB module
@@ -50,5 +55,6 @@ if __name__ == "__main__":
           install_requires=["cffi", "pysnmp >= 4"],
           setup_requires=["cffi"],
           tests_require=["cffi", "pysnmp >= 4", "nose", "mock"],
-          test_suite="nose.collector"
+          test_suite="nose.collector",
+          cmdclass={"test": SnimpyTestCommand},
           )
