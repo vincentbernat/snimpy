@@ -80,13 +80,14 @@ class LazyLibrary(object):
         self._lib = None
         self._lock = threading.Lock()
 
-    def __getattr__(self, name):
+    @property
+    def lib(self):
         if self._lib is None:
-            with self._lock:
-                if self._lib is None:
-                    self._lib = self._ffi.verifier.load_library()
+            self._lib = self.ffi.verifier.load_library()
+        return self._lib
 
-        return getattr(self._lib, name)
+    def __getattr__(self, name):
+        return getattr(self.lib, name)
 
 import cffi.vengine_cpy
 import cffi.vengine_gen
