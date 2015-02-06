@@ -83,7 +83,7 @@ class LazyLibrary(object):
     @property
     def lib(self):
         if self._lib is None:
-            self._lib = self.ffi.verifier.load_library()
+            self._lib = self._ffi.verifier.load_library()
         return self._lib
 
     def __getattr__(self, name):
