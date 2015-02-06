@@ -1,6 +1,7 @@
 from setuptools import setup
 import snimpy
 
+# Those are here to keep references to those modules when testing
 try:
     import multiprocessing
     import pysnmp
