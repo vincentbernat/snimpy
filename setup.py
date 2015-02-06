@@ -63,9 +63,9 @@ if __name__ == "__main__":
           },
           data_files=[('share/man/man1', ['man/snimpy.1'])],
           zip_safe=False,
-          install_requires=["cffi", "pysnmp >= 4"],
-          setup_requires=["cffi"],
-          tests_require=["cffi", "pysnmp >= 4", "nose", "mock"],
+          install_requires=["cffi>=0.8", "pysnmp >= 4"],
+          setup_requires=["cffi>=0.8"],
+          tests_require=["cffi>=0.8", "pysnmp >= 4", "nose", "mock"],
           test_suite="nose.collector",
           cmdclass={
               "test": SnimpyTestCommand,
