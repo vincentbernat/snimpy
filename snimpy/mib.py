@@ -89,8 +89,27 @@ class Node(object):
             raise SMIException("unable to retrieve type of node")
         return target
 
-    @type.setter
-    def type(self, type_name):
+    @property
+    def typeName(self):
+        """Retrieves the name of the the node's current declared type
+        (not basic type).
+
+        :return: A string representing the current declared type,
+            suitable for assignment to type.setter.
+        """
+        if self._override_type:
+            t = self._override_type
+        else:
+            t = _smi.smiGetNodeType(self.node)
+
+        if t is None or t == ffi.NULL:
+            raise SMIException("unable to retrieve the declared type "
+                               "of the node '{}'".format(self.node.name))
+
+        return ffi.string(t.name)
+
+    @typeName.setter
+    def typeName(self, type_name):
         """Override the node's type to type_name from the same module.
         The new type must resolve to the same basictype.
 
@@ -125,8 +144,8 @@ class Node(object):
                                    ffi.string(declared_type.name),
                                    ffi.string(new_type.name)))
 
-    @type.deleter
-    def type(self):
+    @typeName.deleter
+    def typeName(self):
         """Clears the type override."""
         self._override_type = None
 
@@ -435,6 +454,20 @@ def get(mib, name):
     if node == ffi.NULL:
         raise SMIException("in {0}, no node named {1}".format(
             mib, name))
+    pnode = _kind2object(node.nodekind)
+    return pnode(node)
+
+
+def getByOid(oid):
+    """Get a node by its OID.
+
+    :param oid: The OID as a tuple
+    :return: The requested MIB node (:class:`Node`)
+    """
+    node = _smi.smiGetNodeByOID(len(oid), oid)
+    if node == ffi.NULL:
+        raise SMIException("no node for {0}".format(
+            ".".join([str(o) for o in oid])))
     pnode = _kind2object(node.nodekind)
     return pnode(node)
 
