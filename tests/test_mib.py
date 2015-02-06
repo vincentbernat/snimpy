@@ -336,6 +336,15 @@ class TestMibSnimpy(unittest.TestCase):
         self.assertEqual(str(addr), ipv6)
         self.assertEqual(addr.toOid(), ipv6_oid)
 
+        # Try a type from a different module (chosen because snmpwalk
+        # prints IPv6 addresses incorrectly).
+        ipv6_1xformat = u'1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:1'
+        addr_attr.typeName = "PhysAddress"
+
+        addr = addr_attr.type(addr_attr, ipv6_1xformat)
+        self.assertEqual(str(addr), ipv6_1xformat)
+        self.assertEqual(addr.toOid(), ipv6_oid)
+
         # Try overriding back to the default.
         del addr_attr.typeName
         addr_len, addr = addr_attr.type.fromOid(addr_attr, ipv4_oid)

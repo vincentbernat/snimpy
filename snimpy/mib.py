@@ -110,7 +110,7 @@ class Node(object):
 
     @typeName.setter
     def typeName(self, type_name):
-        """Override the node's type to type_name from the same module.
+        """Override the node's type to type_name, found using _getType.
         The new type must resolve to the same basictype.
 
         :param type_name: string name of the type.
@@ -120,17 +120,10 @@ class Node(object):
         declared_type = _smi.smiGetNodeType(self.node)
         declared_basetype = self.type
 
-        module = _smi.smiGetTypeModule(declared_type)
-        if module == ffi.NULL:
-            raise SMIException("unable to get module for {0}".format(
-                self.node.name))
-
-        if not isinstance(type_name, bytes):
-            type_name = type_name.encode("ascii")
-        new_type = _smi.smiGetType(module, type_name)
-        if new_type == ffi.NULL:
-            raise SMIException("no type named {1} in module {0}".format(
-                ffi.string(module.name), type_name))
+        new_type = _getType(type_name)
+        if not new_type:
+            raise SMIException("no type named {0} in any loaded module".format(
+                type_name))
 
         # Easiest way to find the new basetype is to set the override
         # and ask.
