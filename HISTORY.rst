@@ -3,8 +3,8 @@
 History
 -------
 
-0.8.4 (???)
-+++++++++++
+0.8.4 (2015-02-06)
+++++++++++++++++++
 
  * More CFFI workarounds, including cross-compilation support.
  * Ability to override a node type.
