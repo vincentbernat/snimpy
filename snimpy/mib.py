@@ -28,6 +28,7 @@ incomplete.
 
 from snimpy import cffi_fix  # nopep8
 from cffi import FFI
+from cffi.verifier import Verifier
 
 _CDEF = """
 
@@ -157,10 +158,12 @@ _SOURCE = """
 
 ffi = FFI()
 ffi.cdef(_CDEF)
-_smi = ffi.verify(
+ffi.verifier = Verifier(
+    ffi,
     _SOURCE,
     libraries=["smi"],
     modulename=cffi_fix.create_modulename("Mib", _CDEF, _SOURCE))
+_smi = cffi_fix.LazyLibrary(ffi)
 
 
 class SMIException(Exception):

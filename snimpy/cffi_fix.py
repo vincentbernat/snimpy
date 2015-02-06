@@ -23,6 +23,7 @@ import imp
 import sys
 import binascii
 import functools
+import threading
 
 
 def get_so_suffixes():
@@ -72,6 +73,20 @@ def create_modulename(prefix, cdef_sources, source, sys_version=sys.version):
     k2 = k2.lstrip('0').rstrip('L')
     return '_{2}_cffi_{0}{1}'.format(k1, k2, prefix)
 
+
+class LazyLibrary(object):
+    def __init__(self, ffi):
+        self._ffi = ffi
+        self._lib = None
+        self._lock = threading.Lock()
+
+    def __getattr__(self, name):
+        if self._lib is None:
+            with self._lock:
+                if self._lib is None:
+                    self._lib = self._ffi.verifier.load_library()
+
+        return getattr(self._lib, name)
 
 import cffi.vengine_cpy
 import cffi.vengine_gen
