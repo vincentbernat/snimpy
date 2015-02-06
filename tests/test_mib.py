@@ -135,6 +135,14 @@ class TestMibSnimpy(unittest.TestCase):
         """Test that unknown OIDs raise an exception."""
         self.assertRaises(mib.SMIException, mib.getByOid, (255,))
 
+    def testGetType(self):
+        """Test that _getType properly identifies known and unknown types."""
+        self.assertEqual(b"PhysAddress",
+                         mib.ffi.string(mib._getType("PhysAddress").name))
+        self.assertEqual(b"InetAddress",
+                         mib.ffi.string(mib._getType(b"InetAddress").name))
+        self.assertEqual(None, mib._getType("SomeUnknownType.kjgf"))
+
     def testTableColumnRelation(self):
         """Test that we can get the column from the table and vice-versa"""
         for i in self.tables:
