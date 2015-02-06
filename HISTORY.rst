@@ -3,6 +3,13 @@
 History
 -------
 
+0.8.4 (???)
++++++++++++
+
+ * More CFFI workarounds, including cross-compilation support.
+ * Ability to override a node type.
+ * Automatic workaround for "SNMP too big" error message.
+
 0.8.3 (2014-08-18)
 ++++++++++++++++++
 
