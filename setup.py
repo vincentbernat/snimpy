@@ -1,5 +1,7 @@
+from distutils.command.build import build
 from setuptools import setup
 from setuptools.command.test import test
+from setuptools.command.install import install
 import snimpy
 
 
@@ -11,16 +13,26 @@ class SnimpyTestCommand(test):
         import pysnmp
         SnimpyTestCommand.multiprocessing = multiprocessing
         SnimpyTestCommand.pysnmp = pysnmp
-        test.run_tests(self, *args, **kwds)
+        return test.run_tests(self, *args, **kwds)
+
+
+def get_cffi_modules():
+    import snimpy.mib
+    return [snimpy.mib.ffi.verifier.get_extension()]
+
+
+class SnimpyBuildCommand(build):
+    def finalize_options(self):
+        self.distribution.ext_modules = get_cffi_modules()
+        return build.finalize_options(self)
+
+
+class SnimpyInstallCommand(install):
+    def finalize_options(self):
+        self.distribution.ext_modules = get_cffi_modules()
+        return install.finalize_options(self)
 
 if __name__ == "__main__":
-    # MIB module
-    try:
-        import snimpy.mib
-        ext_modules = [snimpy.mib.ffi.verifier.get_extension()]
-    except ImportError:
-        ext_modules = []
-
     readme = open('README.rst').read()
     history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
@@ -50,11 +62,14 @@ if __name__ == "__main__":
               ],
           },
           data_files=[('share/man/man1', ['man/snimpy.1'])],
-          ext_modules=ext_modules,
           zip_safe=False,
           install_requires=["cffi", "pysnmp >= 4"],
           setup_requires=["cffi"],
           tests_require=["cffi", "pysnmp >= 4", "nose", "mock"],
           test_suite="nose.collector",
-          cmdclass={"test": SnimpyTestCommand},
+          cmdclass={
+              "test": SnimpyTestCommand,
+              "build": SnimpyBuildCommand,
+              "install": SnimpyInstallCommand,
+          },
           )
