@@ -381,3 +381,6 @@ class TestMibSnimpy(unittest.TestCase):
 
         attr.typeName = b"InetAddressIPv6"
         self.assertEqual(attr.typeName, b"InetAddressIPv6")
+
+        attr = mib.get("SNIMPY-MIB", "snimpySimpleIndex")
+        self.assertEqual(attr.typeName, b"Integer32")

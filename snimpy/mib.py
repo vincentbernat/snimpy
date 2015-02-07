@@ -102,6 +102,10 @@ class Node(object):
         else:
             t = _smi.smiGetNodeType(self.node)
 
+        # This occurs when the type is "implied".
+        if t.name == ffi.NULL:
+            t = _smi.smiGetParentType(t)
+
         if t is None or t == ffi.NULL:
             raise SMIException("unable to retrieve the declared type "
                                "of the node '{}'".format(self.node.name))
