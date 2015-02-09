@@ -401,12 +401,22 @@ class Column(Node):
         return t
 
 
+_lastError = None
+
+
+@ffi.callback("void(char *, int, int, char *, char*)")
+def _logError(path, line, severity, msg, tag):
+    global _lastError
+    _lastError = "{0}:{1}: {2}".format(ffi.string(path), line, ffi.string(msg))
+
+
 def reset():
     """Reset libsmi to its initial state."""
     _smi.smiExit()
     if _smi.smiInit(b"snimpy") < 0:
             raise SMIException("unable to init libsmi")
-    _smi.smiSetErrorLevel(0)
+    _smi.smiSetErrorLevel(1)
+    _smi.smiSetErrorHandler(_logError)
     try:
         _smi.smiSetFlags(_smi.SMI_FLAG_ERRORS | _smi.SMI_FLAG_RECURSIVE)
     except TypeError:
@@ -546,8 +556,8 @@ def load(mib):
         raise SMIException("unable to load {0}".format(mib))
     modulename = ffi.string(modulename)
     if not _get_module(modulename.decode("ascii")):
-        raise SMIException("{0} contains major SMI error "
-                           "(check with smilint -s -l1)".format(mib))
+        raise SMIException("{0} contains major SMI error ({1}: "
+                           "check with smilint -s -l1)".format(mib, _lastError))
     return modulename
 
 reset()

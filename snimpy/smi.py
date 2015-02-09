@@ -117,9 +117,13 @@ typedef struct SmiNamedNumber {
     SmiValue            value;
 } SmiNamedNumber;
 
+typedef void (SmiErrorHandler) (char *path, int line,
+  int severity, char *msg, char *tag);
+
 int          smiInit(const char *);
 void         smiExit(void);
 void         smiSetErrorLevel(int);
+void         smiSetErrorHandler(SmiErrorHandler *);
 void         smiSetFlags(int);
 char        *smiLoadModule(const char *);
 SmiModule   *smiGetModule(const char *);
