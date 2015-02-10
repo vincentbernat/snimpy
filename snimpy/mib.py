@@ -557,7 +557,8 @@ def load(mib):
     modulename = ffi.string(modulename)
     if not _get_module(modulename.decode("ascii")):
         raise SMIException("{0} contains major SMI error ({1}: "
-                           "check with smilint -s -l1)".format(mib, _lastError))
+                           "check with smilint -s -l1)".format(mib,
+                                                               _lastError))
     return modulename
 
 reset()
