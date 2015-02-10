@@ -404,7 +404,11 @@ _lastError = None
 @ffi.callback("void(char *, int, int, char *, char*)")
 def _logError(path, line, severity, msg, tag):
     global _lastError
-    _lastError = "{0}:{1}: {2}".format(ffi.string(path), line, ffi.string(msg))
+    if path != ffi.NULL and msg != ffi.NULL:
+        _lastError = "{0}:{1}: {2}".format(ffi.string(path), line,
+                                           ffi.string(msg))
+    else:
+        _lastError = None
 
 
 def reset():
@@ -568,9 +572,12 @@ def load(mib):
         raise SMIException("unable to load {0}".format(mib))
     modulename = ffi.string(modulename)
     if not _get_module(modulename.decode("ascii")):
-        raise SMIException("{0} contains major SMI error ({1}: "
-                           "check with smilint -s -l1)".format(mib,
-                                                               _lastError))
+        details = "check with smilint -s -l1"
+        if _lastError is not None:
+            details = "{0}: {1}".format(_lastError,
+                                        details)
+        raise SMIException(
+            "{0} contains major SMI error ({1})".format(mib, details))
     return modulename
 
 
