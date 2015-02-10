@@ -102,6 +102,10 @@ class Node(object):
         else:
             t = _smi.smiGetNodeType(self.node)
 
+        # This occurs when the type is "implied".
+        if t.name == ffi.NULL:
+            t = _smi.smiGetParentType(t)
+
         if t is None or t == ffi.NULL:
             raise SMIException("unable to retrieve the declared type "
                                "of the node '{}'".format(self.node.name))
@@ -110,7 +114,7 @@ class Node(object):
 
     @typeName.setter
     def typeName(self, type_name):
-        """Override the node's type to type_name from the same module.
+        """Override the node's type to type_name, found using _getType.
         The new type must resolve to the same basictype.
 
         :param type_name: string name of the type.
@@ -120,17 +124,10 @@ class Node(object):
         declared_type = _smi.smiGetNodeType(self.node)
         declared_basetype = self.type
 
-        module = _smi.smiGetTypeModule(declared_type)
-        if module == ffi.NULL:
-            raise SMIException("unable to get module for {0}".format(
-                self.node.name))
-
-        if not isinstance(type_name, bytes):
-            type_name = type_name.encode("ascii")
-        new_type = _smi.smiGetType(module, type_name)
-        if new_type == ffi.NULL:
-            raise SMIException("no type named {1} in module {0}".format(
-                ffi.string(module.name), type_name))
+        new_type = _getType(type_name)
+        if not new_type:
+            raise SMIException("no type named {0} in any loaded module".format(
+                type_name))
 
         # Easiest way to find the new basetype is to set the override
         # and ask.
@@ -482,6 +479,21 @@ def getByOid(oid):
     return pnode(node)
 
 
+def _getType(type_name):
+    """Searches for a smi type through all loaded modules.
+
+    :param type_name: The name of the type to search for.
+    :return: The requested type (:class:`smi.SmiType`), if found, or None.
+    """
+    if not isinstance(type_name, bytes):
+        type_name = type_name.encode("ascii")
+    for module in _loadedModules():
+        new_type = _smi.smiGetType(module, type_name)
+        if new_type != ffi.NULL:
+            return new_type
+    return None
+
+
 def _get_kind(mib, kind):
     """Get nodes of a given kind from a MIB.
 
@@ -560,5 +572,27 @@ def load(mib):
                            "check with smilint -s -l1)".format(mib,
                                                                _lastError))
     return modulename
+
+
+def _loadedModules():
+    """Generates the list of loaded modules.
+
+    :yield: The :class:`smi.SmiModule` of all currently loaded modules.
+    """
+    module = _smi.smiGetFirstModule()
+    while module != ffi.NULL:
+        yield module
+
+        module = _smi.smiGetNextModule(module)
+
+
+def loadedMibNames():
+    """Generates the list of loaded MIB names.
+
+    :yield: The names of all currently loaded MIBs.
+    """
+    for module in _loadedModules():
+        yield ffi.string(module.name).decode('utf-8')
+
 
 reset()

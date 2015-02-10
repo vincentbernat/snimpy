@@ -52,6 +52,13 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyMacAddress"]
         self.scalars.sort()
 
+        self.expected_modules = ["SNMPv2-SMI",
+                                 "SNMPv2-TC",
+                                 "SNMPv2-CONF",
+                                 "SNIMPY-MIB",
+                                 "INET-ADDRESS-MIB",
+                                 "IANAifType-MIB"]
+
     def tearDown(self):
         mib.reset()
 
@@ -127,6 +134,14 @@ class TestMibSnimpy(unittest.TestCase):
     def testGetByOid_UnknownOid(self):
         """Test that unknown OIDs raise an exception."""
         self.assertRaises(mib.SMIException, mib.getByOid, (255,))
+
+    def testGetType(self):
+        """Test that _getType properly identifies known and unknown types."""
+        self.assertEqual(b"PhysAddress",
+                         mib.ffi.string(mib._getType("PhysAddress").name))
+        self.assertEqual(b"InetAddress",
+                         mib.ffi.string(mib._getType(b"InetAddress").name))
+        self.assertEqual(None, mib._getType("SomeUnknownType.kjgf"))
 
     def testTableColumnRelation(self):
         """Test that we can get the column from the table and vice-versa"""
@@ -252,6 +267,10 @@ class TestMibSnimpy(unittest.TestCase):
         for o in oids:
             self.assertEqual(mib.get('SNIMPY-MIB', o).oid, oids[o])
 
+    def testLoadedMibNames(self):
+        """Check that only expected modules were loaded."""
+        self.assertEqual(list(mib.loadedMibNames()), self.expected_modules)
+
     def testLoadInexistantModule(self):
         """Check that we get an exception when loading an inexistant module"""
         self.assertRaises(mib.SMIException, mib.load, "idontexist.gfdgfdg")
@@ -317,6 +336,15 @@ class TestMibSnimpy(unittest.TestCase):
         self.assertEqual(str(addr), ipv6)
         self.assertEqual(addr.toOid(), ipv6_oid)
 
+        # Try a type from a different module (chosen because snmpwalk
+        # prints IPv6 addresses incorrectly).
+        ipv6_1xformat = u'1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:1'
+        addr_attr.typeName = "PhysAddress"
+
+        addr = addr_attr.type(addr_attr, ipv6_1xformat)
+        self.assertEqual(str(addr), ipv6_1xformat)
+        self.assertEqual(addr.toOid(), ipv6_oid)
+
         # Try overriding back to the default.
         del addr_attr.typeName
         addr_len, addr = addr_attr.type.fromOid(addr_attr, ipv4_oid)
@@ -353,3 +381,6 @@ class TestMibSnimpy(unittest.TestCase):
 
         attr.typeName = b"InetAddressIPv6"
         self.assertEqual(attr.typeName, b"InetAddressIPv6")
+
+        attr = mib.get("SNIMPY-MIB", "snimpySimpleIndex")
+        self.assertEqual(attr.typeName, b"Integer32")

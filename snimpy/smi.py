@@ -126,6 +126,8 @@ void         smiSetErrorLevel(int);
 void         smiSetErrorHandler(SmiErrorHandler *);
 void         smiSetFlags(int);
 char        *smiLoadModule(const char *);
+SmiModule   *smiGetFirstModule();
+SmiModule   *smiGetNextModule(SmiModule *);
 SmiModule   *smiGetModule(const char *);
 SmiModule   *smiGetNodeModule(SmiNode *);
 SmiType     *smiGetNodeType(SmiNode *);

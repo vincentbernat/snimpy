@@ -193,7 +193,7 @@ snimpySimpleEntry OBJECT-TYPE
 
 SnimpySimpleEntry ::=
     SEQUENCE {
-        snimpySimpleIndex	Integer32,
+        snimpySimpleIndex       Integer32,
         snimpySimpleDescr       DisplayString,
         snimpySimpleType        IANAifType,
         snimpySimplePhys        PhysAddress
