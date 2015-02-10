@@ -3,7 +3,7 @@
 History
 -------
 
-0.8.4 (2015-02-06)
+0.8.4 (2015-02-10)
 ++++++++++++++++++
 
  * More CFFI workarounds, including cross-compilation support.
