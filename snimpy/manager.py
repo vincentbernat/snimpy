@@ -395,6 +395,8 @@ class ProxyColumn(Proxy, MutableMapping):
                 target.append(x.type(x, o))
                 index = index[l:]
             count = count + 1
+            if result is not None:
+                result = self.proxy.type(self.proxy, result)
             if len(target) == 1:
                 # Should work most of the time
                 yield target[0], result
