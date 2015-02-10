@@ -36,13 +36,19 @@ from snimpy import mib
 
 PYTHON3 = sys.version_info >= (3, 0)
 if PYTHON3:
-    ord2 = lambda x: x
-    chr2 = lambda x: bytes([x & 0xff])
+    def ord2(x):
+        return x
+
+    def chr2(x):
+        return bytes([x & 0xff])
+
     unicode = str
     long = int
 else:
     ord2 = ord
-    chr2 = lambda x: chr(x & 0xff)
+
+    def chr2(x):
+        return chr(x & 0xff)
 
 
 def ordering_with_cmp(cls):
