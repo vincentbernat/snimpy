@@ -268,8 +268,8 @@ class TestMibSnimpy(unittest.TestCase):
 
     def testLoadedMibNames(self):
         """Check that only expected modules were loaded."""
-        self.assertEqual(sorted(list(mib.loadedMibNames())),
-                         sorted(self.expected_modules))
+        for module in self.expected_modules:
+            self.assertIn(module, list(mib.loadedMibNames()))
 
     def testLoadInexistantModule(self):
         """Check that we get an exception when loading an inexistant module"""
