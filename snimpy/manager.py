@@ -200,6 +200,7 @@ class Manager(object):
                  community="public", version=2,
                  cache=False, none=False,
                  timeout=None, retries=None,
+                 loose=False,
                  # SNMPv3
                  secname=None,
                  authprotocol=None, authpassword=None,
@@ -231,7 +232,12 @@ class Manager(object):
         :type timeout: int
         :param retries: How many times the request should be retried?
         :type retries: int
-
+        :param loose: Enable loose typing. When type coercion fails
+            (for example when a MIB declare an element to be an ASCII
+            string while it is not), just return the raw result
+            instead of an exception. This mode should be enabled with
+            caution. Patching the MIB is a better idea.
+        :type loose: bool
         """
         if host is None:
             host = Manager._host
@@ -251,6 +257,7 @@ class Manager(object):
                 self._session = CachedSession(self._session, cache)
         if none:
             self._session = NoneSession(self._session)
+        self._loose = loose
 
     def _locate(self, attribute):
         for m in loaded:
@@ -268,10 +275,15 @@ class Manager(object):
         if isinstance(a, mib.Scalar):
             oid, result = self._session.get(a.oid + (0,))[0]
             if result is not None:
-                return a.type(a, result)
+                try:
+                    return a.type(a, result)
+                except ValueError:
+                    if self._loose:
+                        return result
+                    raise
             return None
         elif isinstance(a, mib.Column):
-            return ProxyColumn(self._session, a)
+            return ProxyColumn(self._session, a, self._loose)
         raise NotImplementedError
 
     def __setattr__(self, attribute, value):
@@ -316,9 +328,10 @@ class ProxyColumn(Proxy, MutableMapping):
 
     """Proxy for column access"""
 
-    def __init__(self, session, column):
+    def __init__(self, session, column, loose):
         self.proxy = column
         self.session = session
+        self._loose = loose
 
     def _op(self, op, index, *args):
         if not isinstance(index, tuple):
@@ -340,7 +353,12 @@ class ProxyColumn(Proxy, MutableMapping):
         if op != "set":
             oid, result = result[0]
             if result is not None:
-                return self.proxy.type(self.proxy, result)
+                try:
+                    return self.proxy.type(self.proxy, result)
+                except ValueError:
+                    if self._loose:
+                        return result
+                    raise
             return None
 
     def __getitem__(self, index):
@@ -396,7 +414,11 @@ class ProxyColumn(Proxy, MutableMapping):
                 index = index[l:]
             count = count + 1
             if result is not None:
-                result = self.proxy.type(self.proxy, result)
+                try:
+                    result = self.proxy.type(self.proxy, result)
+                except ValueError:
+                    if not self._loose:
+                        raise
             if len(target) == 1:
                 # Should work most of the time
                 yield target[0], result

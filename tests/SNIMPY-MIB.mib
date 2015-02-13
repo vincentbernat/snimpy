@@ -172,6 +172,14 @@ snimpyMacAddress OBJECT-TYPE
 	"A MAC address"
     ::= { snimpyScalars 15 }
 
+snimpyMacAddressInvalid OBJECT-TYPE
+    SYNTAX 	DisplayString
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A MAC address with invalid syntax"
+    ::= { snimpyScalars 16 }
+
 -- A simple table
 
 snimpySimpleTable OBJECT-TYPE

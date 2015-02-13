@@ -2,7 +2,7 @@ import unittest
 import os
 import time
 from datetime import timedelta
-from snimpy.manager import load, Manager, snmp
+from snimpy.manager import load, Manager, snmp, mib
 import agent
 
 
@@ -308,3 +308,29 @@ class TestCachingManagerWithModificatons(TestManager):
         self.manager.snimpyString = "Yeesss"
         time.sleep(1)
         self.assertEqual(self.manager.snimpyString, "Yeesss")
+
+
+class TestManagerInvalidValues(TestManager):
+
+    """Test when the agent is returning invalid values"""
+
+    def testInvalidValue(self):
+        """Check if an invalid value raises an exception"""
+        self.assertRaises(ValueError,
+                          getattr, self.manager,
+                          "snimpyMacAddressInvalid")
+
+class TestManagerLoose(TestManager):
+
+    """Test when the agent is returning invalid values but loose mode is enabled"""
+
+    def setUp(self):
+        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
+                               community="public",
+                               version=2, loose=True)
+        self.session = self.manager._session
+
+    def testInvalidValue(self):
+        """Check if an invalid value raises an exception"""
+        self.assertEqual(self.manager.snimpyMacAddressInvalid,
+                         b"\xf1\x12\x13\x14\x15\x16")
