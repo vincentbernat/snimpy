@@ -49,7 +49,8 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyNotImplemented",
                         "snimpyOctetString",
                         "snimpyUnicodeString",
-                        "snimpyMacAddress"]
+                        "snimpyMacAddress",
+                        "snimpyMacAddressInvalid"]
         self.scalars.sort()
 
         self.expected_modules = [u"SNMPv2-SMI",
