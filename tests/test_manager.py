@@ -2,7 +2,7 @@ import unittest
 import os
 import time
 from datetime import timedelta
-from snimpy.manager import load, Manager, snmp, mib
+from snimpy.manager import load, Manager, snmp
 import agent
 
 
@@ -320,9 +320,10 @@ class TestManagerInvalidValues(TestManager):
                           getattr, self.manager,
                           "snimpyMacAddressInvalid")
 
+
 class TestManagerLoose(TestManager):
 
-    """Test when the agent is returning invalid values but loose mode is enabled"""
+    """Test when the agent is returning invalid values with loose mode"""
 
     def setUp(self):
         self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
