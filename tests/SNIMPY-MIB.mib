@@ -425,4 +425,45 @@ snimpyInetAddressState OBJECT-TYPE
             "State for the IP"
     ::= { snimpyInetAddressEntry 3 }
 
+-- A table that may contain invalid values
+
+snimpyInvalidTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpyInvalidEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table"
+    ::= { snimpyTables 5 }
+
+snimpyInvalidEntry OBJECT-TYPE
+    SYNTAX      SnimpyInvalidEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our invalid table"
+    INDEX   { snimpyInvalidIndex }
+    ::= { snimpyInvalidTable 1 }
+
+SnimpyInvalidEntry ::=
+    SEQUENCE {
+        snimpyInvalidIndex       Integer32,
+        snimpyInvalidDescr       DisplayString
+    }
+
+snimpyInvalidIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..30)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Index for snimpy invalid table"
+    ::= { snimpyInvalidEntry 1 }
+
+snimpyInvalidDescr OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpyInvalidEntry 2 }
+
 END

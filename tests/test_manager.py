@@ -320,6 +320,18 @@ class TestManagerInvalidValues(TestManager):
                           getattr, self.manager,
                           "snimpyMacAddressInvalid")
 
+    def testInvalidValueInTable(self):
+        """Check if an invalid value in a table raises an exception"""
+        self.assertRaises(ValueError,
+                          self.manager.snimpyInvalidDescr.__getitem__,
+                          2)
+
+    def testInvalidValueWhileIterating(self):
+        """Check if an invalid value while walking raises an exception"""
+        self.assertRaises(ValueError,
+                          list,
+                          self.manager.snimpyInvalidDescr.iteritems())
+
 
 class TestManagerLoose(TestManager):
 
@@ -332,6 +344,19 @@ class TestManagerLoose(TestManager):
         self.session = self.manager._session
 
     def testInvalidValue(self):
-        """Check if an invalid value raises an exception"""
+        """Check if an invalid value is correctly returned"""
         self.assertEqual(self.manager.snimpyMacAddressInvalid,
                          b"\xf1\x12\x13\x14\x15\x16")
+
+    def testInvalidValueInTable(self):
+        """Check if an invalid value in a table is correctly returned"""
+        self.assertEqual(self.manager.snimpyInvalidDescr[1],
+                         "Hello")
+        self.assertEqual(self.manager.snimpyInvalidDescr[2],
+                         b"\xf1\x12\x13\x14\x15\x16")
+
+    def testInvalidValueWhileIterating(self):
+        """Check if an invalid value while walking works"""
+        self.assertEqual(list(self.manager.snimpyInvalidDescr.iteritems()),
+                         [(1, "Hello"),
+                          (2, b"\xf1\x12\x13\x14\x15\x16")])

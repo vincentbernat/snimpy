@@ -213,6 +213,20 @@ class TestAgent(object):
                                       stringToOid('gamma7'),
                                       stringToOid('end of row3')),
                               v2c.Integer(4110)),
+
+            # SNIMPY-MIB::snimpyInvalidTable
+            MibTable((1, 3, 6, 1, 2, 1, 45121, 2, 5)),
+            MibTableRow(
+                (1, 3, 6, 1, 2, 1, 45121, 2, 5, 1)).setIndexNames(
+                (0, "__MY_SNIMPY-MIB", "snimpyInvalidIndex")),
+            # SNIMPY-MIB::snimpyInvalidDescr
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 5, 1, 2),
+                              (1,),
+                              v2c.OctetString(b"Hello")),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 5, 1, 2),
+                              (2,),
+                              v2c.OctetString(b"\xf1\x12\x13\x14\x15\x16")),
+
             # Indexes
             snimpyIndexVarLen=MibTableColumn(
                 (1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 1),
@@ -240,7 +254,13 @@ class TestAgent(object):
                 )).setMaxAccess("noaccess"),
             snimpyIndexInt=MibTableColumn(
                 (1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 6),
-                v2c.Integer()).setMaxAccess("readwrite")
+                v2c.Integer()).setMaxAccess("readwrite"),
+            snimpyInvalidIndex=MibTableColumn(
+                (1, 3, 6, 1, 2, 1, 45121, 2, 5, 1, 1),
+                v2c.Integer()).setMaxAccess("noaccess"),
+            snimpyInvalidDescr=MibTableColumn(
+                (1, 3, 6, 1, 2, 1, 45121, 2, 5, 1, 2),
+                v2c.OctetString()).setMaxAccess("readwrite")
         )
         # Start agent
         cmdrsp.GetCommandResponder(snmpEngine, snmpContext)
