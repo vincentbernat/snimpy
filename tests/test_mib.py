@@ -1,6 +1,11 @@
 import unittest
 import os
+import sys
 from snimpy import mib, basictypes
+
+PYTHON3 = sys.version_info >= (3, 0)
+if PYTHON3:
+    unicode = str
 
 
 class TestMibSnimpy(unittest.TestCase):
