@@ -388,3 +388,22 @@ class TestMibSnimpy(unittest.TestCase):
 
         attr = mib.get("SNIMPY-MIB", "snimpySimpleIndex")
         self.assertEqual(attr.typeName, b"Integer32")
+
+
+class TestSmi(unittest.TestCase):
+
+    def testGetPath(self):
+        """Test we can get default SMI path"""
+        current = mib.path()
+        self.assertTrue(type(current), unicode)
+        self.assertNotEqual(mib.path(), u"")
+
+    def testSetPath(self):
+        """Test we can set path to some value"""
+        original = mib.path()
+        current = original + ":/some/other/directory"
+        try:
+            mib.path(current)
+            self.assertEqual(mib.path(), current)
+        finally:
+            mib.path(original)

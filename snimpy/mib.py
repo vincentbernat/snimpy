@@ -424,17 +424,29 @@ def reset():
         pass                    # We are being mocked
 
 
-def set_path(path):
-    """Set a search path to libsmi.
+def path(path=None):
+    """Set or get a search path to libsmi.
 
-    The behavior of this function changes accourding to the 'path' param. Check
-    'man smi_config' for more information.
+    The behavior of this function changes accourding to the 'path'
+    param. Check 'man smi_config' for more information.
 
     :param path: The string to be used to change the search path
+
     """
-    path = str(path)
+    if path is None:
+        # Get the path
+        path = _smi.smiGetPath()
+        if path == ffi.NULL:
+            raise SMIException("unable to get current libsmi path")
+        result = ffi.string(path)
+        _smi.free(path)
+        return result.decode("utf8")
+
+    # Set the path
+    if not isinstance(path, bytes):
+        path = path.encode("utf8")
     if _smi.smiSetPath(path) < 0:
-        raise SMIException("unable to set the path {}".format(path))
+        raise SMIException("unable to set the path {0}".format(path))
 
 
 def _get_module(name):
