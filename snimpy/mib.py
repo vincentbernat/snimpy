@@ -427,10 +427,11 @@ def reset():
 def path(path=None):
     """Set or get a search path to libsmi.
 
-    The behavior of this function changes accourding to the 'path'
-    param. Check 'man smi_config' for more information.
+    When no path is provided, return the current path,
+    unmodified. Otherwise, set the path to the specified value.
 
-    :param path: The string to be used to change the search path
+    :param path: The string to be used to change the search path or
+                 `None`
 
     """
     if path is None:
