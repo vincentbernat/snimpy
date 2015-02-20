@@ -424,6 +424,19 @@ def reset():
         pass                    # We are being mocked
 
 
+def set_path(path):
+    """Set a search path to libsmi.
+
+    The behavior of this function changes accourding to the 'path' param. Check
+    'man smi_config' for more information.
+
+    :param path: The string to be used to change the search path
+    """
+    path = str(path)
+    if _smi.smiSetPath(path) < 0:
+        raise SMIException("unable to set the path {}".format(path))
+
+
 def _get_module(name):
     """Get the SMI module from its name.
 
