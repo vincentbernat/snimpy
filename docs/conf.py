@@ -14,6 +14,7 @@ sys.path.insert(0, project_root)
 if rtd:
     from mock import Mock
     sys.modules['cffi'] = Mock()
+    sys.modules['cffi.verifier'] = Mock()
 import snimpy
 
 # -- General configuration ----------------------------------------------------
