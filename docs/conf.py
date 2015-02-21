@@ -25,7 +25,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Snimpy'
-copyright = u'2013, Vincent Bernat'
+copyright = u'2015, Vincent Bernat'
 
 version = snimpy.__version__
 release = snimpy.__version__
