@@ -1,8 +1,11 @@
+import os
 from distutils.command.build import build
 from setuptools import setup
 from setuptools.command.test import test
 from setuptools.command.install import install
 import snimpy
+
+rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 
 class SnimpyTestCommand(test):
@@ -17,6 +20,8 @@ class SnimpyTestCommand(test):
 
 
 def get_cffi_modules():
+    if rtd:
+        return []
     import snimpy.smi
     return [snimpy.smi.ffi.verifier.get_extension()]
 
