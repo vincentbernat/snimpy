@@ -22,9 +22,9 @@ clean-build:
 	rm -fr *.egg-info
 
 clean-pyc:
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
+	find . -name '*.pyc' -type f -exec rm -f {} +
+	find . -name '*.pyo' -type f -exec rm -f {} +
+	find . -name '*~' -type f -exec rm -f {} +
 	find . -name '__pycache__' -type d -exec rm -rf {} +
 
 lint:
