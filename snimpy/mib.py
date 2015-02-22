@@ -595,7 +595,7 @@ def load(mib):
         mib = mib.encode("ascii")
     modulename = _smi.smiLoadModule(mib)
     if modulename == ffi.NULL:
-        raise SMIException("unable to load {0}".format(mib))
+        raise SMIException("unable to find {0} (check the path)".format(mib))
     modulename = ffi.string(modulename)
     if not _get_module(modulename.decode("ascii")):
         details = "check with smilint -s -l1"
