@@ -474,6 +474,11 @@ class TestBasicTypes(unittest.TestCase):
                                  u"te+st+te+st@Z-tes?tes=tes?tes?tes")
             self.assertEqual(a.pack(), b"\x04testtestZ\x02testes\x03testestes")
 
+            e.return_value = "3a"
+            a = basictypes.build("SNIMPY-MIB", "snimpyString",
+                                 u"a\n\r")
+            self.assertEqual(a.pack(), b"a\n\r")
+
     def testRepr(self):
         """Test representation"""
         self.assertEqual(repr(basictypes.build("SNIMPY-MIB",

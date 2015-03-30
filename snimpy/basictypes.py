@@ -488,9 +488,9 @@ class String(StringOrOctetString, unicode):
                     fmatch = "(?P<d>[0-9]{{1,{0}}})".format(
                         int(length * 2.4083) + 1)
                 elif format == "a":
-                    fmatch = "(?P<a>.{{1,{0}}})".format(length)
+                    fmatch = "(?P<a>(?:.|\n){{1,{0}}})".format(length)
                 elif format == "t":
-                    fmatch = "(?P<t>.{{1,{0}}})".format(length)
+                    fmatch = "(?P<t>(?:.|\n){{1,{0}}})".format(length)
                 else:
                     raise ValueError("{0!r} cannot be parsed due to an "
                                      "incorrect format ({1})".format(
