@@ -7,6 +7,8 @@ History
 ++++++++++++++++++
 
  * Ability to set SMI search path (with ``mib.path()``)
+ * Fix documentation build on *Read the Doc*.
+ * Add a loose mode to manager to loosen type coercion.
 
 0.8.4 (2015-02-10)
 ++++++++++++++++++
