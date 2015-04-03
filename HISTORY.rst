@@ -3,7 +3,7 @@
 History
 -------
 
-0.8.5 (????-??-??)
+0.8.5 (2015-04-04)
 ++++++++++++++++++
 
  * Ability to set SMI search path (with ``mib.path()``)
