@@ -240,6 +240,7 @@ class Node(object):
         if r == ffi.NULL:
             return "<uninitialized {0} object at {1}>".format(
                 self.__class__.__name__, hex(id(self)))
+        r = ffi.gc(r, _smi.free)
         module = _smi.smiGetNodeModule(self.node)
         if module == ffi.NULL:
             raise SMIException("unable to get module for {0}".format(
@@ -439,8 +440,8 @@ def path(path=None):
         path = _smi.smiGetPath()
         if path == ffi.NULL:
             raise SMIException("unable to get current libsmi path")
+        path = ffi.gc(path, _smi.free)
         result = ffi.string(path)
-        _smi.free(path)
         return result.decode("utf8")
 
     # Set the path
