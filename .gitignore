@@ -4,6 +4,7 @@
 /build
 /snimpy.egg-info
 /*.egg
+/.eggs/
 /dist
 /MANIFEST
 /.coverage
