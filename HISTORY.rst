@@ -3,6 +3,12 @@
 History
 -------
 
+0.8.6 (????-??-??)
+++++++++++++++++++
+
+ * Major speed improvement.
+ * Major memory usage improvement.
+
 0.8.5 (2015-04-04)
 ++++++++++++++++++
 
