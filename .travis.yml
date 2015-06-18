@@ -10,7 +10,7 @@ env:
   - TOX_ENV=doc
 install:
   - "sudo apt-get -qq update"
-  - "sudo apt-get -y install pkg-config libsmi2-dev libsnmp-dev snmp-mibs-downloader"
+  - "sudo apt-get -y install pkg-config libsmi2-dev libsnmp-dev snmp-mibs-downloader ncurses-term"
   - pip install tox coveralls
 script:
   - TERM=xterm tox -e $TOX_ENV
