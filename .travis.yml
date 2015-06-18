@@ -13,6 +13,6 @@ install:
   - "sudo apt-get -y install pkg-config libsmi2-dev libsnmp-dev snmp-mibs-downloader"
   - pip install tox coveralls
 script:
-  - TERM=xterm-256color tox -e $TOX_ENV
+  - TERM=xterm tox -e $TOX_ENV
 after_success:
   - coveralls
