@@ -49,8 +49,14 @@ lines.
 
 The two main points of *Snimpy* are:
 
-* very high-level interface
+* very high-level interface relying on MIBs
 * raise exceptions when something goes wrong
+
+Meantime, another Pythonic SNMP library based on Net-SNMP has been
+released: `Easy SNMP`_. Its interface is a less Pythonic than *Snimpy*
+but it doesn't need MIBs to work.
+
+.. _Easy SNMP: https://github.com/fgimian/easysnmp
 
 Contents
 ---------
