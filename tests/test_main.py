@@ -3,6 +3,7 @@ import os
 import tempfile
 import code  # nopep8
 import mock
+import platform
 from snimpy.main import interact
 from multiprocessing import Process
 import agent
@@ -20,6 +21,8 @@ class TestMain(unittest.TestCase):
     def tearDownClass(cls):
         cls.agent.terminate()
 
+    @unittest.skipIf(platform.python_implementation() == "PyPy",
+                     "setupterm seems unreliable with Pypy")
     def test_loadfile(self):
         script = tempfile.NamedTemporaryFile(delete=False)
         try:
