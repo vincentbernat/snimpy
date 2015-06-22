@@ -73,6 +73,14 @@ class TestAgent(object):
             'SNMPv2-SMI',
             'MibTable', 'MibTableRow', 'MibTableColumn',
             'MibScalar', 'MibScalarInstance')
+
+        class RandomMibScalarInstance(MibScalarInstance):
+            previous_value = 0
+            def getValue(self, name, idx):
+                self.previous_value = (self.previous_value +
+                                       random.randint(1, 2000))
+                return self.getSyntax().clone(self.previous_value)
+
         mibBuilder.exportSymbols(
             '__MY_SNMPv2_MIB',
             # SNMPv2-MIB::sysDescr
@@ -111,6 +119,14 @@ class TestAgent(object):
                 (1, 3, 6, 1, 2, 1, 2, 2, 1, 3), (2,), v2c.Integer(6)),
             MibScalarInstance(
                 (1, 3, 6, 1, 2, 1, 2, 2, 1, 3), (3,), v2c.Integer(6)),
+            # IF-MIB::ifInOctets
+            MibTableColumn((1, 3, 6, 1, 2, 1, 2, 2, 1, 10), v2c.Integer()),
+            RandomMibScalarInstance(
+                (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (1,), v2c.Gauge32()),
+            RandomMibScalarInstance(
+                (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (2,), v2c.Gauge32()),
+            RandomMibScalarInstance(
+                (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (3,), v2c.Gauge32()),
             # IF-MIB::ifIndex
             ifIndex=MibTableColumn((1, 3, 6, 1, 2, 1, 2, 2, 1, 1),
                                    v2c.Integer()))

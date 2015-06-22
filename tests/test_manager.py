@@ -137,6 +137,12 @@ class TestManagerGet(TestManager):
         self.assertRaises(ValueError,
                           self.manager.ifDescr.__getitem__, "nothing")
 
+    def testGetChangingStuff(self):
+        """Get stuff with varying values"""
+        initial = self.manager.ifInOctets[2]
+        current = self.manager.ifInOctets[2]
+        self.assertGreater(current, initial)
+
 
 class TestManagerSet(TestManager):
 
@@ -278,6 +284,12 @@ class TestCachingManager(TestManagerGet):
                                community="public",
                                version=2, cache=1)
         self.session = self.manager._session._session
+
+    def testGetChangingStuff(self):
+        """Get stuff with varying values"""
+        initial = self.manager.ifInOctets[2]
+        current = self.manager.ifInOctets[2]
+        self.assertEqual(current, initial)
 
 
 class TestCachingManagerWithModificatons(TestManager):
