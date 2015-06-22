@@ -9,6 +9,10 @@ from multiprocessing import Process
 import agent
 
 
+if not hasattr(unittest, "skipIf"):
+    unittest.skipIf = lambda _, __: lambda x: x
+
+
 class TestMain(unittest.TestCase):
 
     """Test the main shell"""
