@@ -302,7 +302,7 @@ class TestCachingManager(TestManagerGet):
         self.assertEqual(second1, second2)  # timeout not reached
         self.assertEqual(third1, third2)  # timeout not reached
         time.sleep(1)
-        first2 = self.manager.ifInOctets[2]
+        first2 = self.manager.ifInOctets[1]
         self.assertGreater(first2, first1)  # timeout was reached
 
 
