@@ -291,6 +291,20 @@ class TestCachingManager(TestManagerGet):
         current = self.manager.ifInOctets[2]
         self.assertEqual(current, initial)
 
+    def testCacheFlush(self):
+        """Test cache timeout is working as expected"""
+        first1 = self.manager.ifInOctets[1]
+        second1 = self.manager.ifInOctets[2]
+        third1 = self.manager.ifInOctets[3]
+        time.sleep(0.5)
+        second2 = self.manager.ifInOctets[2]
+        third2 = self.manager.ifInOctets[3]
+        self.assertEqual(second1, second2)  # timeout not reached
+        self.assertEqual(third1, third2)  # timeout not reached
+        time.sleep(1)
+        first2 = self.manager.ifInOctets[2]
+        self.assertGreater(first2, first1)  # timeout was reached
+
 
 class TestCachingManagerWithModificatons(TestManager):
 

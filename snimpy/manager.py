@@ -126,9 +126,7 @@ class CachedSession(DelegatedSession):
         return self.getorwalk("walk", *args)
 
     def flush(self):
-        if self.count < 1000:
-            return
-        keys = self.cache.keys()
+        keys = list(self.cache.keys())
         for k in keys:
             if time() - self.cache[k][0] > self.timeout:
                 del self.cache[k]
