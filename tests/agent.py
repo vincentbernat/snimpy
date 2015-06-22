@@ -75,10 +75,8 @@ class TestAgent(object):
             'MibScalar', 'MibScalarInstance')
 
         class RandomMibScalarInstance(MibScalarInstance):
-
+            previous_value = 0
             def getValue(self, name, idx):
-                if not hasattr(self, "previous_value"):
-                    self.previous_value = 0
                 self.previous_value = (self.previous_value +
                                        random.randint(1, 2000))
                 return self.getSyntax().clone(self.previous_value)
