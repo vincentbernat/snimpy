@@ -1,4 +1,5 @@
 import os
+import sys
 from distutils.command.build import build
 from setuptools import setup
 from setuptools.command.test import test
@@ -70,7 +71,12 @@ if __name__ == "__main__":
           zip_safe=False,
           install_requires=["cffi>=0.8", "pysnmp >= 4"],
           setup_requires=["cffi>=0.8"],
-          tests_require=["cffi>=0.8", "pysnmp >= 4", "nose", "mock"],
+          tests_require=list(filter(None, ["cffi>=0.8",
+                                           "pysnmp >= 4",
+                                           "nose",
+                                           "mock",
+                                           sys.version_info < (2, 7) and
+                                           "unittests2"])),
           test_suite="nose.collector",
           cmdclass={
               "test": SnimpyTestCommand,

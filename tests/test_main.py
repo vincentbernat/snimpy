@@ -1,4 +1,8 @@
-import unittest
+import sys
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 import os
 import tempfile
 import code  # nopep8
@@ -7,10 +11,6 @@ import platform
 from snimpy.main import interact
 from multiprocessing import Process
 import agent
-
-
-if not hasattr(unittest, "skipIf"):
-    unittest.skipIf = lambda _, __: lambda x: x
 
 
 class TestMain(unittest.TestCase):
