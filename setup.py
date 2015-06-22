@@ -76,7 +76,7 @@ if __name__ == "__main__":
                                            "nose",
                                            "mock",
                                            sys.version_info < (2, 7) and
-                                           "unittests2"])),
+                                           "unittest2"])),
           test_suite="nose.collector",
           cmdclass={
               "test": SnimpyTestCommand,
