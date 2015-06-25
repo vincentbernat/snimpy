@@ -68,7 +68,7 @@ if __name__ == "__main__":
           },
           data_files=[('share/man/man1', ['man/snimpy.1'])],
           zip_safe=False,
-          install_requires=["cffi>=0.8", "pysnmp >= 4"],
+          install_requires=["cffi>=0.8", "pysnmp >= 4", "setuptools"],
           setup_requires=["cffi>=0.8", "vcversioner"],
           tests_require=list(filter(None, ["cffi>=0.8",
                                            "pysnmp >= 4",
