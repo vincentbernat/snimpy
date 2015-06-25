@@ -7,6 +7,7 @@ include AUTHORS.rst
 include CONTRIBUTING.rst
 include HISTORY.rst
 include README.rst
+include version.txt
 recursive-include docs *.rst *.py
 recursive-include docs/_themes *
 recursive-include docs/_static *

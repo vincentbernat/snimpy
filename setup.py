@@ -43,7 +43,6 @@ if __name__ == "__main__":
     history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
     setup(name="snimpy",
-          version=snimpy.__version__,
           classifiers=[
               'Development Status :: 4 - Beta',
               'Environment :: Console',
@@ -70,7 +69,7 @@ if __name__ == "__main__":
           data_files=[('share/man/man1', ['man/snimpy.1'])],
           zip_safe=False,
           install_requires=["cffi>=0.8", "pysnmp >= 4"],
-          setup_requires=["cffi>=0.8"],
+          setup_requires=["cffi>=0.8", "vcversioner"],
           tests_require=list(filter(None, ["cffi>=0.8",
                                            "pysnmp >= 4",
                                            "nose",
@@ -82,5 +81,8 @@ if __name__ == "__main__":
               "test": SnimpyTestCommand,
               "build": SnimpyBuildCommand,
               "install": SnimpyInstallCommand,
+          },
+          vcversioner={
+              'version_module_paths': ['snimpy/_version.py'],
           },
           )

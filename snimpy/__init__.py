@@ -2,4 +2,8 @@
 
 __author__ = 'Vincent Bernat'
 __email__ = 'bernat@luffy.cx'
-__version__ = '0.8.6'
+
+try:
+    from snimpy._version import __version__  # nopep8
+except ImportError:
+    __version__ = '0.0~dev'

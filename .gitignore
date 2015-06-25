@@ -1,8 +1,10 @@
 *.pyc
 *~
 *.so
+/version.txt
 /build
 /snimpy.egg-info
+/snimpy/_version.py
 /*.egg
 /.eggs/
 /dist
