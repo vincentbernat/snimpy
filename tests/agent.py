@@ -11,9 +11,12 @@ class TestAgent(object):
 
     """Agent for testing purpose"""
 
-    def __init__(self, ipv6=False):
+    def __init__(self, ipv6=False, community='public', authpass='authpass', privpass='privpass'):
         q = Queue()
         self.ipv6 = ipv6
+        self.community = community
+        self.authpass = authpass
+        self.privpass = privpass
         self._process = Process(target=self._setup, args=(q,))
         self._process.start()
         self.port = q.get()
@@ -40,16 +43,15 @@ class TestAgent(object):
                 udp.domainName,
                 udp.UdpTransport().openServerMode(('127.0.0.1', port)))
         # Community is public and MIB is writable
-        config.addV1System(snmpEngine, 'read-write', 'public')
+        config.addV1System(snmpEngine, 'read-write', self.community)
         config.addVacmUser(snmpEngine, 1, 'read-write', 'noAuthNoPriv',
                            (1, 3, 6), (1, 3, 6))
         config.addVacmUser(snmpEngine, 2, 'read-write', 'noAuthNoPriv',
                            (1, 3, 6), (1, 3, 6))
         config.addV3User(
             snmpEngine, 'read-write',
-            config.usmHMACMD5AuthProtocol, 'authpass',
-            config.usmAesCfb128Protocol, 'privpass'
-        )
+            config.usmHMACMD5AuthProtocol, self.authpass,
+            config.usmAesCfb128Protocol, self.privpass)
         config.addVacmUser(snmpEngine, 3, 'read-write', 'authPriv',
                            (1, 3, 6), (1, 3, 6))
 

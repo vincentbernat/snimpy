@@ -312,6 +312,26 @@ class TestSnmp3(TestSnmp2):
             authprotocol="MD5", authpassword="authpass",
             privprotocol="AES", privpassword="privpass")
 
+    def testSeveralSessions(self):
+        agent2 = agent.TestAgent(authpass='authpass2', privpass='privpass2')
+        try:
+            session1 = self.session
+            session2 = snmp.Session(
+                host="127.0.0.1:{0}".format(agent2.port),
+                version=3,
+                secname="read-write",
+                authprotocol="MD5", authpassword="authpass2",
+                privprotocol="AES", privpassword="privpass2")
+            ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
+            oid1, a1 = session1.get(ooid)[0]
+            oid2, a2 = session2.get(ooid)[0]
+            self.assertEqual(oid1, ooid)
+            self.assertEqual(oid2, ooid)
+            self.assertEqual(a1, b"Snimpy Test Agent")
+            self.assertEqual(a2, b"Snimpy Test Agent")
+        finally:
+            agent2.terminate()
+
 
 class TestSnmpTransports(unittest.TestCase):
 
