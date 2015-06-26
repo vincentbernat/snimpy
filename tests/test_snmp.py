@@ -128,17 +128,32 @@ class TestSnmp1(unittest.TestCase):
     def setUpClass(cls):
         mib.load('IF-MIB')
         mib.load('SNMPv2-MIB')
-        cls.agent = agent.TestAgent()
+        cls.agent = None
+        cls.agent2 = None
+        cls.agent = agent.TestAgent(community='public',
+                                    authpass='public-authpass',
+                                    privpass='public-privpass')
+        cls.agent2 = agent.TestAgent(community='private',
+                                     authpass='private-authpass',
+                                     privpass='private-privpass')
 
     def setUp(self):
-        self.session = snmp.Session(
-            host="127.0.0.1:{0}".format(self.agent.port),
-            community="public",
-            version=self.version)
+        params = self.setUpSession(self.agent, 'public')
+        self.session = snmp.Session(**params)
+        params = self.setUpSession(self.agent2, 'private')
+        self.session2 = snmp.Session(**params)
+
+    def setUpSession(self, agent, password):
+        return dict(host="127.0.0.1:{0}".format(agent.port),
+                    community=password,
+                    version=self.version)
 
     @classmethod
     def tearDownClass(cls):
-        cls.agent.terminate()
+        if cls.agent is not None:
+            cls.agent.terminate()
+        if cls.agent2 is not None:
+            cls.agent2.terminate()
 
     def testGetString(self):
         """Get a string value"""
@@ -272,6 +287,15 @@ class TestSnmp1(unittest.TestCase):
                           (ooid + (2,), b"eth0"),
                           (ooid + (3,), b"eth1")))
 
+    def testSeveralSessions(self):
+        ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
+        oid1, a1 = self.session.get(ooid)[0]
+        oid2, a2 = self.session2.get(ooid)[0]
+        self.assertEqual(oid1, ooid)
+        self.assertEqual(oid2, ooid)
+        self.assertEqual(a1, b"Snimpy Test Agent")
+        self.assertEqual(a2, b"Snimpy Test Agent")
+
 
 class TestSnmp2(TestSnmp1):
 
@@ -304,33 +328,14 @@ class TestSnmp3(TestSnmp2):
     """Test communicaton with an agent with SNMPv3."""
     version = 3
 
-    def setUp(self):
-        self.session = snmp.Session(
-            host="127.0.0.1:{0}".format(self.agent.port),
-            version=3,
-            secname="read-write",
-            authprotocol="MD5", authpassword="authpass",
-            privprotocol="AES", privpassword="privpass")
-
-    def testSeveralSessions(self):
-        agent2 = agent.TestAgent(authpass='authpass2', privpass='privpass2')
-        try:
-            session1 = self.session
-            session2 = snmp.Session(
-                host="127.0.0.1:{0}".format(agent2.port),
-                version=3,
-                secname="read-write",
-                authprotocol="MD5", authpassword="authpass2",
-                privprotocol="AES", privpassword="privpass2")
-            ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
-            oid1, a1 = session1.get(ooid)[0]
-            oid2, a2 = session2.get(ooid)[0]
-            self.assertEqual(oid1, ooid)
-            self.assertEqual(oid2, ooid)
-            self.assertEqual(a1, b"Snimpy Test Agent")
-            self.assertEqual(a2, b"Snimpy Test Agent")
-        finally:
-            agent2.terminate()
+    def setUpSession(self, agent, password):
+        return dict(host="127.0.0.1:{0}".format(agent.port),
+                    version=3,
+                    secname="read-write",
+                    authprotocol="MD5",
+                    authpassword="{0}-authpass".format(password),
+                    privprotocol="AES",
+                    privpassword="{0}-privpass".format(password))
 
 
 class TestSnmpTransports(unittest.TestCase):
