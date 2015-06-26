@@ -11,7 +11,8 @@ class TestAgent(object):
 
     """Agent for testing purpose"""
 
-    def __init__(self, ipv6=False, community='public', authpass='authpass', privpass='privpass'):
+    def __init__(self, ipv6=False, community='public',
+                 authpass='authpass', privpass='privpass'):
         q = Queue()
         self.ipv6 = ipv6
         self.community = community
