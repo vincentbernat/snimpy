@@ -20,24 +20,6 @@ class SnimpyTestCommand(test):
         return test.run_tests(self, *args, **kwds)
 
 
-def get_cffi_modules():
-    if rtd:
-        return []
-    import snimpy.smi
-    return [snimpy.smi.ffi.verifier.get_extension()]
-
-
-class SnimpyBuildCommand(build):
-    def finalize_options(self):
-        self.distribution.ext_modules = get_cffi_modules()
-        return build.finalize_options(self)
-
-
-class SnimpyInstallCommand(install):
-    def finalize_options(self):
-        self.distribution.ext_modules = get_cffi_modules()
-        return install.finalize_options(self)
-
 if __name__ == "__main__":
     readme = open('README.rst').read()
     history = open('HISTORY.rst').read().replace('.. :changelog:', '')
@@ -68,9 +50,10 @@ if __name__ == "__main__":
           },
           data_files=[('share/man/man1', ['man/snimpy.1'])],
           zip_safe=False,
-          install_requires=["cffi>=0.8", "pysnmp >= 4", "setuptools"],
-          setup_requires=["cffi>=0.8", "vcversioner"],
-          tests_require=list(filter(None, ["cffi>=0.8",
+          cffi_modules=["snimpy/smi_build.py:ffi"],
+          install_requires=["cffi >= 1.0.0", "pysnmp >= 4", "setuptools"],
+          setup_requires=["cffi >= 1.0.0", "vcversioner"],
+          tests_require=list(filter(None, ["cffi >= 1.0.0",
                                            "pysnmp >= 4",
                                            "nose",
                                            "mock",
@@ -78,9 +61,7 @@ if __name__ == "__main__":
                                            "unittest2"])),
           test_suite="nose.collector",
           cmdclass={
-              "test": SnimpyTestCommand,
-              "build": SnimpyBuildCommand,
-              "install": SnimpyInstallCommand,
+              "test": SnimpyTestCommand
           },
           vcversioner={
               'version_module_paths': ['snimpy/_version.py'],
