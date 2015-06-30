@@ -21,9 +21,6 @@
 .. _CFFI: http://cffi.readthedocs.org/
 """
 
-import sys
-import binascii
-import threading
 from cffi import FFI
 
 _CDEF = """
