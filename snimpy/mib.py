@@ -26,8 +26,12 @@ incomplete.
 .. _CFFI: http://cffi.readthedocs.org/
 """
 
-from snimpy._smi import lib as _smi
-from snimpy._smi import ffi
+try:
+    from snimpy._smi import lib as _smi
+    from snimpy._smi import ffi
+except ImportError:
+    from snimpy.smi_build import ffi, get_lib
+    _smi = get_lib()
 
 
 class SMIException(Exception):

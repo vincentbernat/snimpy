@@ -162,8 +162,13 @@ _SOURCE = """
 
 ffi = FFI()
 ffi.cdef(_CDEF)
-ffi.set_source("snimpy._smi", _SOURCE,
-               libraries=["smi"])
+if hasattr(ffi, 'set_source'):
+    ffi.set_source("snimpy._smi", _SOURCE,
+                   libraries=["smi"])
+
+
+def get_lib():
+    return ffi.verify(_SOURCE, libraries=["smi"])
 
 if __name__ == "__main__":
     ffi.compile()
