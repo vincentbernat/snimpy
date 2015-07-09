@@ -3,6 +3,11 @@
 History
 -------
 
+0.8.7 (????-??-??)
+++++++++++++++++++
+
+ * Ability to specify a module name when querying a manager.
+
 0.8.6 (2015-06-24)
 ++++++++++++++++++
 

@@ -28,6 +28,7 @@ Here is a simple example of use of this module::
     <String: lo>
 """
 
+import inspect
 from time import time
 from collections import MutableMapping
 from snimpy import snmp, mib, basictypes
@@ -131,6 +132,16 @@ class CachedSession(DelegatedSession):
             if time() - self.cache[k][0] > self.timeout:
                 del self.cache[k]
         self.count = 0
+
+
+def MibRestrictedManager(original, mibs):
+
+    """Copy an existing manager but restrict its view to the given set of
+    MIBs.
+    """
+    clone = Manager(**original._constructor_args)
+    clone._loaded = mibs
+    return clone
 
 
 class Manager(object):
@@ -256,9 +267,18 @@ class Manager(object):
         if none:
             self._session = NoneSession(self._session)
         self._loose = loose
+        self._loaded = loaded
+
+        # To be able to clone, we save the arguments provided to the
+        # constructor in a generic way
+        frame = inspect.currentframe()
+        args, _, _, values = inspect.getargvalues(frame)
+        self._constructor_args = dict((a, values[a])
+                                      for a in args
+                                      if a != 'self')
 
     def _locate(self, attribute):
-        for m in loaded:
+        for m in self._loaded:
             try:
                 a = mib.get(m, attribute)
                 return (m, a)
@@ -294,6 +314,13 @@ class Manager(object):
             self._session.set(a.oid + (0,), value)
             return
         raise AttributeError("{0} is not writable".format(attribute))
+
+    def __getitem__(self, modulename):
+        modulename = modulename.encode('ascii')
+        for m in loaded:
+            if modulename == m:
+                return MibRestrictedManager(self, [m])
+        raise KeyError("{0} is not a loaded module".format(modulename))
 
     def __repr__(self):
         return "<Manager for {0}>".format(self._host)

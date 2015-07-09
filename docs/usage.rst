@@ -91,6 +91,12 @@ when querying inexistant objects. Instead of an exception, you'll get
 
     m = M("localhost", none=True)
 
+If for some reason, you need to specify the module you want to use to
+lookup a node, you can do that using the following syntax::
+
+    print(m['SNMPv2-MIB'].sysDescr)
+    print(m['IF-MIB'].ifNumber)
+
 Script interpreter
 ++++++++++++++++++
 

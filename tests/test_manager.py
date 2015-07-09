@@ -148,6 +148,26 @@ class TestManagerGet(TestManager):
         self.assertGreater(current, initial)
 
 
+class TestManagerRestrictModule(TestManager):
+
+    """Test when we restrict modules to be used by a manager"""
+
+    def testGetSpecificModule(self):
+        """Get a scalar from a specific module only"""
+        self.assertEqual(self.manager['IF-MIB'].ifNumber, 3)
+        self.assertEqual(self.manager['SNMPv2-MIB'].sysDescr,
+                         "Snimpy Test Agent")
+
+    def testGetInexistentModule(self):
+        """Get a scalar from a non loaded module"""
+        self.assertRaises(KeyError, lambda: self.manager['IF-MIB2'])
+
+    def testGetInexistentScalarFromModule(self):
+        """Get a non-existent scalar from a specific module"""
+        self.assertRaises(AttributeError,
+                          lambda: self.manager['IF-MIB'].sysDescr)
+
+
 class TestManagerSet(TestManager):
 
     """Test setting stuff from manager"""
