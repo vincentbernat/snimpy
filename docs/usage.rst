@@ -45,13 +45,13 @@ A manager instance contains all the scalars and the columns in MIB
 loaded with the `load()` method. There is no table, node or other
 entities. For a scalar, getting and setting a value is a simple as::
 
-    print m.sysDescr
+    print(m.sysDescr)
     m.sysName = "newhostname"
 
 For a column, you get a dictionary-like interface::
 
     for index in m.ifDescr: 
-	print repr(m.ifDescr[index])
+	print(repr(m.ifDescr[index]))
     m.ifAdminStatus[3] = "down"
 
 If you want to group several write into a single request, you can do
@@ -65,13 +65,13 @@ There is also a caching mechanism which is disabled by default::
 
     import time
     m = M("localhost", cache=True)
-    print m.sysUpTime
+    print(m.sysUpTime)
     time.sleep(1)
-    print m.sysUpTime
+    print(m.sysUpTime)
     time.sleep(1)
-    print m.sysUpTime
+    print(m.sysUpTime)
     time.sleep(10)
-    print m.sysUpTime
+    print(m.sysUpTime)
 
 You can also specify the number of seconds data should be cached::
 
