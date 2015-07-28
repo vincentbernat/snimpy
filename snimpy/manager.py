@@ -209,7 +209,7 @@ class Manager(object):
                  community="public", version=2,
                  cache=False, none=False,
                  timeout=None, retries=None,
-                 loose=False,
+                 loose=False, bulk=40,
                  # SNMPv3
                  secname=None,
                  authprotocol=None, authpassword=None,
@@ -247,6 +247,9 @@ class Manager(object):
             instead of an exception. This mode should be enabled with
             caution. Patching the MIB is a better idea.
         :type loose: bool
+        :param bulk: Max-repetition to use to speed up MIB walking
+            with `GETBULK`. Set to `0` to disable.
+        :type bulk: int
         """
         if host is None:
             host = Manager._host
@@ -254,7 +257,8 @@ class Manager(object):
         self._session = snmp.Session(host, community, version,
                                      secname,
                                      authprotocol, authpassword,
-                                     privprotocol, privpassword)
+                                     privprotocol, privpassword,
+                                     bulk=bulk)
         if timeout is not None:
             self._session.timeout = int(timeout * 1000000)
         if retries is not None:

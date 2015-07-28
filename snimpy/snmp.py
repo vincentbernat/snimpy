@@ -80,7 +80,8 @@ class Session(object):
                  authprotocol=None,
                  authpassword=None,
                  privprotocol=None,
-                 privpassword=None):
+                 privpassword=None,
+                 bulk=40):
         """Create a new SNMP session.
 
         :param host: The hostname or IP address of the agent to
@@ -111,6 +112,9 @@ class Session(object):
         :param privpassword: Privacy password if privacy protocol is
             not `None`.
         :type privpassword: str
+        :param bulk: Max repetition value for `GETBULK` requests. Set
+            to `0` to disable.
+        :type bulk: int
         """
         self._host = host
         self._version = version
@@ -190,7 +194,7 @@ class Session(object):
                                                               port))
 
         # Bulk stuff
-        self.bulk = 40
+        self.bulk = bulk
 
     def _check_exception(self, value):
         """Check if the given ASN1 value is an exception"""
