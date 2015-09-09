@@ -63,6 +63,7 @@ if __name__ == "__main__":
           cmdclass={
               "test": SnimpyTestCommand
           },
+          pbr=False,
           vcversioner={
               'version_module_paths': ['snimpy/_version.py'],
           },
