@@ -451,7 +451,7 @@ class String(StringOrOctetString, unicode):
                     else:       # format == "d":
                         result += str(number)
                 elif format == "a":
-                    result += bb.decode("ascii")
+                    result += bb.decode("ascii", "ignore")
                 elif format == "t":
                     result += bb.decode("utf-8")
                 else:
