@@ -1,9 +1,7 @@
 import os
 import sys
-from distutils.command.build import build
 from setuptools import setup
 from setuptools.command.test import test
-from setuptools.command.install import install
 import snimpy
 
 rtd = os.environ.get('READTHEDOCS', None) == 'True'
