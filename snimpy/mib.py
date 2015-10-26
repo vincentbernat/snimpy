@@ -69,6 +69,8 @@ class Node(object):
             t = self._override_type
         else:
             t = _smi.smiGetNodeType(self.node)
+        if t == ffi.NULL:
+            raise SMIException("unable to retrieve type of node")
         target = {
             _smi.SMI_BASETYPE_INTEGER32: basictypes.Integer,
             _smi.SMI_BASETYPE_INTEGER64: basictypes.Integer,
