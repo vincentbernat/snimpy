@@ -150,6 +150,7 @@ class TestMibSnimpy(unittest.TestCase):
         self.assertEqual(b"InetAddress",
                          mib.ffi.string(mib._getType(b"InetAddress").name))
         self.assertEqual(None, mib._getType("SomeUnknownType.kjgf"))
+        self.assertEqual(None, mib._getType("snimpySimpleTable"))
 
     def testTableColumnRelation(self):
         """Test that we can get the column from the table and vice-versa"""
@@ -195,6 +196,11 @@ class TestMibSnimpy(unittest.TestCase):
               "snimpyComplexState": basictypes.Enum}
         for t in tt:
             self.assertEqual(mib.get('SNIMPY-MIB', t).type, tt[t])
+
+        # Also check we get an exception when no type available
+        def call():
+            mib.get('SNIMPY-MIB', 'snimpySimpleTable').type
+        self.assertRaises(mib.SMIException, call)
 
     def testRanges(self):
         tt = {"snimpyIpAddress": 4,
