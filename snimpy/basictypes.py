@@ -738,6 +738,9 @@ class Oid(Type):
             return 1
         return -1
 
+    def __getitem__(self, index):
+        return self._value[index]
+
     def __contains__(self, item):
         """Test if item is a sub-oid of this OID"""
         if not isinstance(item, Oid):

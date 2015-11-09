@@ -151,6 +151,12 @@ class TestBasicTypes(unittest.TestCase):
         self.assert_((list(mib.get("SNIMPY-MIB",
                                    "snimpyInteger").oid)[:-1] +
                       [29, 3]) not in a)
+        # Ability to extract a component
+        self.assertEqual(a[0], 1)
+        self.assertEqual(a[1], 3)
+        self.assertEqual(a[-3], 45121)
+        self.assertEqual(a[-1], 3)
+        self.assertEqual(a[:3], (1, 3, 6))
         # Also accepts list
         a = basictypes.build("SNIMPY-MIB", "snimpyObjectId",
                              (1, 2, 3, 4))
