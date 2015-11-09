@@ -49,10 +49,10 @@ if __name__ == "__main__":
           data_files=[('share/man/man1', ['man/snimpy.1'])],
           zip_safe=False,
           cffi_modules=["snimpy/smi_build.py:ffi"],
-          install_requires=["cffi >= 1.0.0", "pysnmp >= 4", "setuptools"],
+          install_requires=["cffi >= 1.0.0", "pysnmp >= 4, < 4.3", "setuptools"],
           setup_requires=["cffi >= 1.0.0", "vcversioner"],
           tests_require=list(filter(None, ["cffi >= 1.0.0",
-                                           "pysnmp >= 4",
+                                           "pysnmp >= 4, < 4.3",
                                            "nose",
                                            "mock",
                                            sys.version_info < (2, 7) and
