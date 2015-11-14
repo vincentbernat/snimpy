@@ -244,6 +244,9 @@ class Session(object):
         else:
             results = [(tuple(name), val)
                        for row in varBinds for name, val in row]
+            if len(results) > 0 and isinstance(results[-1][1],
+                                               rfc1905.EndOfMibView):
+                results = results[:-1]
         if len(results) == 0:
             if cmd not in [self._cmdgen.nextCmd, self._cmdgen.bulkCmd]:
                 raise SNMPException("empty answer")

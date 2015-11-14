@@ -313,11 +313,10 @@ class TestSnmp2(TestSnmp1):
         ooid = mib.get("IF-MIB", "ifDescr").oid
         self.session.bulk = 4
         results = self.session.walk(ooid)
-        self.assertEqual(results,
+        self.assertEqual(results[:3],
                          ((ooid + (1,), b"lo"),
                           (ooid + (2,), b"eth0"),
-                          (ooid + (3,), b"eth1"),
-                          (mib.get("IF-MIB", "ifType").oid + (1,), 24)))
+                          (ooid + (3,), b"eth1")))
         self.session.bulk = 2
         results = self.session.walk(ooid)
         self.assertEqual(results[:2],
