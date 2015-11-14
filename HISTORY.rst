@@ -3,10 +3,14 @@
 History
 -------
 
-0.8.7 (????-??-??)
+0.8.7 (2015-11-14)
 ++++++++++++++++++
 
  * Ability to specify a module name when querying a manager.
+ * Compatibility with PySNMP 4.3
+ * Array-like interface for OIDs.
+ * Ability to restrict lookups to a specific MIB: m['IF-MIB'].ifDescr.
+ * Fix multithread support with SNMPv3 (with a performance impact).
 
 0.8.6 (2015-06-24)
 ++++++++++++++++++
