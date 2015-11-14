@@ -80,8 +80,12 @@ def interact(argv=sys.argv):  # pragma: no cover
                 # ipython >= 0.11
                 from IPython.frontend.terminal.embed import \
                     InteractiveShellEmbed
-            # ipython >= 0.11
-            from IPython.config.loader import Config
+            try:
+                # ipython >= 4
+                from traitlets.config.loader import Config
+            except ImportError:
+                # ipython >= 0.11
+                from IPython.config.loader import Config
             cfg = Config()
             try:
                 # >= 0.12
