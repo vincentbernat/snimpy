@@ -185,10 +185,12 @@ class TestSnmp1(unittest.TestCase):
 
     def testInexistant(self):
         """Get an inexistant value"""
-        self.assertRaises(
-            self.version == 1 and snmp.SNMPNoSuchName or snmp.SNMPNoSuchObject,
-            self.session.get,
-            (1, 2, 3))
+        try:
+            self.session.get((1, 2, 3))
+            self.assertFalse("we should have got an exception")
+        except snmp.SNMPException as ex:
+            self.assert_(isinstance(ex, snmp.SNMPNoSuchName) or
+                         isinstance(ex, snmp.SNMPNoSuchObject))
 
     def testSetIpAddress(self):
         """Set IpAddress."""
