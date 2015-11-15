@@ -37,7 +37,7 @@ class TestManagerGet(TestManager):
 
     def testGetScalar(self):
         """Retrieve some simple scalar values"""
-        self.assertEqual(self.manager.sysDescr, "Snimpy Test Agent")
+        self.assertEqual(self.manager.sysDescr, "Snimpy Test Agent public")
         self.assertEqual(self.manager.ifNumber, 3)
 
     def scalarGetAndCheck(self, name, value):
@@ -156,7 +156,7 @@ class TestManagerRestrictModule(TestManager):
         """Get a scalar from a specific module only"""
         self.assertEqual(self.manager['IF-MIB'].ifNumber, 3)
         self.assertEqual(self.manager['SNMPv2-MIB'].sysDescr,
-                         "Snimpy Test Agent")
+                         "Snimpy Test Agent public")
 
     def testGetInexistentModule(self):
         """Get a scalar from a non loaded module"""

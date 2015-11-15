@@ -1,5 +1,7 @@
 import unittest
 import os
+import threading
+import multiprocessing
 from datetime import timedelta
 from snimpy import basictypes, snmp, mib
 import agent
@@ -125,23 +127,24 @@ class TestSnmp1(unittest.TestCase):
     version = 1
 
     @classmethod
+    def addAgent(cls, community, auth, priv):
+        a = agent.TestAgent(community=community,
+                            authpass=auth,
+                            privpass=priv)
+        cls.agents.append(a)
+        return a
+
+    @classmethod
     def setUpClass(cls):
         mib.load('IF-MIB')
         mib.load('SNMPv2-MIB')
-        cls.agent = None
-        cls.agent2 = None
-        cls.agent = agent.TestAgent(community='public',
-                                    authpass='public-authpass',
-                                    privpass='public-privpass')
-        cls.agent2 = agent.TestAgent(community='private',
-                                     authpass='private-authpass',
-                                     privpass='private-privpass')
+        cls.agents = []
+        cls.agent = cls.addAgent('public',
+                                 'public-authpass', 'public-privpass')
 
     def setUp(self):
         params = self.setUpSession(self.agent, 'public')
         self.session = snmp.Session(**params)
-        params = self.setUpSession(self.agent2, 'private')
-        self.session2 = snmp.Session(**params)
 
     def setUpSession(self, agent, password):
         return dict(host="127.0.0.1:{0}".format(agent.port),
@@ -150,17 +153,15 @@ class TestSnmp1(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if cls.agent is not None:
-            cls.agent.terminate()
-        if cls.agent2 is not None:
-            cls.agent2.terminate()
+        for a in cls.agents:
+            a.terminate()
 
     def testGetString(self):
         """Get a string value"""
         ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
         oid, a = self.session.get(ooid)[0]
         self.assertEqual(oid, ooid)
-        self.assertEqual(a, b"Snimpy Test Agent")
+        self.assertEqual(a, b"Snimpy Test Agent public")
 
     def testGetInteger(self):
         """Get an integer value"""
@@ -260,7 +261,7 @@ class TestSnmp1(unittest.TestCase):
         self.assertEqual(oid1, ooid1)
         self.assertEqual(oid2, ooid2)
         self.assertEqual(oid3, ooid3)
-        self.assertEqual(a1, b"Snimpy Test Agent")
+        self.assertEqual(a1, b"Snimpy Test Agent public")
         self.assert_(a2 > 1)
         b = basictypes.build('IF-MIB', 'ifType', a3)
         self.assertEqual(b, "softwareLoopback")
@@ -290,13 +291,57 @@ class TestSnmp1(unittest.TestCase):
                           (ooid + (3,), b"eth1")))
 
     def testSeveralSessions(self):
+        """Test with two sessions"""
+        agent2 = self.addAgent('private',
+                               'private-authpass', 'private-privpass')
+        params = self.setUpSession(agent2, 'private')
+        session2 = snmp.Session(**params)
+
         ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
         oid1, a1 = self.session.get(ooid)[0]
-        oid2, a2 = self.session2.get(ooid)[0]
+        oid2, a2 = session2.get(ooid)[0]
         self.assertEqual(oid1, ooid)
         self.assertEqual(oid2, ooid)
-        self.assertEqual(a1, b"Snimpy Test Agent")
-        self.assertEqual(a2, b"Snimpy Test Agent")
+        self.assertEqual(a1, b"Snimpy Test Agent public")
+        self.assertEqual(a2, b"Snimpy Test Agent private")
+
+    def testMultipleThreads(self):
+        """Test with multiple sessions in different threds."""
+        count = 20
+        agents = []
+        for i in range(count):
+            agents.append(self.addAgent('community{}'.format(i),
+                                        'community{}-authpass'.format(i),
+                                        'community{}-privpass'.format(i)))
+        ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
+
+        threads = []
+        successes = []
+        failures = []
+        lock = multiprocessing.Lock()
+
+        # Start one thread
+        def run(i):
+            params = self.setUpSession(agents[i], 'community{}'.format(i))
+            session = snmp.Session(**params)
+            session.timeout = 10 * 1000 * 1000
+            oid, a = session.get(ooid)[0]
+            with lock:
+                if oid == ooid and \
+                   a == b"Snimpy Test Agent community{}".format(i):
+                    successes.append("community{}".format(i))
+                else:
+                    failures.append("community{}".format(i))
+        for i in range(count):
+            threads.append(threading.Thread(target=run, args=(i,)))
+        for i in range(count):
+            threads[i].start()
+        for i in range(count):
+            threads[i].join()
+        self.assertEqual(failures, [])
+        self.assertEqual(sorted(successes),
+                         sorted(["community{}".format(i)
+                                 for i in range(count)]))
 
 
 class TestSnmp2(TestSnmp1):
@@ -358,7 +403,7 @@ class TestSnmpTransports(unittest.TestCase):
         try:
             ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
             oid, a = session.get(ooid)[0]
-            self.assertEqual(a, b"Snimpy Test Agent")
+            self.assertEqual(a, b"Snimpy Test Agent public")
         finally:
             m.terminate()
 
