@@ -31,7 +31,7 @@ class TestAgent(object):
         The port the agent is listening too will be returned using the
         provided queue.
         """
-        port = random.randrange(22000, 29989)
+        port = random.randrange(22000, 22989)
         snmpEngine = engine.SnmpEngine()
         if self.ipv6:
             config.addSocketTransport(
