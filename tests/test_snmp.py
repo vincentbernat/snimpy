@@ -326,9 +326,10 @@ class TestSnmp1(unittest.TestCase):
             session = snmp.Session(**params)
             session.timeout = 10 * 1000 * 1000
             oid, a = session.get(ooid)[0]
+            exp = ("Snimpy Test Agent community{}".format(i)).encode('ascii')
             with lock:
                 if oid == ooid and \
-                   a == b"Snimpy Test Agent community{}".format(i):
+                   a == exp:
                     successes.append("community{}".format(i))
                 else:
                     failures.append("community{}".format(i))
