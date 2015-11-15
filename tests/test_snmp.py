@@ -306,7 +306,7 @@ class TestSnmp1(unittest.TestCase):
         self.assertEqual(a2, b"Snimpy Test Agent private")
 
     def testMultipleThreads(self):
-        """Test with multiple sessions in different threds."""
+        """Test with multiple sessions in different threads."""
         count = 20
         agents = []
         for i in range(count):
