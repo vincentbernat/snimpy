@@ -114,7 +114,7 @@ class Node(object):
 
         if t is None or t == ffi.NULL:
             raise SMIException("unable to retrieve the declared type "
-                               "of the node '{}'".format(self.node.name))
+                               "of the node '{0}'".format(self.node.name))
 
         return ffi.string(t.name)
 

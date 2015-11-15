@@ -310,9 +310,9 @@ class TestSnmp1(unittest.TestCase):
         count = 20
         agents = []
         for i in range(count):
-            agents.append(self.addAgent('community{}'.format(i),
-                                        'community{}-authpass'.format(i),
-                                        'community{}-privpass'.format(i)))
+            agents.append(self.addAgent('community{0}'.format(i),
+                                        'community{0}-authpass'.format(i),
+                                        'community{0}-privpass'.format(i)))
         ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
 
         threads = []
@@ -322,17 +322,17 @@ class TestSnmp1(unittest.TestCase):
 
         # Start one thread
         def run(i):
-            params = self.setUpSession(agents[i], 'community{}'.format(i))
+            params = self.setUpSession(agents[i], 'community{0}'.format(i))
             session = snmp.Session(**params)
             session.timeout = 10 * 1000 * 1000
             oid, a = session.get(ooid)[0]
-            exp = ("Snimpy Test Agent community{}".format(i)).encode('ascii')
+            exp = ("Snimpy Test Agent community{0}".format(i)).encode('ascii')
             with lock:
                 if oid == ooid and \
                    a == exp:
-                    successes.append("community{}".format(i))
+                    successes.append("community{0}".format(i))
                 else:
-                    failures.append("community{}".format(i))
+                    failures.append("community{0}".format(i))
         for i in range(count):
             threads.append(threading.Thread(target=run, args=(i,)))
         for i in range(count):
@@ -341,7 +341,7 @@ class TestSnmp1(unittest.TestCase):
             threads[i].join()
         self.assertEqual(failures, [])
         self.assertEqual(sorted(successes),
-                         sorted(["community{}".format(i)
+                         sorted(["community{0}".format(i)
                                  for i in range(count)]))
 
 

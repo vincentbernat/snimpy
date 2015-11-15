@@ -93,7 +93,7 @@ class TestAgent(object):
             MibScalar((1, 3, 6, 1, 2, 1, 1, 1), v2c.OctetString()),
             MibScalarInstance((1, 3, 6, 1, 2, 1, 1, 1), (0,),
                               v2c.OctetString(
-                                  "Snimpy Test Agent {}".format(
+                                  "Snimpy Test Agent {0}".format(
                                       self.community))))
         mibBuilder.exportSymbols(
             '__MY_IF_MIB',
