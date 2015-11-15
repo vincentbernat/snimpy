@@ -29,6 +29,7 @@ type coercing.
 import re
 import socket
 import inspect
+import threading
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902, rfc1905
 from pysnmp.smi import error
@@ -74,6 +75,8 @@ class Session(object):
     session. From such an instance, one can get information from the
     associated agent."""
 
+    _tls = threading.local()
+
     def __init__(self, host,
                  community="public", version=2,
                  secname=None,
@@ -118,7 +121,12 @@ class Session(object):
         """
         self._host = host
         self._version = version
-        self._cmdgen = cmdgen.CommandGenerator()
+        if version == 3:
+            self._cmdgen = cmdgen.CommandGenerator()
+        else:
+            if not hasattr(self._tls, "cmdgen"):
+                self._tls.cmdgen = cmdgen.CommandGenerator()
+            self._cmdgen = self._tls.cmdgen
 
         # Put authentication stuff in self._auth
         if version in [1, 2]:
