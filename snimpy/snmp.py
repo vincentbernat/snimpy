@@ -31,6 +31,7 @@ import socket
 import inspect
 import threading
 from pysnmp.entity.rfc3413.oneliner import cmdgen
+from pysnmp.entity.engine import SnmpEngine
 from pysnmp.proto import rfc1902, rfc1905
 from pysnmp.smi import error
 
@@ -121,12 +122,9 @@ class Session(object):
         """
         self._host = host
         self._version = version
-        if version == 3:
-            self._cmdgen = cmdgen.CommandGenerator()
-        else:
-            if not hasattr(self._tls, "cmdgen"):
-                self._tls.cmdgen = cmdgen.CommandGenerator()
-            self._cmdgen = self._tls.cmdgen
+        if not hasattr(self._tls, "snmpengine"):
+            self._tls.snmpengine = SnmpEngine()
+        self._cmdgen = cmdgen.CommandGenerator(self._tls.snmpengine)
 
         # Put authentication stuff in self._auth
         if version in [1, 2]:
