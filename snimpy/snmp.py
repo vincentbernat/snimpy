@@ -74,8 +74,6 @@ class Session(object):
     session. From such an instance, one can get information from the
     associated agent."""
 
-    _cmdgen = cmdgen.CommandGenerator()
-
     def __init__(self, host,
                  community="public", version=2,
                  secname=None,
@@ -120,13 +118,13 @@ class Session(object):
         """
         self._host = host
         self._version = version
+        self._cmdgen = cmdgen.CommandGenerator()
 
         # Put authentication stuff in self._auth
         if version in [1, 2]:
             self._auth = cmdgen.CommunityData(
                 community, community, version - 1)
         elif version == 3:
-            self._cmdgen = cmdgen.CommandGenerator()
             if secname is None:
                 secname = community
             try:
