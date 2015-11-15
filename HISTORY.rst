@@ -3,6 +3,14 @@
 History
 -------
 
+0.8.8 (2015-11-15)
+++++++++++++++++++
+
+ * Fix thread-safety problem introduced in 0.8.6. This also undo any
+   improvement advertised in 0.8.6 when using multiple
+   threads. However, performance should be kept when using a single
+   thread.
+
 0.8.7 (2015-11-14)
 ++++++++++++++++++
 
