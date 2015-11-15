@@ -9,6 +9,8 @@ from pysnmp.proto.api import v2c
 
 class TestAgent(object):
 
+    next_port = [random.randint(22000, 32000)]
+
     """Agent for testing purpose"""
 
     def __init__(self, ipv6=False, community='public',
@@ -18,20 +20,21 @@ class TestAgent(object):
         self.community = community
         self.authpass = authpass
         self.privpass = privpass
-        self._process = Process(target=self._setup, args=(q,))
+        self.next_port[0] += 1
+        self._process = Process(target=self._setup,
+                                args=(q, self.next_port[0]))
         self._process.start()
         self.port = q.get()
 
     def terminate(self):
         self._process.terminate()
 
-    def _setup(self, q):
+    def _setup(self, q, port):
         """Setup a new agent in a separate process.
 
         The port the agent is listening too will be returned using the
         provided queue.
         """
-        port = random.randrange(22000, 22989)
         snmpEngine = engine.SnmpEngine()
         if self.ipv6:
             config.addSocketTransport(
