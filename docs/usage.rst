@@ -54,14 +54,15 @@ For a column, you get a dictionary-like interface::
 	print(repr(m.ifDescr[index]))
     m.ifAdminStatus[3] = "down"
 
-If you want to group several write into a single request, you can do
-it with `with` keyword::
+If you care about efficiency, note that the above snippet will walk
+the table twice: once to retrieve the index to loop over and once to
+retrieve the values. This could be avoided with::
 
-    with M("localhost", "private") as m:
-        m.sysName = "toto"
-        m.ifAdminStatus[20] = "down"
+    for index, value in m.ifDescr.iteritems():
+	print(repr(value))
 
-There is also a caching mechanism which is disabled by default::
+Another way to avoid those extra SNMP requests is to enable the
+caching mechanism which is disabled by default::
 
     import time
     m = M("localhost", cache=True)
@@ -76,6 +77,13 @@ There is also a caching mechanism which is disabled by default::
 You can also specify the number of seconds data should be cached::
 
     m = M("localhost", cache=20)
+
+If you want to group several write into a single request, you can do
+it with `with` keyword::
+
+    with M("localhost", "private") as m:
+        m.sysName = "toto"
+        m.ifAdminStatus[20] = "down"
 
 It's also possible to set a custom timeout and a custom value for the
 number of retries. For example, to wait 2.5 seconds before timeout
