@@ -401,10 +401,7 @@ class ProxyColumn(Proxy, MutableMapping):
     def __delitem__(self, index):
         raise NotImplementedError("cannot suppress a column")
 
-    def keys(self):
-        return [k for k in self]
-
-    def has_key(self, object):
+    def __contains__(self, object):
         try:
             self._op("get", object)
         except:
