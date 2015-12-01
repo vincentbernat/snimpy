@@ -83,7 +83,7 @@ MIB usually have accessible indexes. If this is not the case, you'll
 have to iterate on a column instead. For example, the first example
 could be written as::
 
-    for index in m.ifTable: 
+    for index in m.ifDescr:
 	print(repr(m.ifDescr[index]))
 
 If you want to group several write into a single request, you can do
