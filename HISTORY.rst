@@ -3,6 +3,11 @@
 History
 -------
 
+0.8.9 (????-??-??)
+++++++++++++++++++
+
+ * Ability to walk a table (if the first index is accessible).
+
 0.8.8 (2015-11-15)
 ++++++++++++++++++
 
