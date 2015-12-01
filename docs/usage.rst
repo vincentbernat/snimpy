@@ -50,7 +50,7 @@ entities. For a scalar, getting and setting a value is a simple as::
 
 For a column, you get a dictionary-like interface::
 
-    for index in m.ifDescr: 
+    for index in m.ifTable: 
 	print(repr(m.ifDescr[index]))
     m.ifAdminStatus[3] = "down"
 
@@ -77,6 +77,14 @@ caching mechanism which is disabled by default::
 You can also specify the number of seconds data should be cached::
 
     m = M("localhost", cache=20)
+
+Also note that iterating over a table require an accessible index. Old
+MIB usually have accessible indexes. If this is not the case, you'll
+have to iterate on a column instead. For example, the first example
+could be written as::
+
+    for index in m.ifTable: 
+	print(repr(m.ifDescr[index]))
 
 If you want to group several write into a single request, you can do
 it with `with` keyword::

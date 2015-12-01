@@ -325,7 +325,7 @@ SnimpyIndexEntry ::=
 
 snimpyIndexVarLen OBJECT-TYPE
     SYNTAX      DisplayString (SIZE (1..10))
-    MAX-ACCESS  not-accessible
+    MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
             "Variable length index"

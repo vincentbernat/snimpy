@@ -30,7 +30,7 @@ Here is a simple example of use of this module::
 
 import inspect
 from time import time
-from collections import MutableMapping
+from collections import MutableMapping, Container, Iterable, Sized
 from snimpy import snmp, mib, basictypes
 
 
@@ -306,6 +306,8 @@ class Manager(object):
             return None
         elif isinstance(a, mib.Column):
             return ProxyColumn(self._session, a, self._loose)
+        elif isinstance(a, mib.Table):
+            return TableColumn(self._session, a, self._loose)
         raise NotImplementedError
 
     def __setattr__(self, attribute, value):
@@ -347,20 +349,20 @@ class Manager(object):
 
 
 class Proxy:
+    """A proxy for some base type, notably a column or a table."""
 
     def __repr__(self):
         return "<{0} for {1}>".format(self.__class__.__name__,
                                       repr(self.proxy)[1:-1])
 
 
-class ProxyColumn(Proxy, MutableMapping):
+class ProxyIter(Proxy, Sized, Iterable, Container):
+    """Proxy for an iterable sequence.
 
-    """Proxy for column access"""
-
-    def __init__(self, session, column, loose):
-        self.proxy = column
-        self.session = session
-        self._loose = loose
+    This a proxy offering the ABC of an iterable sequence (something
+    like a set but without set operations). This will be used by both
+    `ProxyColumn` and `ProxyTable`.
+    """
 
     def _op(self, op, index, *args):
         if not isinstance(index, tuple):
@@ -389,17 +391,6 @@ class ProxyColumn(Proxy, MutableMapping):
                         return result
                     raise
             return None
-
-    def __getitem__(self, index):
-        return self._op("get", index)
-
-    def __setitem__(self, index, value):
-        if not isinstance(value, basictypes.Type):
-            value = self.proxy.type(self.proxy, value, raw=False)
-        self._op("set", index, value)
-
-    def __delitem__(self, index):
-        raise NotImplementedError("cannot suppress a column")
 
     def __contains__(self, object):
         try:
@@ -471,6 +462,38 @@ class ProxyColumn(Proxy, MutableMapping):
                 raise
 
         raise StopIteration
+
+class TableColumn(ProxyIter):
+    """Proxy for table access.
+
+    We just use the first index as a column. However, the mapping
+    operations are not available.
+    """
+
+    def __init__(self, session, table, loose):
+        self.proxy = table.index[0]
+        self.session = session
+        self._loose = loose
+
+
+class ProxyColumn(ProxyIter, MutableMapping):
+    """Proxy for column access"""
+
+    def __init__(self, session, column, loose):
+        self.proxy = column
+        self.session = session
+        self._loose = loose
+
+    def __getitem__(self, index):
+        return self._op("get", index)
+
+    def __setitem__(self, index, value):
+        if not isinstance(value, basictypes.Type):
+            value = self.proxy.type(self.proxy, value, raw=False)
+        self._op("set", index, value)
+
+    def __delitem__(self, index):
+        raise NotImplementedError("cannot suppress a column")
 
 
 loaded = []

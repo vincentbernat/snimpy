@@ -218,6 +218,25 @@ class TestAgent(object):
                 (0, "__MY_SNIMPY-MIB", "snimpyIndexOidVarLen"),
                 (0, "__MY_SNIMPY-MIB", "snimpyIndexFixedLen"),
                 (1, "__MY_SNIMPY-MIB", "snimpyIndexImplied")),
+            # SNIMPY-MIB::snimpyIndexVarLen
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 1),
+                              flatten(4, stringToOid('row1'),
+                                      3, 1, 2, 3,
+                                      stringToOid('alpha5'),
+                                      stringToOid('end of row1')),
+                              v2c.OctetString(b"row1")),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 1),
+                              flatten(4, stringToOid('row2'),
+                                      4, 1, 0, 2, 3,
+                                      stringToOid('beta32'),
+                                      stringToOid('end of row2')),
+                              v2c.OctetString(b"row2")),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 1),
+                              flatten(4, stringToOid('row3'),
+                                      4, 120, 1, 2, 3,
+                                      stringToOid('gamma7'),
+                                      stringToOid('end of row3')),
+                              v2c.OctetString(b"row3")),
             # SNIMPY-MIB::snimpyIndexInt
             MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 6),
                               flatten(4, stringToOid('row1'),
@@ -255,7 +274,7 @@ class TestAgent(object):
             snimpyIndexVarLen=MibTableColumn(
                 (1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 1),
                 v2c.OctetString(
-                )).setMaxAccess("noaccess"),
+                )),
             snimpyIndexIntIndex=MibTableColumn(
                 (1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 2),
                 v2c.Integer(

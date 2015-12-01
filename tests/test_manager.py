@@ -94,14 +94,28 @@ class TestManagerGet(TestManager):
         """Retrieve MacAddress as a scalar"""
         self.scalarGetAndCheck("snimpyMacAddress", "11:12:13:14:15:16")
 
-    def testWalkIfTable(self):
-        """Test we can walk IF-MIB::ifTable"""
+    def testWalkIfDescr(self):
+        """Test we can walk IF-MIB::ifDescr and IF-MIB::ifTpe"""
         results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
                    for idx in self.manager.ifIndex]
         self.assertEqual(results,
                          [(1, "lo", 24),
                           (2, "eth0", 6),
                           (3, "eth1", 6)])
+
+    def testWalkIfTable(self):
+        """Test we can walk IF-MIB::ifTable"""
+        results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
+                   for idx in self.manager.ifTable]
+        self.assertEqual(results,
+                         [(1, "lo", 24),
+                          (2, "eth0", 6),
+                          (3, "eth1", 6)])
+
+    def testWalkIfDescrWithoutBulk(self):
+        """Walk IF-MIB::ifDescr without GETBULK"""
+        self.session.bulk = False
+        self.testWalkIfDescr()
 
     def testWalkIfTableWithoutBulk(self):
         """Walk IF-MIB::ifTable without GETBULK"""
@@ -112,6 +126,18 @@ class TestManagerGet(TestManager):
         """Test if we can walk a table with complex indexes"""
         results = [(idx, self.manager.snimpyIndexInt[idx])
                    for idx in self.manager.snimpyIndexInt]
+        self.assertEqual(results,
+                         [(("row1", (1, 2, 3),
+                            "alpha5", "end of row1"), 4571),
+                          (("row2", (1, 0, 2, 3),
+                            "beta32", "end of row2"), 78741),
+                          (("row3", (120, 1, 2, 3),
+                            "gamma7", "end of row3"), 4110)])
+
+    def testWalkTableWithComplexIndexes(self):
+        """Test if we can walk a table with complex indexes"""
+        results = [(idx, self.manager.snimpyIndexInt[idx])
+                   for idx in self.manager.snimpyIndexTable]
         self.assertEqual(results,
                          [(("row1", (1, 2, 3),
                             "alpha5", "end of row1"), 4571),
