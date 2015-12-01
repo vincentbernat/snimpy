@@ -307,7 +307,7 @@ class Manager(object):
         elif isinstance(a, mib.Column):
             return ProxyColumn(self._session, a, self._loose)
         elif isinstance(a, mib.Table):
-            return TableColumn(self._session, a, self._loose)
+            return ProxyTable(self._session, a, self._loose)
         raise NotImplementedError
 
     def __setattr__(self, attribute, value):
@@ -463,7 +463,8 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
 
         raise StopIteration
 
-class TableColumn(ProxyIter):
+
+class ProxyTable(ProxyIter):
     """Proxy for table access.
 
     We just use the first index as a column. However, the mapping
@@ -510,5 +511,6 @@ def load(mibname):
         loaded.append(m)
         if Manager._complete:
             for o in mib.getScalars(m) + \
-                    mib.getColumns(m):
+                    mib.getColumns(m) + \
+                    mib.getTables(m):
                 setattr(Manager, str(o), 1)
