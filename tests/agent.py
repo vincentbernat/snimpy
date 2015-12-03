@@ -14,9 +14,11 @@ class TestAgent(object):
     """Agent for testing purpose"""
 
     def __init__(self, ipv6=False, community='public',
-                 authpass='authpass', privpass='privpass'):
+                 authpass='authpass', privpass='privpass',
+                 emptyTable=True):
         q = Queue()
         self.ipv6 = ipv6
+        self.emptyTable = emptyTable
         self.community = community
         self.authpass = authpass
         self.privpass = privpass
@@ -138,7 +140,8 @@ class TestAgent(object):
             # IF-MIB::ifIndex
             ifIndex=MibTableColumn((1, 3, 6, 1, 2, 1, 2, 2, 1, 1),
                                    v2c.Integer()))
-        mibBuilder.exportSymbols(
+
+        args = (
             '__MY_SNIMPY-MIB',
             # SNIMPY-MIB::snimpyIpAddress
             MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 1),
@@ -268,14 +271,17 @@ class TestAgent(object):
                               v2c.OctetString(b"Hello")),
             MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 5, 1, 2),
                               (2,),
-                              v2c.OctetString(b"\xf1\x12\x13\x14\x15\x16")),
+                              v2c.OctetString(b"\xf1\x12\x13\x14\x15\x16")))
 
-            # SNIMPY-MIB::snimpyEmptyTable
-            MibTable((1, 3, 6, 1, 2, 1, 45121, 2, 6)),
-            MibTableRow(
-                (1, 3, 6, 1, 2, 1, 45121, 2, 6, 1)).setIndexNames(
-                (0, "__MY_SNIMPY-MIB", "snimpyEmptyIndex")),
+        if self.emptyTable:
+            args += (
+                # SNIMPY-MIB::snimpyEmptyTable
+                MibTable((1, 3, 6, 1, 2, 1, 45121, 2, 6)),
+                MibTableRow(
+                    (1, 3, 6, 1, 2, 1, 45121, 2, 6, 1)).setIndexNames(
+                        (0, "__MY_SNIMPY-MIB", "snimpyEmptyIndex")))
 
+        kwargs = dict(
             # Indexes
             snimpyIndexVarLen=MibTableColumn(
                 (1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 1),
@@ -309,14 +315,20 @@ class TestAgent(object):
                 v2c.Integer()).setMaxAccess("noaccess"),
             snimpyInvalidDescr=MibTableColumn(
                 (1, 3, 6, 1, 2, 1, 45121, 2, 5, 1, 2),
-                v2c.OctetString()).setMaxAccess("readwrite"),
-            snimpyEmptyIndex=MibTableColumn(
-                (1, 3, 6, 1, 2, 1, 45121, 2, 6, 1, 1),
-                v2c.Integer()).setMaxAccess("noaccess"),
-            snimpyEmptyDescr=MibTableColumn(
-                (1, 3, 6, 1, 2, 1, 45121, 2, 6, 1, 2),
                 v2c.OctetString()).setMaxAccess("readwrite")
         )
+
+        if self.emptyTable:
+            kwargs.update(dict(
+                snimpyEmptyIndex=MibTableColumn(
+                    (1, 3, 6, 1, 2, 1, 45121, 2, 6, 1, 1),
+                    v2c.Integer()).setMaxAccess("noaccess"),
+                snimpyEmptyDescr=MibTableColumn(
+                    (1, 3, 6, 1, 2, 1, 45121, 2, 6, 1, 2),
+                    v2c.OctetString()).setMaxAccess("readwrite")))
+
+        mibBuilder.exportSymbols(*args, **kwargs)
+
         # Start agent
         cmdrsp.GetCommandResponder(snmpEngine, snmpContext)
         cmdrsp.SetCommandResponder(snmpEngine, snmpContext)

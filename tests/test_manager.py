@@ -172,6 +172,21 @@ class TestManagerGet(TestManager):
         results = [(idx,) for idx in self.manager.snimpyEmptyDescr]
         self.assertEqual(results, [])
 
+    def testAccessNotExistentTable(self):
+        """Try to walk a non-existent table"""
+        agent2 = agent.TestAgent(emptyTable=False)
+        try:
+            manager = Manager(host="127.0.0.1:{0}".format(agent2.port),
+                              community="public",
+                              version=2)
+            [(idx,) for idx in manager.snimpyEmptyDescr]
+        except snmp.SNMPNoSuchObject:
+            pass                # That's OK
+        else:
+            self.assertFalse("should raise SNMPNoSuchObject exception")
+        finally:
+            agent2.terminate()
+
     def testGetChangingStuff(self):
         """Get stuff with varying values"""
         initial = self.manager.ifInOctets[2]
