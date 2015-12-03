@@ -258,8 +258,6 @@ class Session(object):
         if len(results) == 0:
             if cmd not in [self._cmdgen.nextCmd, self._cmdgen.bulkCmd]:
                 raise SNMPException("empty answer")
-            # This seems to be filtered
-            raise SNMPEndOfMibView("no more stuff after this OID")  # nopep8
         return tuple([(oid, self._convert(val)) for oid, val in results])
 
     def get(self, *oids):
