@@ -9,7 +9,7 @@ env:
   - TOX_ENV=py35
   - TOX_ENV=py35-pysnmp42
   - TOX_ENV=py35-ipython
-  - TOX_ENV=pypy
+  - TOX_ENV=pypy-pysnmp42
   - TOX_ENV=lint
   - TOX_ENV=doc
 install:
