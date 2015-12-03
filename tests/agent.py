@@ -270,6 +270,12 @@ class TestAgent(object):
                               (2,),
                               v2c.OctetString(b"\xf1\x12\x13\x14\x15\x16")),
 
+            # SNIMPY-MIB::snimpyEmptyTable
+            MibTable((1, 3, 6, 1, 2, 1, 45121, 2, 6)),
+            MibTableRow(
+                (1, 3, 6, 1, 2, 1, 45121, 2, 6, 1)).setIndexNames(
+                (0, "__MY_SNIMPY-MIB", "snimpyEmptyIndex")),
+
             # Indexes
             snimpyIndexVarLen=MibTableColumn(
                 (1, 3, 6, 1, 2, 1, 45121, 2, 3, 1, 1),
@@ -303,6 +309,12 @@ class TestAgent(object):
                 v2c.Integer()).setMaxAccess("noaccess"),
             snimpyInvalidDescr=MibTableColumn(
                 (1, 3, 6, 1, 2, 1, 45121, 2, 5, 1, 2),
+                v2c.OctetString()).setMaxAccess("readwrite"),
+            snimpyEmptyIndex=MibTableColumn(
+                (1, 3, 6, 1, 2, 1, 45121, 2, 6, 1, 1),
+                v2c.Integer()).setMaxAccess("noaccess"),
+            snimpyEmptyDescr=MibTableColumn(
+                (1, 3, 6, 1, 2, 1, 45121, 2, 6, 1, 2),
                 v2c.OctetString()).setMaxAccess("readwrite")
         )
         # Start agent

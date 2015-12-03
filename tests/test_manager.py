@@ -167,6 +167,11 @@ class TestManagerGet(TestManager):
         self.assertRaises(ValueError,
                           self.manager.ifDescr.__getitem__, "nothing")
 
+    def testAccessEmptyTable(self):
+        """Try to walk an empty table"""
+        results = [(idx,) for idx in self.manager.snimpyEmptyDescr]
+        self.assertEqual(results, [])
+
     def testGetChangingStuff(self):
         """Get stuff with varying values"""
         initial = self.manager.ifInOctets[2]

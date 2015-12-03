@@ -21,7 +21,8 @@ class TestMibSnimpy(unittest.TestCase):
                        "snimpyInetAddressTable",
                        "snimpySimpleTable",
                        "snimpyIndexTable",
-                       "snimpyInvalidTable"]
+                       "snimpyInvalidTable",
+                       "snimpyEmptyTable"]
         self.tables.sort()
         self.columns = ["snimpyComplexFirstIP",
                         "snimpyComplexSecondIP",
@@ -40,7 +41,9 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyIndexImplied",
                         "snimpyIndexInt",
                         "snimpyInvalidIndex",
-                        "snimpyInvalidDescr"
+                        "snimpyInvalidDescr",
+                        "snimpyEmptyIndex",
+                        "snimpyEmptyDescr"
                         ]
         self.columns.sort()
         self.scalars = ["snimpyIpAddress",

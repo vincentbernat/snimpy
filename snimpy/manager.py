@@ -454,6 +454,9 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
             except snmp.SNMPNoSuchInstance:
                 # OK, the set of result is really empty
                 raise StopIteration
+            except snmp.SNMPNoAccess:
+                # Some implementations seem to return NoAccess (PySNMP is one)
+                raise StopIteration
             except snmp.SNMPNoSuchName:
                 # SNMPv1, we don't know
                 pass

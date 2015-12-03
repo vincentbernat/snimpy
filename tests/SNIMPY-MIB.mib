@@ -466,4 +466,46 @@ snimpyInvalidDescr OBJECT-TYPE
             "Blah blah"
     ::= { snimpyInvalidEntry 2 }
 
+-- A table that may be empty
+
+snimpyEmptyTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpyEmptyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table"
+    ::= { snimpyTables 6 }
+
+snimpyEmptyEntry OBJECT-TYPE
+    SYNTAX      SnimpyEmptyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our empty table"
+    INDEX   { snimpyEmptyIndex }
+    ::= { snimpyEmptyTable 1 }
+
+SnimpyEmptyEntry ::=
+    SEQUENCE {
+        snimpyEmptyIndex       Integer32,
+        snimpyEmptyDescr       DisplayString
+    }
+
+snimpyEmptyIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..30)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Index for snimpy empty table"
+    ::= { snimpyEmptyEntry 1 }
+
+snimpyEmptyDescr OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpyEmptyEntry 2 }
+
+
 END
