@@ -268,7 +268,7 @@ class Session(object):
         """
         return self._op(self._cmdgen.getCmd, *oids)
 
-    def walk(self, *oids):
+    def walkmore(self, *oids):
         """Retrieve OIDs values using GETBULK or GETNEXT. The method is called
         "walk" but this is either a GETBULK or a GETNEXT. The later is
         only used for SNMPv1 or if bulk has been disabled using
@@ -294,7 +294,21 @@ class Session(object):
                 return self.walk(*oids)
             raise
 
+    def walk(self, *oids):
+        """Walk from given OIDs but don't return any "extra" results. Only
+        results in the subtree will be returned.
+
+        :param oid: OIDs used as a start point
+        :return: a list of tuples with the retrieved OID and the raw value.
+        """
+        return ((noid, result)
+                for oid in oids
+                for noid, result in self.walkmore(oid)
+                if (len(noid) >= len(oid) and
+                    noid[:len(oid)] == oid[:len(oid)]))
+
     def set(self, *args):
+
         """Set an OID value using SET. This function takes an odd number of
         arguments. They are working by pair. The first member is an
         OID and the second one is :class:`basictypes.Type` instace

@@ -285,7 +285,7 @@ class TestSnmp1(unittest.TestCase):
         """Check if we can walk"""
         ooid = mib.get("IF-MIB", "ifDescr").oid
         results = self.session.walk(ooid)
-        self.assertEqual(results,
+        self.assertEqual(tuple(results),
                          ((ooid + (1,), b"lo"),
                           (ooid + (2,), b"eth0"),
                           (ooid + (3,), b"eth1")))
@@ -359,15 +359,16 @@ class TestSnmp2(TestSnmp1):
         ooid = mib.get("IF-MIB", "ifDescr").oid
         self.session.bulk = 4
         results = self.session.walk(ooid)
-        self.assertEqual(results[:3],
+        self.assertEqual(tuple(results),
                          ((ooid + (1,), b"lo"),
                           (ooid + (2,), b"eth0"),
                           (ooid + (3,), b"eth1")))
         self.session.bulk = 2
         results = self.session.walk(ooid)
-        self.assertEqual(results[:2],
+        self.assertEqual(tuple(results),
                          ((ooid + (1,), b"lo"),
-                          (ooid + (2,), b"eth0")))
+                          (ooid + (2,), b"eth0"),
+                          (ooid + (3,), b"eth1")))
 
 
 class TestSnmp3(TestSnmp2):
