@@ -30,6 +30,7 @@ install:
   - pip install tox coveralls
 before_script:
   - sudo sh -c 'echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6'
+  - sudo sh -c 'echo ::1 ip6-localhost >> /etc/hosts'
 script:
   - tox -e $TOX_ENV
 after_success:
