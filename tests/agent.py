@@ -96,7 +96,12 @@ class TestAgent(object):
             MibScalarInstance((1, 3, 6, 1, 2, 1, 1, 1), (0,),
                               v2c.OctetString(
                                   "Snimpy Test Agent {0}".format(
-                                      self.community))))
+                                      self.community))),
+            # SNMPv2-MIB::sysObjectID
+            MibScalar((1, 3, 6, 1, 2, 1, 1, 2), v2c.ObjectIdentifier()),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 1, 2), (0,),
+                              v2c.ObjectIdentifier((1, 3, 6, 1, 4,
+                                                    1, 9, 1, 1208))))
         mibBuilder.exportSymbols(
             '__MY_IF_MIB',
             # IF-MIB::ifNumber

@@ -184,6 +184,13 @@ class TestSnmp1(unittest.TestCase):
         b = basictypes.build('SNIMPY-MIB', 'snimpyMacAddress', a)
         self.assertEqual(b, "11:12:13:14:15:16")
 
+    def testGetObjectId(self):
+        """Get ObjectId."""
+        ooid = mib.get('SNMPv2-MIB', 'sysObjectID').oid + (0,)
+        oid, a = self.session.get(ooid)[0]
+        self.assertEqual(oid, ooid)
+        self.assertEqual(a, (1, 3, 6, 1, 4, 1, 9, 1, 1208))
+
     def testInexistant(self):
         """Get an inexistant value"""
         try:
