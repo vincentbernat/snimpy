@@ -215,6 +215,12 @@ class Session(object):
 
     def _convert(self, value):
         """Convert a PySNMP value to some native Python type"""
+        try:
+            # With PySNMP 4.3+, an OID is a ObjectIdentity. We try to
+            # extract it while being compatible with earlier releases.
+            value = value.getOid()
+        except AttributeError:
+            pass
         for cl, fn in {rfc1902.Integer: int,
                        rfc1902.Integer32: int,
                        rfc1902.OctetString: bytes,
