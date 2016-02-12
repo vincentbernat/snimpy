@@ -142,9 +142,41 @@ class TestAgent(object):
                 (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (2,), v2c.Gauge32()),
             RandomMibScalarInstance(
                 (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (3,), v2c.Gauge32()),
+
+            # IF-MIB::ifRcvAddressTable
+            MibTable((1, 3, 6, 1, 2, 1, 31, 1, 4)),
+            MibTableRow((1, 3, 6, 1, 2, 1, 31, 1, 4, 1)).setIndexNames(
+                (0, '__MY_IF_MIB', 'ifIndex'),
+                (1, '__MY_IF_MIB', 'ifRcvAddressAddress')),
+            # IF-MIB::ifRcvAddressStatus
+            MibTableColumn((1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 2), v2c.Integer()),
+            MibScalarInstance(
+                (1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 2),
+                flatten(2, 6, stringToOid("abcdef")), v2c.Integer(1)),
+            MibScalarInstance(
+                (1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 2),
+                flatten(2, 6, stringToOid("ghijkl")), v2c.Integer(1)),
+            MibScalarInstance(
+                (1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 2),
+                flatten(3, 6, stringToOid("mnopqr")), v2c.Integer(1)),
+            # IF-MIB::ifRcvAddressType
+            MibTableColumn((1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 3), v2c.Integer()),
+            MibScalarInstance(
+                (1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 3),
+                flatten(2, 6, stringToOid("abcdef")), v2c.Integer(1)),
+            MibScalarInstance(
+                (1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 3),
+                flatten(2, 6, stringToOid("ghijkl")), v2c.Integer(1)),
+            MibScalarInstance(
+                (1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 3),
+                flatten(3, 6, stringToOid("mnopqr")), v2c.Integer(1)),
+
             # IF-MIB::ifIndex
             ifIndex=MibTableColumn((1, 3, 6, 1, 2, 1, 2, 2, 1, 1),
-                                   v2c.Integer()))
+                                   v2c.Integer()),
+            # IF-MIB::ifRcvAddressAddress
+            ifRcvAddressAddress=MibTableColumn((1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 1),
+                                               v2c.OctetString()))
 
         args = (
             '__MY_SNIMPY-MIB',
