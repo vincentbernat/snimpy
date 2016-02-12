@@ -406,19 +406,33 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
     def __len__(self):
         len(list(self.iteritems()))
 
-    def iteritems(self):
+    def iteritems(self, table_filter=None):
         count = 0
         oid = self.proxy.oid
         indexes = self.proxy.table.index
 
+        if table_filter is not None:
+            # Allow single-part table filter to be specified as is
+            if not isinstance(table_filter, tuple):
+                table_filter = (table_filter,)
+            if len(table_filter) >= len(indexes):
+                raise ValueError("Table filter has too many elements")
+            oid_suffix = []
+            # Convert filter elements to correct types
+            for i, part in enumerate(table_filter):
+                part = indexes[i].type(indexes[i], part, raw=False)
+                oid_suffix.extend(part.toOid())
+            oid += tuple(oid_suffix)
+
+        walk_oid = oid
         for noid, result in self.session.walk(oid):
             if noid <= oid:
                 noid = None
                 break
             oid = noid
-            if not((len(oid) >= len(self.proxy.oid) and
-                    oid[:len(self.proxy.oid)] ==
-                    self.proxy.oid[:len(self.proxy.oid)])):
+            if not((len(oid) >= len(walk_oid) and
+                    oid[:len(walk_oid)] ==
+                    walk_oid[:len(walk_oid)])):
                 noid = None
                 break
 
@@ -489,6 +503,15 @@ class ProxyColumn(ProxyIter, MutableMapping):
         self._loose = loose
 
     def __getitem__(self, index):
+        # If supplied index is partial we return a generator
+        idx_len = len(self.proxy.table.index)
+        if isinstance(index, tuple):
+            if len(index) < idx_len:
+                return (k for k, _ in self.iteritems(index))
+        elif idx_len > 1:
+            return (k for k, _ in self.iteritems(index))
+
+        # Otherwise a read op is made
         return self._op("get", index)
 
     def __setitem__(self, index, value):
