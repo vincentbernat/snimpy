@@ -180,6 +180,15 @@ class Manager(object):
         >>> for idx in m.ifDescr:
         ...     print(m.ifDescr[idx])
 
+    You can get a slice of value indexes from a table by iterating on
+    a row name subscripted by a partial index::
+
+        >>> load("IF-MIB")
+        >>> m = Manager("localhost", "private")
+        >>> for idx in m.ipNetToMediaPhysAddress[1]:
+        ...     print(idx)
+        (<Integer: 1>, <IpAddress: 127.0.0.1>)
+
     A context manager is also provided. Any modification issued inside
     the context will be delayed until the end of the context and then
     grouped into a single SNMP PDU to be executed atomically::
