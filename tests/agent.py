@@ -175,7 +175,8 @@ class TestAgent(object):
             ifIndex=MibTableColumn((1, 3, 6, 1, 2, 1, 2, 2, 1, 1),
                                    v2c.Integer()),
             # IF-MIB::ifRcvAddressAddress
-            ifRcvAddressAddress=MibTableColumn((1, 3, 6, 1, 2, 1, 31, 1, 4, 1, 1),
+            ifRcvAddressAddress=MibTableColumn((1, 3, 6, 1, 2, 1, 31,
+                                                1, 4, 1, 1),
                                                v2c.OctetString()))
 
         args = (
