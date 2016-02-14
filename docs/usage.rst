@@ -61,6 +61,17 @@ retrieve the values. This could be avoided with::
     for index, value in m.ifDescr.iteritems():
 	print(repr(value))
 
+Furthermore, you can pass partial index values to `iteritems()` to
+limit walked table rows to a specific subset::
+
+    for index, value in m.ipNetToMediaPhysAddress.iteritems(10):
+	print(repr(value))
+
+You can use subscript operator for this as well::
+
+    for index, value in m.ipNetToMediaPhysAddress[10]:
+	print(repr(value))
+
 Another way to avoid those extra SNMP requests is to enable the
 caching mechanism which is disabled by default::
 

@@ -146,6 +146,25 @@ class TestManagerGet(TestManager):
                           (("row3", (120, 1, 2, 3),
                             "gamma7", "end of row3"), 4110)])
 
+    def testWalkPartialIndexes(self):
+        """Test if we can walk a slice of a table given a partial index"""
+        results = [(idx, self.manager.ifRcvAddressType[idx])
+                   for idx in self.manager.ifRcvAddressStatus[2]]
+        self.assertEqual(results,
+                         [((2, "61:62:63:64:65:66"), 1),
+                          ((2, "67:68:69:6a:6b:6c"), 1)])
+        results = [(idx, self.manager.ifRcvAddressType[idx])
+                   for idx in self.manager.ifRcvAddressStatus[(3,)]]
+        self.assertEqual(results,
+                         [((3, "6d:6e:6f:70:71:72"), 1)])
+
+    def testWalkInvalidPartialIndexes(self):
+        """Try to get a table slice with an incorrect index filter"""
+        self.assertRaises(ValueError,
+                          lambda: list(
+                              self.manager.ifRcvAddressStatus.iteritems(
+                                  (3, "6d:6e:6f:70:71:72"))))
+
     def testGetInexistentStuff(self):
         """Try to access stuff that does not exist on the agent"""
         self.assertRaises(snmp.SNMPNoSuchObject,
