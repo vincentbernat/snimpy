@@ -421,9 +421,6 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
         indexes = self.proxy.table.index
 
         if table_filter is not None:
-            # Allow single-part table filter to be specified as is
-            if not isinstance(table_filter, tuple):
-                table_filter = (table_filter,)
             if len(table_filter) >= len(indexes):
                 raise ValueError("Table filter has too many elements")
             oid_suffix = []
@@ -506,30 +503,56 @@ class ProxyTable(ProxyIter):
 class ProxyColumn(ProxyIter, MutableMapping):
     """Proxy for column access"""
 
-    def __init__(self, session, column, loose):
+    def __init__(self, session, column, loose, oid_suffix=()):
         self.proxy = column
         self.session = session
         self._loose = loose
+        self._oid_suffix = oid_suffix
 
     def __getitem__(self, index):
-        # If supplied index is partial we return a generator
+        # If supplied index is partial we return new ProxyColumn
+        # with appended OID suffix
         idx_len = len(self.proxy.table.index)
+        suffix_len = len(self._oid_suffix)
         if isinstance(index, tuple):
-            if len(index) < idx_len:
-                return (k for k, _ in self.iteritems(index))
-        elif idx_len > 1:
-            return (k for k, _ in self.iteritems(index))
+            if len(index) + suffix_len < idx_len:
+                return self._partial(index)
+        elif idx_len > suffix_len + 1:
+            return self._partial((index,))
 
         # Otherwise a read op is made
-        return self._op("get", index)
+        if not isinstance(index, tuple):
+            index = (index,)
+        return self._op("get", self._oid_suffix + index)
 
     def __setitem__(self, index, value):
         if not isinstance(value, basictypes.Type):
             value = self.proxy.type(self.proxy, value, raw=False)
-        self._op("set", index, value)
+        if not isinstance(index, tuple):
+            index = (index,)
+        self._op("set", self._oid_suffix + index, value)
 
     def __delitem__(self, index):
         raise NotImplementedError("cannot suppress a column")
+
+    def __contains__(self, index):
+        if not isinstance(index, tuple):
+            index = (index,)
+        return ProxyIter.__contains__(self, self._oid_suffix + index)
+
+    def _partial(self, index):
+        """Create new ProxyColumn based on current one,
+        but with appended OID suffix"""
+        new_suffix = self._oid_suffix + index
+        return ProxyColumn(self.session, self.proxy, self._loose, new_suffix)
+
+    def iteritems(self, table_filter=None):
+        resulting_filter = self._oid_suffix
+        if table_filter is not None:
+            if not isinstance(table_filter, tuple):
+                table_filter = (table_filter,)
+            resulting_filter += table_filter
+        return ProxyIter.iteritems(self, resulting_filter)
 
 
 loaded = []

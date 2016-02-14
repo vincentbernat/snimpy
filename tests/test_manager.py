@@ -94,6 +94,14 @@ class TestManagerGet(TestManager):
         """Retrieve MacAddress as a scalar"""
         self.scalarGetAndCheck("snimpyMacAddress", "11:12:13:14:15:16")
 
+    def testContains_IfDescr(self):
+        """Test proxy column membership checking code"""
+        self.assertEqual(2 in self.manager.ifDescr,
+                         True)
+        # FIXME: this currently fails under TestManagerWithNone
+        # self.assertEqual(10 in self.manager.ifDescr,
+        #                 False)
+
     def testWalkIfDescr(self):
         """Test we can walk IF-MIB::ifDescr and IF-MIB::ifTpe"""
         results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
@@ -157,6 +165,9 @@ class TestManagerGet(TestManager):
                    for idx in self.manager.ifRcvAddressStatus[(3,)]]
         self.assertEqual(results,
                          [((3, "6d:6e:6f:70:71:72"), 1)])
+        results = list(self.manager.ifRcvAddressType.iteritems(3))
+        self.assertEqual(results,
+                         [((3, "6d:6e:6f:70:71:72"), 1)])
 
     def testWalkInvalidPartialIndexes(self):
         """Try to get a table slice with an incorrect index filter"""
@@ -164,6 +175,22 @@ class TestManagerGet(TestManager):
                           lambda: list(
                               self.manager.ifRcvAddressStatus.iteritems(
                                   (3, "6d:6e:6f:70:71:72"))))
+
+    def testContains_Partial(self):
+        """Test proxy column membership checking code with partial indexes"""
+        self.assertEqual(
+                "61:62:63:64:65:66" in self.manager.ifRcvAddressStatus[2],
+                True)
+        # FIXME: this currently fails under TestManagerWithNone
+        # self.assertEqual(
+        #        "6d:6e:6f:70:71:72" in self.manager.ifRcvAddressStatus[2],
+        #        False)
+
+    def testScalar_MultipleSubscripts(self):
+        """Retrieve a scalar value using multiple subscript syntax
+        (attr[x][y])"""
+        self.assertEqual(self.manager.ifRcvAddressType[2]["67:68:69:6a:6b:6c"],
+                         1)
 
     def testGetInexistentStuff(self):
         """Try to access stuff that does not exist on the agent"""
