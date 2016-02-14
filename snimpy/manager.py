@@ -180,7 +180,7 @@ class Manager(object):
         >>> for idx in m.ifDescr:
         ...     print(m.ifDescr[idx])
 
-    You can get a slice of value indexes from a table by iterating on
+    You can get a slice of index values from a table by iterating on
     a row name subscripted by a partial index::
 
         >>> load("IF-MIB")
@@ -188,6 +188,17 @@ class Manager(object):
         >>> for idx in m.ipNetToMediaPhysAddress[1]:
         ...     print(idx)
         (<Integer: 1>, <IpAddress: 127.0.0.1>)
+
+    You can use multivalue indexes in two ways: using Pythonic
+    multi-dimensional dict syntax, or by providing a tuple containing
+    index values::
+
+        >>> load("IF-MIB")
+        >>> m = Manager("localhost", "private")
+        >>> m.ipNetToMediaPhysAddress[1]['127.0.0.1']
+        <String: aa:bb:cc:dd:ee:ff>
+        >>> m.ipNetToMediaPhysAddress[(1, '127.0.0.1')]
+        <String: aa:bb:cc:dd:ee:ff>
 
     A context manager is also provided. Any modification issued inside
     the context will be delayed until the end of the context and then

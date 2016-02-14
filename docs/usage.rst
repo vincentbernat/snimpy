@@ -67,10 +67,10 @@ limit walked table rows to a specific subset::
     for index, value in m.ipNetToMediaPhysAddress.iteritems(10):
 	print(repr(value))
 
-You can use subscript operator for this as well::
+If you don't need values you can use subscript syntax for this as well::
 
-    for index, value in m.ipNetToMediaPhysAddress[10]:
-	print(repr(value))
+    for index in m.ipNetToMediaPhysAddress[10]:
+	print(repr(index))
 
 Another way to avoid those extra SNMP requests is to enable the
 caching mechanism which is disabled by default::
