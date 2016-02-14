@@ -197,7 +197,7 @@ class Manager(object):
         >>> m = Manager("localhost", "private")
         >>> m.ipNetToMediaPhysAddress[1]['127.0.0.1']
         <String: aa:bb:cc:dd:ee:ff>
-        >>> m.ipNetToMediaPhysAddress[(1, '127.0.0.1')]
+        >>> m.ipNetToMediaPhysAddress[1, '127.0.0.1']
         <String: aa:bb:cc:dd:ee:ff>
 
     A context manager is also provided. Any modification issued inside
