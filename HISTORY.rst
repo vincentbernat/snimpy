@@ -3,8 +3,8 @@
 History
 -------
 
-0.8.9 (2016-02-16)
-++++++++++++++++++
+0.8.10 (2016-02-16)
++++++++++++++++++++
 
  * Ability to walk a table (if the first index is accessible).
  * Ability to do a partial walk (courtesy of Alex Unigovsky).
