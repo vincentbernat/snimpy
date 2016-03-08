@@ -84,7 +84,8 @@ class Session(object):
                  authpassword=None,
                  privprotocol=None,
                  privpassword=None,
-                 bulk=40):
+                 bulk=40,
+                 none=False):
         """Create a new SNMP session.
 
         :param host: The hostname or IP address of the agent to
@@ -118,15 +119,21 @@ class Session(object):
         :param bulk: Max repetition value for `GETBULK` requests. Set
             to `0` to disable.
         :type bulk: int
+        :param none: When enabled, will return None for not found
+            values (instead of raising an exception)
+        :type none: bool
         """
         self._host = host
         self._version = version
+        self._none = none
         if version == 3:
             self._cmdgen = cmdgen.CommandGenerator()
         else:
             if not hasattr(self._tls, "cmdgen"):
                 self._tls.cmdgen = cmdgen.CommandGenerator()
             self._cmdgen = self._tls.cmdgen
+        if version == 1 and none:
+            raise ValueError("None-GET requests are not compatible with SNMPv1")
 
         # Put authentication stuff in self._auth
         if version in [1, 2]:
@@ -221,18 +228,22 @@ class Session(object):
             value = value.getOid()
         except AttributeError:
             pass
-        for cl, fn in {rfc1902.Integer: int,
-                       rfc1902.Integer32: int,
-                       rfc1902.OctetString: bytes,
-                       rfc1902.IpAddress: value.prettyOut,
-                       rfc1902.Counter32: int,
-                       rfc1902.Counter64: int,
-                       rfc1902.Gauge32: int,
-                       rfc1902.Unsigned32: int,
-                       rfc1902.TimeTicks: int,
-                       rfc1902.Bits: str,
-                       rfc1902.Opaque: str,
-                       rfc1902.univ.ObjectIdentifier: tuple}.items():
+        convertors = {rfc1902.Integer: int,
+                      rfc1902.Integer32: int,
+                      rfc1902.OctetString: bytes,
+                      rfc1902.IpAddress: value.prettyOut,
+                      rfc1902.Counter32: int,
+                      rfc1902.Counter64: int,
+                      rfc1902.Gauge32: int,
+                      rfc1902.Unsigned32: int,
+                      rfc1902.TimeTicks: int,
+                      rfc1902.Bits: str,
+                      rfc1902.Opaque: str,
+                      rfc1902.univ.ObjectIdentifier: tuple}
+        if self._none:
+            convertors[rfc1905.NoSuchObject] = lambda x: None
+            convertors[rfc1905.NoSuchInstance] = lambda x: None
+        for cl, fn in convertors.items():
             if isinstance(value, cl):
                 return fn(value)
         self._check_exception(value)

@@ -357,6 +357,14 @@ class TestSnmp2(TestSnmp1):
     """Test communication with an agent with SNMPv2."""
     version = 2
 
+    def testInexistantNone(self):
+        """Get an inexistant value but request none"""
+        params = self.setUpSession(self.agent, 'public')
+        params['none'] = True
+        session = snmp.Session(**params)
+        oid, a = session.get((1, 2, 3))[0]
+        self.assertEqual(a, None)
+
     def testSetCounter64(self):
         """Set Counter64."""
         self.setAndCheck('snimpyCounter64', 2 ** 47 + 1)
