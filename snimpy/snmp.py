@@ -133,7 +133,7 @@ class Session(object):
                 self._tls.cmdgen = cmdgen.CommandGenerator()
             self._cmdgen = self._tls.cmdgen
         if version == 1 and none:
-            raise ValueError("None-GET requests are not compatible with SNMPv1")
+            raise ValueError("None-GET requests not compatible with SNMPv1")
 
         # Put authentication stuff in self._auth
         if version in [1, 2]:
