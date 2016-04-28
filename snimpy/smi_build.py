@@ -18,7 +18,7 @@
 
 """This module just exports libsmi through CFFI_.
 
-.. _CFFI: http://cffi.readthedocs.org/
+.. _CFFI: http://cffi.readthedocs.io/
 """
 
 from cffi import FFI

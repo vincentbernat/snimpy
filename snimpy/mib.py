@@ -23,7 +23,7 @@ wrapper is merely here to serve *Snimpy* use and is therefore
 incomplete.
 
 .. _libsmi: http://www.ibr.cs.tu-bs.de/projects/libsmi/
-.. _CFFI: http://cffi.readthedocs.org/
+.. _CFFI: http://cffi.readthedocs.io/
 """
 
 try:
