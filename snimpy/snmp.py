@@ -175,7 +175,7 @@ class Session(object):
 
         # Put transport stuff into self._transport
         mo = re.match(r'^(?:'
-                      r'\[(?P<ipv6>[\d:]+)\]|'
+                      r'\[(?P<ipv6>[\d:A-Fa-f]+)\]|'
                       r'(?P<ipv4>[\d\.]+)|'
                       r'(?P<any>.*?))'
                       r'(?::(?P<port>\d+))?$',
