@@ -275,7 +275,7 @@ class Session(object):
         if len(results) == 0:
             if cmd not in [self._cmdgen.nextCmd, self._cmdgen.bulkCmd]:
                 raise SNMPException("empty answer")
-        return tuple([(oid, self._convert(val)) for oid, val in results])
+        return tuple([(oid, val.prettyPrint()) for oid, val in results])
 
     def get(self, *oids):
         """Retrieve an OID value using GET.
