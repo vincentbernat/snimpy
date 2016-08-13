@@ -3,6 +3,13 @@
 History
 -------
 
+0.8.11 (2016-08-13)
++++++++++++++++++++
+
+ * Fix IPython interactive shell.S
+ * Fix IPv6 handling for sessions.
+ * Ability for a session to return None instead of raising an exception.
+
 0.8.10 (2016-02-16)
 +++++++++++++++++++
 
