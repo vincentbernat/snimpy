@@ -1,7 +1,7 @@
 import sys
 import os
 import tempfile
-import code  # nopep8
+import code  # noqa: F401
 import mock
 import platform
 from snimpy.main import interact

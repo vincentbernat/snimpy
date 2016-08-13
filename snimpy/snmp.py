@@ -214,11 +214,11 @@ class Session(object):
     def _check_exception(self, value):
         """Check if the given ASN1 value is an exception"""
         if isinstance(value, rfc1905.NoSuchObject):
-            raise SNMPNoSuchObject("No such object was found")  # nopep8
+            raise SNMPNoSuchObject("No such object was found")  # noqa: F821
         if isinstance(value, rfc1905.NoSuchInstance):
-            raise SNMPNoSuchInstance("No such instance exists")  # nopep8
+            raise SNMPNoSuchInstance("No such instance exists")  # noqa: F821
         if isinstance(value, rfc1905.EndOfMibView):
-            raise SNMPEndOfMibView("End of MIB was reached")  # nopep8
+            raise SNMPEndOfMibView("End of MIB was reached")  # noqa: F821
 
     def _convert(self, value):
         """Convert a PySNMP value to some native Python type"""
