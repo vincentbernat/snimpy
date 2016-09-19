@@ -1,14 +1,10 @@
-import sys
+import unittest
 import os
 import threading
 import multiprocessing
 from datetime import timedelta
 from snimpy import basictypes, snmp, mib
 import agent
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
 
 
 class TestSnmpRetriesTimeout(unittest.TestCase):
@@ -439,9 +435,3 @@ class TestSnmpTransports(unittest.TestCase):
     def testIpv6(self):
         """Test IPv6 transport"""
         self._test(True, "[::1]")
-
-    @unittest.skipIf(bool(os.environ.get("TRAVIS", "false")),
-                     "IPv6 support flaky on Travis CI")
-    def testIpv6WithDNS(self):
-        """Test IPv6 transport with name resolution"""
-        self._test(True, "ip6-localhost")
