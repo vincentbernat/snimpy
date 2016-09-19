@@ -436,6 +436,7 @@ class TestSnmpTransports(unittest.TestCase):
         """Test IPv6 transport"""
         self._test(True, "[::1]")
 
+    @unittest.skipIf(bool(os.environ.get("TRAVIS", "false")))
     def testIpv6WithDNS(self):
         """Test IPv6 transport with name resolution"""
         self._test(True, "ip6-localhost")
