@@ -8,9 +8,6 @@ snimpy
 .. image:: https://travis-ci.org/vincentbernat/snimpy.png?branch=master
         :target: https://travis-ci.org/vincentbernat/snimpy
 
-.. image:: https://pypip.in/d/snimpy/badge.png
-        :target: https://crate.io/packages/snimpy?version=latest
-
 .. image:: https://coveralls.io/repos/vincentbernat/snimpy/badge.png
         :target: https://coveralls.io/r/vincentbernat/snimpy
 
