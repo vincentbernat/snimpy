@@ -37,6 +37,8 @@ variables available.
 *Snimpy* requires libsmi_ to work correctly. See the documentation for
 more information.
 
+.. _libsmi: https://www.ibr.cs.tu-bs.de/projects/libsmi/
+
 Features
 --------
 
