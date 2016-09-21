@@ -21,7 +21,7 @@ environment variable::
 
 On Debian/Ubuntu, you can install libsmi with::
 
-    $ sudo apt-get install libffi-dev libsmi2-dev
+    $ sudo apt-get install libffi-dev libsmi2-dev snmp-mibs-downloader
 
 On RedHat and similar, you can use::
 
