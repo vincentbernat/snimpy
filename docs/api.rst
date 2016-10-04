@@ -15,20 +15,25 @@ other modules are considered as internal details.
 .. automodule:: snimpy.manager
     :members: Manager, load
 
+Internal modules
+----------------
+
+Those modules shouldn't be used directly.
+
 :mod:`mib` module
-------------------
+~~~~~~~~~~~~~~~~~
 
 .. automodule:: snimpy.mib
     :members:
 
 :mod:`snmp` module
--------------------
+~~~~~~~~~~~~~~~~~~
 
 .. automodule:: snimpy.snmp
     :members:
 
 :mod:`basictypes` module
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: snimpy.basictypes
     :members:
