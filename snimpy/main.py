@@ -87,13 +87,34 @@ def interact(argv=sys.argv):  # pragma: no cover
                 from traitlets.config.loader import Config
             cfg = Config()
             try:
-                # >= 0.12
-                cfg.PromptManager.in_template = "Snimpy [\\#]> "
-                cfg.PromptManager.out_template = "Snimpy [\\#]: "
+                # >= 5
+                from IPython.terminal.prompts import Prompts, Token
+
+                class SnimpyPrompt(Prompts):
+                    def in_prompt_tokens(self, cli=None):
+                        return [
+                            (Token.Prompt, "Snimpy["),
+                            (Token.PromptNum, str(self.shell.execution_count)),
+                            (Token.Prompt, ']> '),
+                        ]
+
+                    def out_prompt_tokens(self):
+                        return [
+                            (Token.OutPrompt, "Snimpy["),
+                            (Token.OutPromptNum,
+                             str(self.shell.execution_count)),
+                            (Token.OutPrompt, ']: '),
+                        ]
             except ImportError:
-                # 0.11
-                cfg.InteractiveShellEmbed.prompt_in1 = "Snimpy [\\#]> "
-                cfg.InteractiveShellEmbed.prompt_out = "Snimpy [\\#]: "
+                SnimpyPrompt = None
+                try:
+                    # >= 0.12
+                    cfg.PromptManager.in_template = "Snimpy [\\#]> "
+                    cfg.PromptManager.out_template = "Snimpy [\\#]: "
+                except ImportError:
+                    # 0.11
+                    cfg.InteractiveShellEmbed.prompt_in1 = "Snimpy [\\#]> "
+                    cfg.InteractiveShellEmbed.prompt_out = "Snimpy [\\#]: "
             if conf.ipythonprofile:
                 cfg.InteractiveShellEmbed.profile = conf.ipythonprofile
             shell = InteractiveShellEmbed(
@@ -102,6 +123,8 @@ def interact(argv=sys.argv):  # pragma: no cover
                 user_ns=local)
             # Not interested by traceback in this module
             shell.InteractiveTB.tb_offset += 1
+            if SnimpyPrompt is not None:
+                shell.prompts = SnimpyPrompt(shell)
         except ImportError:
             # ipython < 0.11
             from IPython.Shell import IPShellEmbed
