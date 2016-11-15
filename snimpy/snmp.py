@@ -57,6 +57,7 @@ class SNMPBadValue(SNMPException):
 class SNMPReadOnly(SNMPException):
     pass
 
+
 # Dynamically build remaining (v2) exceptions
 for name, obj in inspect.getmembers(error):
     if name.endswith("Error") and \

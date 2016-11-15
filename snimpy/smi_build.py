@@ -170,5 +170,6 @@ if hasattr(ffi, 'set_source'):
 def get_lib():
     return ffi.verify(_SOURCE, libraries=["smi"])
 
+
 if __name__ == "__main__":
     ffi.compile()
