@@ -401,6 +401,21 @@ class TestSnmp3(TestSnmp2):
                     privpassword="{0}-privpass".format(password))
 
 
+class TestSnmp3AndContext(TestSnmp3):
+
+    """Test communicaton with an agent with SNMPv3 and a context"""
+
+    def setUpSession(self, agent, password):
+        return dict(host="127.0.0.1:{0}".format(agent.port),
+                    version=3,
+                    secname="read-write",
+                    authprotocol="MD5",
+                    authpassword="{0}-authpass".format(password),
+                    privprotocol="AES",
+                    privpassword="{0}-privpass".format(password),
+                    contextname="batman")
+
+
 class TestSnmpTransports(unittest.TestCase):
 
     """Test communication using IPv6."""

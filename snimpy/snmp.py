@@ -85,6 +85,7 @@ class Session(object):
                  authpassword=None,
                  privprotocol=None,
                  privpassword=None,
+                 contextname=None,
                  bulk=40,
                  none=False):
         """Create a new SNMP session.
@@ -116,6 +117,8 @@ class Session(object):
         :type privprotocol: None or str
         :param privpassword: Privacy password if privacy protocol is
             not `None`.
+        :type contextname: str
+        :param contextname: Context name for SNMPv3 messages.
         :type privpassword: str
         :param bulk: Max repetition value for `GETBULK` requests. Set
             to `0` to disable.
@@ -129,10 +132,12 @@ class Session(object):
         self._none = none
         if version == 3:
             self._cmdgen = cmdgen.CommandGenerator()
+            self._contextname = None
         else:
             if not hasattr(self._tls, "cmdgen"):
                 self._tls.cmdgen = cmdgen.CommandGenerator()
             self._cmdgen = self._tls.cmdgen
+            self._contextname = contextname
         if version == 1 and none:
             raise ValueError("None-GET requests not compatible with SNMPv1")
 
@@ -252,8 +257,11 @@ class Session(object):
 
     def _op(self, cmd, *oids):
         """Apply an SNMP operation"""
+        kwargs = {}
+        if self._contextname:
+            kwargs['contextName'] = rfc1902.OctetString(self._contextname)
         errorIndication, errorStatus, errorIndex, varBinds = cmd(
-            self._auth, self._transport, *oids)
+            self._auth, self._transport, *oids, **kwargs)
         if errorIndication:
             self._check_exception(errorIndication)
             raise SNMPException(str(errorIndication))

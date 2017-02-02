@@ -7,6 +7,7 @@ History
 +++++++++++++++++++
 
  * Support for more recent versions of IPython.
+ * Support for SNMPv3 context name.
 
 0.8.11 (2016-08-13)
 +++++++++++++++++++
