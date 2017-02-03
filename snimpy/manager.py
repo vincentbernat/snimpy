@@ -233,7 +233,8 @@ class Manager(object):
                  # SNMPv3
                  secname=None,
                  authprotocol=None, authpassword=None,
-                 privprotocol=None, privpassword=None):
+                 privprotocol=None, privpassword=None,
+                 contextname=None):
         """Create a new SNMP manager. Some of the parameters are explained in
         :meth:`snmp.Session.__init__`.
 
@@ -278,6 +279,7 @@ class Manager(object):
                                      secname,
                                      authprotocol, authpassword,
                                      privprotocol, privpassword,
+                                     contextname=contextname,
                                      bulk=bulk)
         if timeout is not None:
             self._session.timeout = int(timeout * 1000000)
