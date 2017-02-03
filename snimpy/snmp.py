@@ -132,12 +132,12 @@ class Session(object):
         self._none = none
         if version == 3:
             self._cmdgen = cmdgen.CommandGenerator()
-            self._contextname = None
+            self._contextname = contextname
         else:
             if not hasattr(self._tls, "cmdgen"):
                 self._tls.cmdgen = cmdgen.CommandGenerator()
             self._cmdgen = self._tls.cmdgen
-            self._contextname = contextname
+            self._contextname = None
         if version == 1 and none:
             raise ValueError("None-GET requests not compatible with SNMPv1")
 
