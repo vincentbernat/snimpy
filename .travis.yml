@@ -7,6 +7,7 @@ env:
   - TOX_ENV=py33
   - TOX_ENV=py34
   - TOX_ENV=py35
+  - TOX_ENV=py36
   - TOX_ENV=py35-pysnmp42
   - TOX_ENV=py35-ipython
   - TOX_ENV=pypy-pysnmp42
