@@ -180,7 +180,7 @@ class TestAgent(object):
                                                v2c.OctetString()))
         for m in ('snimpy', 'snimpy2'):
             um = m.upper()
-            mymib = '__MY_{}-MIB'.format(um)
+            mymib = '__MY_{0}-MIB'.format(um)
             args = (
                 mymib,
                 # SNIMPY-MIB::snimpyIpAddress
