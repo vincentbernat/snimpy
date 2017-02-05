@@ -456,7 +456,7 @@ class MibLoader(object):
 
     def __init__(self):
         global _datasetid
-        self._tag = "snimpy:{}".format(
+        self._tag = "snimpy:{0}".format(
                                         MibLoader._datasetid
                                       ).encode('ascii')
         MibLoader._datasetid += 1
