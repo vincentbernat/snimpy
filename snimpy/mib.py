@@ -47,13 +47,14 @@ class Node(object):
     :class:`Table`, :class:`Column`, :class:`Node`.
     """
 
-    def __init__(self, node):
+    def __init__(self, node, mibloader):
         """Create a new MIB node.
 
         :param node: libsmi node supporting this node.
         """
         self.node = node
         self._override_type = None
+        self.mibloader = mibloader
 
     @property
     def type(self):
@@ -64,6 +65,7 @@ class Node(object):
             this node, the returned class can be instanciated to get
             an appropriate representation.
         """
+        self.mibloader._switch()
         from snimpy import basictypes
         if self._override_type:
             t = self._override_type
@@ -103,6 +105,7 @@ class Node(object):
         :return: A string representing the current declared type,
             suitable for assignment to type.setter.
         """
+        self.mibloader._switch()
         if self._override_type:
             t = self._override_type
         else:
@@ -125,12 +128,13 @@ class Node(object):
 
         :param type_name: string name of the type.
         """
+        self.mibloader._switch()
         current_override = self._override_type
 
         declared_type = _smi.smiGetNodeType(self.node)
         declared_basetype = self.type
 
-        new_type = _getType(type_name)
+        new_type = self.mibloader._getType(type_name)
         if not new_type:
             raise SMIException("no type named {0} in any loaded module".format(
                 type_name))
@@ -163,6 +167,7 @@ class Node(object):
             format available.
 
         """
+        self.mibloader._switch()
         if self._override_type:
             t = self._override_type
         else:
@@ -182,6 +187,7 @@ class Node(object):
 
         :return: OID as a tuple
         """
+        self.mibloader._switch()
         return tuple([self.node.oid[i] for i in range(self.node.oidlen)])
 
     @property
@@ -197,6 +203,7 @@ class Node(object):
 
         :return: The valid range for this node.
         """
+        self.mibloader._switch()
         t = _smi.smiGetNodeType(self.node)
         if t == ffi.NULL:
             return None
@@ -225,6 +232,7 @@ class Node(object):
 
         :return: The dictionary of possible values keyed by the integer value.
         """
+        self.mibloader._switch()
         t = _smi.smiGetNodeType(self.node)
         if t == ffi.NULL or t.basetype not in (_smi.SMI_BASETYPE_ENUM,
                                                _smi.SMI_BASETYPE_BITS):
@@ -239,9 +247,11 @@ class Node(object):
         return result
 
     def __str__(self):
+        self.mibloader._switch()
         return ffi.string(self.node.name).decode("ascii")
 
     def __repr__(self):
+        self.mibloader._switch()
         r = _smi.smiRenderNode(self.node, _smi.SMI_RENDER_ALL)
         if r == ffi.NULL:
             return "<uninitialized {0} object at {1}>".format(
@@ -256,6 +266,7 @@ class Node(object):
                                              ffi.string(module.name))
 
     def _convert(self, value):
+        self.mibloader._switch()
         attr = {_smi.SMI_BASETYPE_INTEGER32: "integer32",
                 _smi.SMI_BASETYPE_UNSIGNED32: "unsigned32",
                 _smi.SMI_BASETYPE_INTEGER64: "integer64",
@@ -289,6 +300,7 @@ class Table(Node):
         :return: list of table columns (:class:`Column` instances)
 
         """
+        self.mibloader._switch()
         child = _smi.smiGetFirstChildNode(self.node)
         if child == ffi.NULL:
             return []
@@ -303,7 +315,7 @@ class Table(Node):
                 raise SMIException("child {0} of {1} is not a column".format(
                     ffi.string(child.name),
                     ffi.string(self.node.name)))
-            columns.append(Column(child))
+            columns.append(Column(child, self.mibloader))
             child = _smi.smiGetNextChildNode(child)
         return columns
 
@@ -313,6 +325,7 @@ class Table(Node):
 
         :return: row object (as an opaque object)
         """
+        self.mibloader._switch()
         child = _smi.smiGetFirstChildNode(self.node)
         if child != ffi.NULL and child.indexkind == _smi.SMI_INDEX_AUGMENT:
             child = _smi.smiGetRelatedNode(child)
@@ -342,6 +355,7 @@ class Table(Node):
 
         :return: `True` if and only if the last index is implied.
         """
+        self.mibloader._switch()
         child = self._row
         if child.implied:
             return True
@@ -355,6 +369,7 @@ class Table(Node):
         :return: The list of indexes (as :class:`Column` instances) of
             the table.
         """
+        self.mibloader._switch()
         child = self._row
         lindex = []
         element = _smi.smiGetFirstElement(child)
@@ -369,7 +384,7 @@ class Table(Node):
                                    "not a column".format(
                                        ffi.string(nelement.name),
                                        ffi.string(self.node.name)))
-            lindex.append(Column(nelement))
+            lindex.append(Column(nelement, self.mibloader))
             element = _smi.smiGetNextElement(element)
         return lindex
 
@@ -385,6 +400,7 @@ class Column(Node):
         :return: The :class:`Table` instance associated to this
             column.
         """
+        self.mibloader._switch()
         parent = _smi.smiGetParentNode(self.node)
         if parent == ffi.NULL:
             raise SMIException("unable to get parent of {0}".format(
@@ -401,7 +417,7 @@ class Column(Node):
             raise SMIException("parent {0} of {1} is not a table".format(
                 ffi.string(parent.name),
                 ffi.string(self.node.name)))
-        t = Table(parent)
+        t = Table(parent, self.mibloader)
         return t
 
 
@@ -420,6 +436,7 @@ def _logError(path, line, severity, msg, tag):
 
 def reset():
     """Reset libsmi to its initial state."""
+    global _mibloader
     _smi.smiExit()
     if _smi.smiInit(b"snimpy") < 0:
             raise SMIException("unable to init libsmi")
@@ -429,210 +446,236 @@ def reset():
         _smi.smiSetFlags(_smi.SMI_FLAG_ERRORS | _smi.SMI_FLAG_RECURSIVE)
     except TypeError:
         pass                    # We are being mocked
+    _mibloader = MibLoader()
 
 
-def path(path=None):
-    """Set or get a search path to libsmi.
+class MibLoader(object):
+    """Isolated MIB loader to support multiple sets of MIBs"""
 
-    When no path is provided, return the current path,
-    unmodified. Otherwise, set the path to the specified value.
+    _datasetid = 0
 
-    :param path: The string to be used to change the search path or
-                 `None`
+    def __init__(self):
+        global _datasetid
+        self._tag = "snimpy:{}".format(
+                                        MibLoader._datasetid
+                                      ).encode('ascii')
+        MibLoader._datasetid += 1
 
-    """
-    if path is None:
-        # Get the path
-        path = _smi.smiGetPath()
-        if path == ffi.NULL:
-            raise SMIException("unable to get current libsmi path")
-        path = ffi.gc(path, _smi.free)
-        result = ffi.string(path)
-        return result.decode("utf8")
+    def _switch(self):
+        """Switch to this object's set of loaded MIBs"""
+        if _smi.smiInit(self._tag) < 0:
+            raise SMIException("unable to switch to the MIB loader")
 
-    # Set the path
-    if not isinstance(path, bytes):
-        path = path.encode("utf8")
-    if _smi.smiSetPath(path) < 0:
-        raise SMIException("unable to set the path {0}".format(path))
+    def path(self, path=None):
+        """Set or get a search path to libsmi.
 
+        When no path is provided, return the current path,
+        unmodified. Otherwise, set the path to the specified value.
 
-def _get_module(name):
-    """Get the SMI module from its name.
+        :param path: The string to be used to change the search path or
+                     `None`
 
-    :param name: The name of the module
-    :return: The SMI module or `None` if not found (not loaded)
-    """
-    if not isinstance(name, bytes):
-        name = name.encode("ascii")
-    m = _smi.smiGetModule(name)
-    if m == ffi.NULL:
+        """
+        self._switch()
+        if path is None:
+            # Get the path
+            path = _smi.smiGetPath()
+            if path == ffi.NULL:
+                raise SMIException("unable to get current libsmi path")
+            path = ffi.gc(path, _smi.free)
+            result = ffi.string(path)
+            return result.decode("utf8")
+
+        # Set the path
+        if not isinstance(path, bytes):
+            path = path.encode("utf8")
+        if _smi.smiSetPath(path) < 0:
+            raise SMIException("unable to set the path {0}".format(path))
+
+    def _get_module(self, name):
+        """Get the SMI module from its name.
+
+        :param name: The name of the module
+        :return: The SMI module or `None` if not found (not loaded)
+        """
+        self._switch()
+        if not isinstance(name, bytes):
+            name = name.encode("ascii")
+        m = _smi.smiGetModule(name)
+        if m == ffi.NULL:
+            return None
+        if m.conformance and m.conformance <= 1:
+            return None
+        return m
+
+    def _kind2object(self, kind):
+        return {
+            _smi.SMI_NODEKIND_NODE: Node,
+            _smi.SMI_NODEKIND_SCALAR: Scalar,
+            _smi.SMI_NODEKIND_TABLE: Table,
+            _smi.SMI_NODEKIND_COLUMN: Column
+        }.get(kind, Node)
+
+    def get(self, mib, name):
+        """Get a node by its name.
+
+        :param mib: The MIB name to query
+        :param name: The object name to get from the MIB
+        :return: the requested MIB node (:class:`Node`)
+        """
+        self._switch()
+        if not isinstance(mib, bytes):
+            mib = mib.encode("ascii")
+        module = self._get_module(mib)
+        if module is None:
+            raise SMIException("no module named {0}".format(mib))
+        node = _smi.smiGetNode(module, name.encode("ascii"))
+        if node == ffi.NULL:
+            raise SMIException("in {0}, no node named {1}".format(
+                mib, name))
+        pnode = self._kind2object(node.nodekind)
+        return pnode(node, self)
+
+    def getByOid(self, oid):
+        """Get a node by its OID.
+
+        :param oid: The OID as a tuple
+        :return: The requested MIB node (:class:`Node`)
+        """
+        self._switch()
+        node = _smi.smiGetNodeByOID(len(oid), oid)
+        if node == ffi.NULL:
+            raise SMIException("no node for {0}".format(
+                ".".join([str(o) for o in oid])))
+        pnode = self._kind2object(node.nodekind)
+        return pnode(node, self)
+
+    def _getType(self, type_name):
+        """Searches for a smi type through all loaded modules.
+
+        :param type_name: The name of the type to search for.
+        :return: The requested type (:class:`smi.SmiType`), if found, or None.
+        """
+        if not isinstance(type_name, bytes):
+            type_name = type_name.encode("ascii")
+        for module in self._loadedModules():
+            new_type = _smi.smiGetType(module, type_name)
+            if new_type != ffi.NULL:
+                return new_type
         return None
-    if m.conformance and m.conformance <= 1:
-        return None
-    return m
 
+    def _get_kind(self, mib, kind):
+        """Get nodes of a given kind from a MIB.
 
-def _kind2object(kind):
-    return {
-        _smi.SMI_NODEKIND_NODE: Node,
-        _smi.SMI_NODEKIND_SCALAR: Scalar,
-        _smi.SMI_NODEKIND_TABLE: Table,
-        _smi.SMI_NODEKIND_COLUMN: Column
-    }.get(kind, Node)
+        :param mib: The MIB name to search objects for
+        :param kind: The SMI kind of object
+        :return: The list of matched MIB nodes for the MIB
+        """
+        if not isinstance(mib, bytes):
+            mib = mib.encode("ascii")
+        module = self._get_module(mib)
+        if module is None:
+            raise SMIException("no module named {0}".format(mib))
+        lnode = []
+        node = _smi.smiGetFirstNode(module, kind)
+        while node != ffi.NULL:
+            lnode.append(self._kind2object(kind)(node, self))
+            node = _smi.smiGetNextNode(node, kind)
+        return lnode
 
+    def getNodes(self, mib):
+        """Return all nodes from a given MIB.
 
-def get(mib, name):
-    """Get a node by its name.
+        :param mib: The MIB name
+        :return: The list of all MIB nodes for the MIB
+        :rtype: list of :class:`Node` instances
+        """
+        self._switch()
+        return self._get_kind(mib, _smi.SMI_NODEKIND_NODE)
 
-    :param mib: The MIB name to query
-    :param name: The object name to get from the MIB
-    :return: the requested MIB node (:class:`Node`)
-    """
-    if not isinstance(mib, bytes):
-        mib = mib.encode("ascii")
-    module = _get_module(mib)
-    if module is None:
-        raise SMIException("no module named {0}".format(mib))
-    node = _smi.smiGetNode(module, name.encode("ascii"))
-    if node == ffi.NULL:
-        raise SMIException("in {0}, no node named {1}".format(
-            mib, name))
-    pnode = _kind2object(node.nodekind)
-    return pnode(node)
+    def getScalars(self, mib):
+        """Return all scalars from a given MIB.
 
+        :param mib: The MIB name
+        :return: The list of all scalars for the MIB
+        :rtype: list of :class:`Scalar` instances
+        """
+        self._switch()
+        return self._get_kind(mib, _smi.SMI_NODEKIND_SCALAR)
 
-def getByOid(oid):
-    """Get a node by its OID.
+    def getTables(self, mib):
+        """Return all tables from a given MIB.
 
-    :param oid: The OID as a tuple
-    :return: The requested MIB node (:class:`Node`)
-    """
-    node = _smi.smiGetNodeByOID(len(oid), oid)
-    if node == ffi.NULL:
-        raise SMIException("no node for {0}".format(
-            ".".join([str(o) for o in oid])))
-    pnode = _kind2object(node.nodekind)
-    return pnode(node)
+        :param mib: The MIB name
+        :return: The list of all tables for the MIB
+        :rtype: list of :class:`Table` instances
+        """
+        self._switch()
+        return self._get_kind(mib, _smi.SMI_NODEKIND_TABLE)
 
+    def getColumns(self, mib):
+        """Return all columns from a givem MIB.
 
-def _getType(type_name):
-    """Searches for a smi type through all loaded modules.
+        :param mib: The MIB name
+        :return: The list of all columns for the MIB
+        :rtype: list of :class:`Column` instances
+        """
+        self._switch()
+        return self._get_kind(mib, _smi.SMI_NODEKIND_COLUMN)
 
-    :param type_name: The name of the type to search for.
-    :return: The requested type (:class:`smi.SmiType`), if found, or None.
-    """
-    if not isinstance(type_name, bytes):
-        type_name = type_name.encode("ascii")
-    for module in _loadedModules():
-        new_type = _smi.smiGetType(module, type_name)
-        if new_type != ffi.NULL:
-            return new_type
-    return None
+    def load(self, mib):
+        """Load a MIB into the library.
 
+        :param mib: The MIB to load, either a filename or a MIB name.
+        :return: The MIB name that has been loaded.
+        :except SMIException: The requested MIB cannot be loaded.
+        """
+        self._switch()
+        if not isinstance(mib, bytes):
+            mib = mib.encode("ascii")
+        modulename = _smi.smiLoadModule(mib)
+        if modulename == ffi.NULL:
+            raise SMIException(
+                    "unable to find {0} (check the path)".format(mib))
+        modulename = ffi.string(modulename)
+        if not self._get_module(modulename.decode("ascii")):
+            details = "check with smilint -s -l1"
+            if _lastError is not None:
+                details = "{0}: {1}".format(_lastError,
+                                            details)
+            raise SMIException(
+                "{0} contains major SMI error ({1})".format(mib, details))
+        return modulename
 
-def _get_kind(mib, kind):
-    """Get nodes of a given kind from a MIB.
+    def _loadedModules(self):
+        """Generates the list of loaded modules.
 
-    :param mib: The MIB name to search objects for
-    :param kind: The SMI kind of object
-    :return: The list of matched MIB nodes for the MIB
-    """
-    if not isinstance(mib, bytes):
-        mib = mib.encode("ascii")
-    module = _get_module(mib)
-    if module is None:
-        raise SMIException("no module named {0}".format(mib))
-    lnode = []
-    node = _smi.smiGetFirstNode(module, kind)
-    while node != ffi.NULL:
-        lnode.append(_kind2object(kind)(node))
-        node = _smi.smiGetNextNode(node, kind)
-    return lnode
+        :yield: The :class:`smi.SmiModule` of all currently loaded modules.
+        """
+        module = _smi.smiGetFirstModule()
+        while module != ffi.NULL:
+            yield module
 
+            module = _smi.smiGetNextModule(module)
 
-def getNodes(mib):
-    """Return all nodes from a given MIB.
+    def loadedMibNames(self):
+        """Generates the list of loaded MIB names.
 
-    :param mib: The MIB name
-    :return: The list of all MIB nodes for the MIB
-    :rtype: list of :class:`Node` instances
-    """
-    return _get_kind(mib, _smi.SMI_NODEKIND_NODE)
-
-
-def getScalars(mib):
-    """Return all scalars from a given MIB.
-
-    :param mib: The MIB name
-    :return: The list of all scalars for the MIB
-    :rtype: list of :class:`Scalar` instances
-    """
-    return _get_kind(mib, _smi.SMI_NODEKIND_SCALAR)
-
-
-def getTables(mib):
-    """Return all tables from a given MIB.
-
-    :param mib: The MIB name
-    :return: The list of all tables for the MIB
-    :rtype: list of :class:`Table` instances
-    """
-    return _get_kind(mib, _smi.SMI_NODEKIND_TABLE)
-
-
-def getColumns(mib):
-    """Return all columns from a givem MIB.
-
-    :param mib: The MIB name
-    :return: The list of all columns for the MIB
-    :rtype: list of :class:`Column` instances
-    """
-    return _get_kind(mib, _smi.SMI_NODEKIND_COLUMN)
-
-
-def load(mib):
-    """Load a MIB into the library.
-
-    :param mib: The MIB to load, either a filename or a MIB name.
-    :return: The MIB name that has been loaded.
-    :except SMIException: The requested MIB cannot be loaded.
-    """
-    if not isinstance(mib, bytes):
-        mib = mib.encode("ascii")
-    modulename = _smi.smiLoadModule(mib)
-    if modulename == ffi.NULL:
-        raise SMIException("unable to find {0} (check the path)".format(mib))
-    modulename = ffi.string(modulename)
-    if not _get_module(modulename.decode("ascii")):
-        details = "check with smilint -s -l1"
-        if _lastError is not None:
-            details = "{0}: {1}".format(_lastError,
-                                        details)
-        raise SMIException(
-            "{0} contains major SMI error ({1})".format(mib, details))
-    return modulename
-
-
-def _loadedModules():
-    """Generates the list of loaded modules.
-
-    :yield: The :class:`smi.SmiModule` of all currently loaded modules.
-    """
-    module = _smi.smiGetFirstModule()
-    while module != ffi.NULL:
-        yield module
-
-        module = _smi.smiGetNextModule(module)
-
-
-def loadedMibNames():
-    """Generates the list of loaded MIB names.
-
-    :yield: The names of all currently loaded MIBs.
-    """
-    for module in _loadedModules():
-        yield ffi.string(module.name).decode('utf-8')
+        :yield: The names of all currently loaded MIBs.
+        """
+        self._switch()
+        for module in self._loadedModules():
+            yield ffi.string(module.name).decode('utf-8')
 
 
 reset()
+_getType = _mibloader._getType
+path = _mibloader.path
+get = _mibloader.get
+getByOid = _mibloader.getByOid
+getColumns = _mibloader.getColumns
+getNodes = _mibloader.getNodes
+getScalars = _mibloader.getScalars
+getTables = _mibloader.getTables
+load = _mibloader.load
+loadedMibNames = _mibloader.loadedMibNames
