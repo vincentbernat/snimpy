@@ -439,10 +439,10 @@ class TestMibSnimpy(unittest.TestCase):
         mloader.get("SNIMPY2-MIB", "snimpy2InetAddressTable")
         mloader.get("SNIMPY2-MIB", "snimpy2IpAddress")
         self.mib.get("SNIMPY-MIB", "snimpyInetAddressTable")
-        with self.assertRaises(mib.SMIException):
-            mloader.get("SNIMPY-MIB", "snimpyInetAddressTable")
-        with self.assertRaises(mib.SMIException):
-            self.mib.get("SNIMPY2-MIB", "snimpy2InetAddressTable")
+        self.assertRaises(mib.SMIException, mloader.get,
+                          "SNIMPY-MIB", "snimpyInetAddressTable")
+        self.assertRaises(mib.SMIException, self.mib.get,
+                          "SNIMPY2-MIB", "snimpy2InetAddressTable")
 
 
 class TestMibLoaderSnimpy(TestMibSnimpy):
