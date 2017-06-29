@@ -441,7 +441,7 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
             # Convert filter elements to correct types
             for i, part in enumerate(table_filter):
                 part = indexes[i].type(indexes[i], part, raw=False)
-                # implied = False: 
+                # implied = False:
                 #   index never includes last element
                 #   (see 'len(table_filter) >= len(indexes)')
                 oid_suffix.extend(part.toOid(implied=False))
@@ -462,7 +462,7 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
             # oid should be turned into index
             index = tuple(oid[len(self.proxy.oid):])
             target = []
-            for i,x in enumerate(indexes):
+            for i, x in enumerate(indexes):
                 implied = self.proxy.table.implied and i == len(indexes)-1
                 l, o = x.type.fromOid(x, index, implied)
                 target.append(x.type(x, o))
