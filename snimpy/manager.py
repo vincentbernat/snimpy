@@ -398,7 +398,8 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
         for i, ind in enumerate(index):
             # Cast to the correct type since we need "toOid()"
             ind = indextype[i].type(indextype[i], ind, raw=False)
-            oidindex.extend(ind.toOid())
+            implied = self.proxy.table.implied and i == len(index)-1
+            oidindex.extend(ind.toOid(implied))
         result = getattr(
             self.session,
             op)(self.proxy.oid + tuple(oidindex),
@@ -440,7 +441,10 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
             # Convert filter elements to correct types
             for i, part in enumerate(table_filter):
                 part = indexes[i].type(indexes[i], part, raw=False)
-                oid_suffix.extend(part.toOid())
+                # implied = False: 
+                #   index never includes last element
+                #   (see 'len(table_filter) >= len(indexes)')
+                oid_suffix.extend(part.toOid(implied=False))
             oid += tuple(oid_suffix)
 
         walk_oid = oid
@@ -456,10 +460,11 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
                 break
 
             # oid should be turned into index
-            index = oid[len(self.proxy.oid):]
+            index = tuple(oid[len(self.proxy.oid):])
             target = []
-            for x in indexes:
-                l, o = x.type.fromOid(x, tuple(index))
+            for i,x in enumerate(indexes):
+                implied = self.proxy.table.implied and i == len(indexes)-1
+                l, o = x.type.fromOid(x, index, implied)
                 target.append(x.type(x, o))
                 index = index[l:]
             count = count + 1

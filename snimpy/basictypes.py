@@ -134,7 +134,7 @@ class Type(object):
         """Prepare the instance to be sent on the wire."""
         raise NotImplementedError  # pragma: no cover
 
-    def toOid(self):
+    def toOid(self, implied=False):
         """Convert to an OID.
 
         If this function is implemented, then class function
@@ -149,7 +149,7 @@ class Type(object):
         raise NotImplementedError  # pragma: no cover
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         """Create instance from an OID.
 
         This is the sister function of :meth:`toOid`.
@@ -230,11 +230,11 @@ class IpAddress(Type):
                 str(".".join(["{0:d}".format(x) for x in self._value])))
         )
 
-    def toOid(self):
+    def toOid(self, implied=False):
         return tuple(self._value)
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 4:
             raise ValueError(
                 "{0!r} is too short for an IP address".format(oid))
@@ -261,7 +261,7 @@ class IpAddress(Type):
 
 class StringOrOctetString(Type):
 
-    def toOid(self):
+    def toOid(self, implied=False):
         # To convert properly to OID, we need to know if it is a
         # fixed-len string, an implied string or a variable-len
         # string.
@@ -274,7 +274,7 @@ class StringOrOctetString(Type):
         raise NotImplementedError
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         type = cls._fixedOrImplied(entity)
         if type == "implied":
             # Eat everything
@@ -570,11 +570,11 @@ class Integer(Type, long):
             return rfc1902.Integer(self._value)
         raise OverflowError("too small to be packed")
 
-    def toOid(self):
+    def toOid(self, implied=False):
         return (self._value,)
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError("{0} is too short for an integer".format(oid))
         return (1, cls(entity, oid[0]))
@@ -653,7 +653,7 @@ class Enum(Integer):
         return rfc1902.Integer(self._value)
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError(
                 "{0!r} is too short for an enumeration".format(oid))
@@ -699,13 +699,13 @@ class Oid(Type):
     def pack(self):
         return rfc1902.univ.ObjectIdentifier(self._value)
 
-    def toOid(self):
+    def toOid(self, implied=False):
         if self._fixedOrImplied(self.entity):
             return self._value
         return tuple([len(self._value)] + list(self._value))
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         if cls._fixedOrImplied(entity) == "fixed":
             # A fixed OID? We don't like this. Provide a real example.
             raise ValueError(
@@ -794,11 +794,11 @@ class Timeticks(Type):
             self._value.seconds * 100 + \
             self._value.microseconds // 10000
 
-    def toOid(self):
+    def toOid(self, implied=False):
         return (int(self),)
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError("{0!r} is too short for a timetick".format(oid))
         return (1, cls(entity, oid[0]))
