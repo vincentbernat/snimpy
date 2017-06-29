@@ -513,7 +513,7 @@ class ProxyTable(ProxyIter):
     """
 
     def __init__(self, session, table, loose):
-        self.proxy = table.index[0]
+        self.proxy = table.columns[0]
         self.session = session
         self._loose = loose
 
