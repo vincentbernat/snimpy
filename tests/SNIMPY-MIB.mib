@@ -42,6 +42,7 @@ UnicodeString ::= TEXTUAL-CONVENTION
 
 snimpyScalars OBJECT IDENTIFIER ::= { snimpy 1 }
 snimpyTables  OBJECT IDENTIFIER ::= { snimpy 2 }
+snimpyTraps   OBJECT IDENTIFIER ::= { snimpy 3 }
 
 snimpyIpAddress OBJECT-TYPE
     SYNTAX 	IpAddress
@@ -506,6 +507,18 @@ snimpyEmptyDescr OBJECT-TYPE
     DESCRIPTION
             "Blah blah"
     ::= { snimpyEmptyEntry 2 }
+
+-- A notification
+
+snimpyNotification NOTIFICATION-TYPE
+    OBJECTS { snimpySimpleIndex,
+              snimpySimpleDescr,
+              snimpySimpleType,
+              snimpySimplePhys }
+    STATUS  current
+    DESCRIPTION
+            "A notification"
+    ::= { snimpyTraps 1 }
 
 
 END

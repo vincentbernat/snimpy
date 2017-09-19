@@ -15,7 +15,8 @@ class TestMibSnimpy(unittest.TestCase):
                               "SNIMPY-MIB.mib"))
         self.nodes = ["snimpy",
                       "snimpyScalars",
-                      "snimpyTables"]
+                      "snimpyTables",
+                      "snimpyTraps"]
         self.nodes.sort()
         self.tables = ["snimpyComplexTable",
                        "snimpyInetAddressTable",
@@ -63,6 +64,8 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyMacAddress",
                         "snimpyMacAddressInvalid"]
         self.scalars.sort()
+        self.notifications = ["snimpyNotification"]
+        self.notifications.sort()
 
         self.expected_modules = [u"SNMPv2-SMI",
                                  u"SNMPv2-TC",
@@ -108,6 +111,14 @@ class TestMibSnimpy(unittest.TestCase):
         for n in scalars:
             self.assert_(isinstance(n, mib.Scalar))
 
+    def testGetNotifications(self):
+        """Test that we can get all notifications"""
+        notifications = mib.getNotifications('SNIMPY-MIB')
+        snotifications = sorted([str(a) for a in notifications])
+        self.assertEqual(self.notifications, snotifications)
+        for n in notifications:
+            self.assert_(isinstance(n, mib.Notification))
+
     def testGet(self):
         """Test that we can get all named attributes"""
         for i in self.scalars:
@@ -122,6 +133,10 @@ class TestMibSnimpy(unittest.TestCase):
         for i in self.nodes:
             self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
             self.assert_(isinstance(mib.get('SNIMPY-MIB', i), mib.Node))
+        for i in self.notifications:
+            self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
+            self.assert_(isinstance(mib.get('SNIMPY-MIB', i),
+                         mib.Notification))
 
     def testGetByOid(self):
         """Test that we can get all named attributes by OID."""
@@ -141,6 +156,11 @@ class TestMibSnimpy(unittest.TestCase):
             nodebyname = mib.get('SNIMPY-MIB', i)
             self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
             self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Node))
+        for i in self.notifications:
+            nodebyname = mib.get('SNIMPY-MIB', i)
+            self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
+            self.assert_(isinstance(mib.getByOid(nodebyname.oid),
+                                    mib.Notification))
 
     def testGetByOid_UnknownOid(self):
         """Test that unknown OIDs raise an exception."""
