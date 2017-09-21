@@ -514,7 +514,8 @@ snimpyNotification NOTIFICATION-TYPE
     OBJECTS { snimpySimpleIndex,
               snimpySimpleDescr,
               snimpySimpleType,
-              snimpySimplePhys }
+              snimpySimplePhys,
+              snimpyIpAddress }
     STATUS  current
     DESCRIPTION
             "A notification"
