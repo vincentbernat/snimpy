@@ -413,8 +413,8 @@ class Notification(Node):
     def objects(self):
         """Get objects for a notification.
 
-        :return: The list of objects (as :class:`Column` instances) of
-            the notification.
+        :return: The list of objects (as :class:`Column`,
+            :class:`Node` or :class:`Scalar` instances) of the notification.
         """
         child = self.node
         lindex = []
@@ -427,6 +427,10 @@ class Notification(Node):
                                        ffi.string(self.node.name)))
             if nelement.nodekind == _smi.SMI_NODEKIND_COLUMN:
                 lindex.append(Column(nelement))
+            elif nelement.nodekind == _smi.SMI_NODEKIND_NODE:
+                lindex.append(Node(nelement))
+            elif nelement.nodekind == _smi.SMI_NODEKIND_SCALAR:
+                lindex.append(Scalar(nelement))
             else:
                 raise SMIException("object {0} for {1} is "
                                    "not a node".format(
