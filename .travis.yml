@@ -1,4 +1,6 @@
 language: python
+group: deprecated-2017Q3
+sudo: require
 python: 3.5
 env:
   - TOX_ENV=py26
