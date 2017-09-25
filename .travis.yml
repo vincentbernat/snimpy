@@ -1,37 +1,41 @@
 language: python
-group: deprecated-2017Q3
-sudo: require
-python: 3.5
-env:
-  - TOX_ENV=py26
-  - TOX_ENV=py27
-  - TOX_ENV=py27-pysnmp42
-  - TOX_ENV=py33
-  - TOX_ENV=py34
-  - TOX_ENV=py35
-  - TOX_ENV=py35-pysnmp42
-  - TOX_ENV=py35-ipython
-  - TOX_ENV=pypy-pysnmp42
-  - TOX_ENV=lint
-  - TOX_ENV=doc
+sudo: false
+matrix:
+  include:
+    - python: "2.6"
+      env: TOX_ENV=py26
+    - python: "2.7"
+      env: TOX_ENV=py27
+    - python: "2.7"
+      env: TOX_ENV=py27-pysnmp42
+    - python: "3.3"
+      env: TOX_ENV=py33
+    - python: "3.4"
+      env: TOX_ENV=py34
+    - python: "3.5"
+      env: TOX_ENV=py35
+    - python: "3.5"
+      env: TOX_ENV=py35-pysnmp42
+    - python: "3.5"
+      env: TOX_ENV=py35-ipython
+    - python: "pypy"
+      env: TOX_ENV=pypy
+    - python: "pypy"
+      env: TOX_ENV=pypy-pysnmp42
+    - python: "3.6"
+      env: TOX_ENV=lint
+    - python: "3.6"
+      env: TOX_ENV=doc
+addons:
+  apt:
+    packages:
+      - pkg-config 
+      - libsmi2-dev 
+      - libsnmp-dev 
+      - snmp-mibs-downloader 
+      - ncurses-term
 install:
-  # This is required because we need to get rid of the Travis installed PyPy
-  # or it'll take precedence over the PPA installed one.
-  - |
-        case ${TOX_ENV} in
-          pypy*)
-            sudo add-apt-repository -y ppa:pypy/ppa
-            sudo apt-get -y update
-            sudo apt-get -y install pypy pypy-dev
-            sudo rm -rf /opt/python/pypy*
-            pypy --version
-            ;;
-        esac
-  - "sudo apt-get -qq update"
-  - "sudo apt-get -y install pkg-config libsmi2-dev libsnmp-dev snmp-mibs-downloader ncurses-term"
   - pip install tox coveralls
-before_script:
-  - sudo sh -c 'echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6'
 script:
   - tox -e $TOX_ENV
 after_success:
