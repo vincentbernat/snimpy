@@ -30,7 +30,7 @@ Here is a simple example of use of this module::
 
 import inspect
 from time import time
-from collections import MutableMapping, Container, Iterable, Sized
+from collections import MutableMapping, Container, Iterable, Sized, defaultdict
 from snimpy import snmp, mib, basictypes
 
 
@@ -234,7 +234,8 @@ class Manager(object):
                  secname=None,
                  authprotocol=None, authpassword=None,
                  privprotocol=None, privpassword=None,
-                 contextname=None):
+                 contextname=None,
+                 mibloader=None):
         """Create a new SNMP manager. Some of the parameters are explained in
         :meth:`snmp.Session.__init__`.
 
@@ -271,7 +272,12 @@ class Manager(object):
         :param bulk: Max-repetition to use to speed up MIB walking
             with `GETBULK`. Set to `0` to disable.
         :type bulk: int
+        :param mibloader: The MibLoader instance which has the loaded MIBs
+        :type mibloader: MibLoader
         """
+        if mibloader is None:
+            mibloader = mib._mibloader
+        self._mibloader = mibloader
         if host is None:
             host = Manager._host
         self._host = host
@@ -293,7 +299,7 @@ class Manager(object):
         if none:
             self._session = NoneSession(self._session)
         self._loose = loose
-        self._loaded = loaded
+        self._loaded = loaded[self._mibloader]
 
         # To be able to clone, we save the arguments provided to the
         # constructor in a generic way
@@ -306,7 +312,7 @@ class Manager(object):
     def _locate(self, attribute):
         for m in self._loaded:
             try:
-                a = mib.get(m, attribute)
+                a = self._mibloader.get(m, attribute)
                 return (m, a)
             except mib.SMIException:
                 pass
@@ -345,7 +351,7 @@ class Manager(object):
 
     def __getitem__(self, modulename):
         modulename = modulename.encode('ascii')
-        for m in loaded:
+        for m in loaded[self._mibloader]:
             if modulename == m:
                 return MibRestrictedManager(self, [m])
         raise KeyError("{0} is not a loaded module".format(modulename))
@@ -568,20 +574,22 @@ class ProxyColumn(ProxyIter, MutableMapping):
         return ProxyIter.iteritems(self, resulting_filter)
 
 
-loaded = []
+loaded = defaultdict(list)
 
 
-def load(mibname):
+def load(mibname, mibloader=None):
     """Load a MIB in memory.
 
     :param mibname: MIB name or filename
     :type mibname: str
     """
-    m = mib.load(mibname)
-    if m not in loaded:
-        loaded.append(m)
+    if mibloader is None:
+        mibloader = mib._mibloader
+    m = mibloader.load(mibname)
+    if m not in loaded[mibloader]:
+        loaded[mibloader].append(m)
         if Manager._complete:
-            for o in mib.getScalars(m) + \
-                    mib.getColumns(m) + \
-                    mib.getTables(m):
+            for o in mibloader.getScalars(m) + \
+                    mibloader.getColumns(m) + \
+                    mibloader.getTables(m):
                 setattr(Manager, str(o), 1)

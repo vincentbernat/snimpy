@@ -1,0 +1,511 @@
+SNIMPY2-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    IpAddress, Integer32, Gauge32,
+    TimeTicks, Counter64,
+    Counter32, mib-2                  FROM SNMPv2-SMI
+    DisplayString, TEXTUAL-CONVENTION,
+    PhysAddress, TruthValue           FROM SNMPv2-TC
+    InetAddressType, InetAddress,
+    InetAddressIPv4, InetAddressIPv6  FROM INET-ADDRESS-MIB
+    IANAifType                        FROM IANAifType-MIB;
+
+
+snimpy2 MODULE-IDENTITY
+    LAST-UPDATED "200809160000Z"
+    ORGANIZATION
+           "snimpy2
+            https://github.com/vincentbernat/snimpy"
+    CONTACT-INFO
+           "Lorem ipsum, etc, etc."
+    DESCRIPTION
+           "This is a test MIB module for snimpy MibLoader."
+
+    REVISION      "200809160000Z"
+    DESCRIPTION   "Last revision"
+    ::= { mib-2 45121 }
+
+OddInteger ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d-2"
+    STATUS       current
+    DESCRIPTION
+	"Testing fmt"
+    SYNTAX       INTEGER (6..18 | 20..23 | 27 | 28..1336)
+
+UnicodeString ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "255t"
+    STATUS       current
+    DESCRIPTION
+	"Testing fmt"
+    SYNTAX       OCTET STRING (SIZE(0..255))
+
+snimpy2Scalars OBJECT IDENTIFIER ::= { snimpy2 1 }
+snimpy2Tables  OBJECT IDENTIFIER ::= { snimpy2 2 }
+
+snimpy2IpAddress OBJECT-TYPE
+    SYNTAX 	IpAddress
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An IP address"
+    ::= { snimpy2Scalars 1 }
+
+snimpy2String OBJECT-TYPE
+    SYNTAX 	DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An string to display"
+    ::= { snimpy2Scalars 2 }
+
+snimpy2Integer OBJECT-TYPE
+    SYNTAX 	OddInteger
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An integer"
+    ::= { snimpy2Scalars 3 }
+
+snimpy2Enum OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  up(1),
+                  down(2),
+                  testing(3)
+                }
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An enumeration"
+    ::= { snimpy2Scalars 4 }
+
+snimpy2ObjectId OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An oid"
+    ::= { snimpy2Scalars 5 }
+
+snimpy2Boolean OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A boolean"
+    ::= { snimpy2Scalars 6 }
+
+snimpy2Counter OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A 32 bits counter"
+    ::= { snimpy2Scalars 7 }
+
+snimpy2Gauge OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A 32 bits gauge"
+    ::= { snimpy2Scalars 8 }
+
+snimpy2Timeticks OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A timetick"
+    ::= { snimpy2Scalars 9 }
+
+snimpy2Counter64 OBJECT-TYPE
+    SYNTAX	Counter64
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A 64-bit counter"
+    ::= { snimpy2Scalars 10 }
+
+snimpy2Bits	OBJECT-TYPE
+    SYNTAX	BITS {
+                  first(0),
+		  second(1),
+		  third(2),
+		  last(7)
+		}
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A bit field"
+    ::= { snimpy2Scalars 11 }
+
+snimpy2NotImplemented OBJECT-TYPE
+    SYNTAX 	DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An string to display (not implemented)"
+    ::= { snimpy2Scalars 12 }
+
+snimpy2OctetString OBJECT-TYPE
+    SYNTAX 	OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An string to display"
+    ::= { snimpy2Scalars 13 }
+
+snimpy2UnicodeString OBJECT-TYPE
+    SYNTAX 	UnicodeString
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"An unicode string to display"
+    ::= { snimpy2Scalars 14 }
+
+snimpy2MacAddress OBJECT-TYPE
+    SYNTAX 	PhysAddress
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A MAC address"
+    ::= { snimpy2Scalars 15 }
+
+snimpy2MacAddressInvalid OBJECT-TYPE
+    SYNTAX 	DisplayString
+    MAX-ACCESS  read-only
+    STATUS	current
+    DESCRIPTION
+	"A MAC address with invalid syntax"
+    ::= { snimpy2Scalars 16 }
+
+-- A simple table
+
+snimpy2SimpleTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Snimpy2SimpleEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table"
+    ::= { snimpy2Tables 1 }
+
+snimpy2SimpleEntry OBJECT-TYPE
+    SYNTAX      Snimpy2SimpleEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our simple table"
+    INDEX   { snimpy2SimpleIndex }
+    ::= { snimpy2SimpleTable 1 }
+
+Snimpy2SimpleEntry ::=
+    SEQUENCE {
+        snimpy2SimpleIndex       Integer32,
+        snimpy2SimpleDescr       DisplayString,
+        snimpy2SimpleType        IANAifType,
+        snimpy2SimplePhys        PhysAddress
+    }
+
+snimpy2SimpleIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..30)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Index for snimpy2 simple table"
+    ::= { snimpy2SimpleEntry 1 }
+
+snimpy2SimpleDescr OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpy2SimpleEntry 2 }
+
+snimpy2SimpleType OBJECT-TYPE
+    SYNTAX      IANAifType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpy2SimpleEntry 3 }
+
+snimpy2SimplePhys OBJECT-TYPE
+    SYNTAX      PhysAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpy2SimpleEntry 4 }
+
+-- A more complex table
+
+snimpy2ComplexTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Snimpy2ComplexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A more complex table"
+    ::= { snimpy2Tables 2 }
+
+snimpy2ComplexEntry OBJECT-TYPE
+    SYNTAX      Snimpy2ComplexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our complex table"
+    INDEX   { snimpy2ComplexFirstIP, snimpy2ComplexSecondIP }
+    ::= { snimpy2ComplexTable 1 }
+
+Snimpy2ComplexEntry ::=
+    SEQUENCE {
+        snimpy2ComplexFirstIP	 IpAddress,
+        snimpy2ComplexSecondIP    IpAddress,
+        snimpy2ComplexState       INTEGER
+    }
+
+snimpy2ComplexFirstIP OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "First IP address for index"
+    ::= { snimpy2ComplexEntry 1 }
+
+snimpy2ComplexSecondIP OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Second IP address for index"
+    ::= { snimpy2ComplexEntry 2 }
+
+snimpy2ComplexState OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  up(1),
+                  down(2),
+                  testing(3)
+		}
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+	"State for our both IP"
+    ::= { snimpy2ComplexEntry 3 }
+
+-- A table with complex indexes
+
+snimpy2IndexTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Snimpy2IndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table with complex indexes"
+    ::= { snimpy2Tables 3 }
+
+snimpy2IndexEntry OBJECT-TYPE
+    SYNTAX      Snimpy2IndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our indexed table"
+    INDEX   { snimpy2IndexVarLen, snimpy2IndexOidVarLen,
+    	      snimpy2IndexFixedLen, IMPLIED snimpy2IndexImplied }
+    ::= { snimpy2IndexTable 1 }
+
+Snimpy2IndexEntry ::=
+    SEQUENCE {
+        snimpy2IndexVarLen	DisplayString,
+	snimpy2IndexIntIndex	Integer32,
+	snimpy2IndexOidVarLen	OBJECT IDENTIFIER,
+	snimpy2IndexFixedLen	DisplayString,
+        snimpy2IndexImplied      DisplayString,
+        snimpy2IndexInt          Integer32
+    }
+
+snimpy2IndexVarLen OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (1..10))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Variable length index"
+    ::= { snimpy2IndexEntry 1 }
+
+snimpy2IndexIntIndex OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Integer index"
+    ::= { snimpy2IndexEntry 2 }
+
+snimpy2IndexOidVarLen OBJECT-TYPE
+    SYNTAX	OBJECT IDENTIFIER
+    MAX-ACCESS	not-accessible
+    STATUS	current
+    DESCRIPTION
+	"OID as index"
+    ::= { snimpy2IndexEntry 3 }
+
+snimpy2IndexFixedLen OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (6))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Fixed length index"
+    ::= { snimpy2IndexEntry 4 }
+
+snimpy2IndexImplied OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (1..30))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Variable length index, implied"
+    ::= { snimpy2IndexEntry 5 }
+
+snimpy2IndexInt OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "An integer of fixed size"
+    ::= { snimpy2IndexEntry 6 }
+
+-- A table indexed using InetAddresses
+
+snimpy2InetAddressTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Snimpy2InetAddressEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A InetAddress table"
+    ::= { snimpy2Tables 4 }
+
+snimpy2InetAddressEntry OBJECT-TYPE
+    SYNTAX      Snimpy2InetAddressEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our complex table"
+    INDEX   { snimpy2InetAddressType, snimpy2InetAddress }
+    ::= { snimpy2InetAddressTable 1 }
+
+Snimpy2InetAddressEntry ::=
+    SEQUENCE {
+        snimpy2InetAddressType        InetAddressType,
+        snimpy2InetAddress            InetAddress,
+        snimpy2InetAddressState       INTEGER
+    }
+
+snimpy2InetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Address type identifier for snimpy2InetAddress"
+    ::= { snimpy2InetAddressEntry 1 }
+
+snimpy2InetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Type dependent InetAddress"
+    ::= { snimpy2InetAddressEntry 2 }
+
+snimpy2InetAddressState OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  up(1),
+                  down(2),
+                  testing(3)
+		}
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "State for the IP"
+    ::= { snimpy2InetAddressEntry 3 }
+
+-- A table that may contain invalid values
+
+snimpy2InvalidTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Snimpy2InvalidEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table"
+    ::= { snimpy2Tables 5 }
+
+snimpy2InvalidEntry OBJECT-TYPE
+    SYNTAX      Snimpy2InvalidEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our invalid table"
+    INDEX   { snimpy2InvalidIndex }
+    ::= { snimpy2InvalidTable 1 }
+
+Snimpy2InvalidEntry ::=
+    SEQUENCE {
+        snimpy2InvalidIndex       Integer32,
+        snimpy2InvalidDescr       DisplayString
+    }
+
+snimpy2InvalidIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..30)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Index for snimpy2 invalid table"
+    ::= { snimpy2InvalidEntry 1 }
+
+snimpy2InvalidDescr OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpy2InvalidEntry 2 }
+
+-- A table that may be empty
+
+snimpy2EmptyTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Snimpy2EmptyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table"
+    ::= { snimpy2Tables 6 }
+
+snimpy2EmptyEntry OBJECT-TYPE
+    SYNTAX      Snimpy2EmptyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our empty table"
+    INDEX   { snimpy2EmptyIndex }
+    ::= { snimpy2EmptyTable 1 }
+
+Snimpy2EmptyEntry ::=
+    SEQUENCE {
+        snimpy2EmptyIndex       Integer32,
+        snimpy2EmptyDescr       DisplayString
+    }
+
+snimpy2EmptyIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..30)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Index for snimpy2 empty table"
+    ::= { snimpy2EmptyEntry 1 }
+
+snimpy2EmptyDescr OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpy2EmptyEntry 2 }
+
+
+END

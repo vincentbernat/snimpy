@@ -3,6 +3,7 @@ import os
 import time
 from datetime import timedelta
 from snimpy.manager import load, Manager, snmp
+from snimpy.mib import MibLoader
 import agent
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -238,6 +239,21 @@ class TestManagerGet(TestManager):
         initial = self.manager.ifInOctets[2]
         current = self.manager.ifInOctets[2]
         self.assertGreater(current, initial)
+
+    def testMibLoaderGet(self):
+        """Create another manager with a different MibLoader"""
+        mibloader = MibLoader()
+        load('IF-MIB', mibloader)
+        load('SNMPv2-MIB', mibloader)
+        load(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "SNIMPY2-MIB.mib"), mibloader)
+
+        manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
+                               community="public",
+                               version=2, mibloader=mibloader)
+        self.assertEqual(manager.snimpy2IpAddress, "65.65.65.65")
+        self.assertRaises(AttributeError,
+                          getattr, manager, "snimpyIpAddress")
 
 
 class TestManagerRestrictModule(TestManager):
