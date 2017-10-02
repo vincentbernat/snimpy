@@ -3,11 +3,12 @@
 History
 -------
 
-0.8.12 (????-??-??)
+0.8.12 (2017-10-02)
 +++++++++++++++++++
 
  * Support for more recent versions of IPython.
  * Support for SNMPv3 context name.
+ * Support for notification nodes (MIB only).
 
 0.8.11 (2016-08-13)
 +++++++++++++++++++
