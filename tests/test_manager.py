@@ -154,6 +154,22 @@ class TestManagerGet(TestManager):
                           (("row3", (120, 1, 2, 3),
                             "gamma7", "end of row3"), 4110)])
 
+    def testWalkReuseIndexes(self):
+        """Test if we can walk a table with re-used indexes"""
+        results = [(idx, self.manager.snimpyReuseIndexValue[idx])
+                   for idx in self.manager.snimpyReuseIndexValue]
+        self.assertEqual(results,
+                         [(("end of row1", 4), 1785),
+                          (("end of row1", 5), 2458)])
+
+    def testWalkTableWithReuseIndexes(self):
+        """Test if we can walk a table with re-used indexes"""
+        results = [(idx, self.manager.snimpyReuseIndexValue[idx])
+                   for idx in self.manager.snimpyReuseIndexTable]
+        self.assertEqual(results,
+                         [(("end of row1", 4), 1785),
+                          (("end of row1", 5), 2458)])
+
     def testWalkPartialIndexes(self):
         """Test if we can walk a slice of a table given a partial index"""
         results = [(idx, self.manager.ifRcvAddressType[idx])

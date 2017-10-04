@@ -508,6 +508,41 @@ snimpyEmptyDescr OBJECT-TYPE
             "Blah blah"
     ::= { snimpyEmptyEntry 2 }
 
+-- A table whose index re-uses objects from other tables' indexes
+
+snimpyReuseIndexTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpyReuseIndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table whose index re-uses objects from
+             other tables' indexes"
+    ::= { snimpyTables 7 }
+
+snimpyReuseIndexEntry OBJECT-TYPE
+    SYNTAX      SnimpyReuseIndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our snimpyReuseIndexTable table
+             note that snimpyIndexImplied is not the last item
+             so it cannot be implied"
+    INDEX   { snimpyIndexImplied, snimpySimpleIndex }
+    ::= { snimpyReuseIndexTable 1 }
+
+SnimpyReuseIndexEntry ::=
+    SEQUENCE {
+        snimpyReuseIndexValue       INTEGER
+    }
+
+snimpyReuseIndexValue OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Integer value"
+    ::= { snimpyReuseIndexEntry 1 }
+
 -- A notification
 
 snimpyNotification NOTIFICATION-TYPE
@@ -520,6 +555,5 @@ snimpyNotification NOTIFICATION-TYPE
     DESCRIPTION
             "A notification"
     ::= { snimpyTraps 1 }
-
 
 END

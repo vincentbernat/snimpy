@@ -305,28 +305,31 @@ class TestBasicTypes(unittest.TestCase):
 
     def testOidConversion(self):
         """Test conversion to/from OID."""
-        tt = {("snimpySimpleIndex", 47): (47,),
-              ("snimpyComplexFirstIP", "10.14.15.4"): (10, 14, 15, 4),
-              ("snimpyComplexSecondIP", (14, 15, 16, 17)): (14, 15, 16, 17),
-              ("snimpyIndexOidVarLen", (47, 48, 49)): (3, 47, 48, 49),
-              ("snimpyIndexVarLen", "hello1"): tuple([len("hello1")] +
-                                                     [ord(a)
-                                                      for a in "hello1"]),
-              ("snimpyIndexFixedLen", "hello2"): tuple(ord(a)
-                                                       for a in "hello2"),
-              ("snimpyIndexImplied", "hello3"): tuple(ord(a)
-                                                      for a in "hello3"),
+        tt = {("snimpySimpleIndex", 47, False): (47,),
+              ("snimpyComplexFirstIP", "10.14.15.4", False): (10, 14, 15, 4),
+              ("snimpyComplexSecondIP", (14, 15, 16, 17), False):
+              (14, 15, 16, 17),
+              ("snimpyIndexOidVarLen", (47, 48, 49), False): (3, 47, 48, 49),
+              ("snimpyIndexVarLen", "hello1", False):
+              tuple([len("hello1")] + [ord(a) for a in "hello1"]),
+              ("snimpyIndexFixedLen", "hello2", False):
+              tuple(ord(a) for a in "hello2"),
+              ("snimpyIndexImplied", "hello3", True):
+              tuple(ord(a) for a in "hello3"),
+              ("snimpyIndexImplied", "hello3", False):
+              tuple([len("hello3")] + [ord(a) for a in "hello3"]),
               }
-        for t, v in tt:
+        for key in tt:
+            t, v, implied = key
             oid = basictypes.build("SNIMPY-MIB",
                                    t,
-                                   v).toOid()
+                                   v).toOid(implied)
             self.assertEqual(oid,
-                             tt[t, v])
+                             tt[key])
             # Test double conversion
             self.assertEqual(mib.get("SNIMPY-MIB", t).type.fromOid(
-                mib.get("SNIMPY-MIB", t), oid),
-                (len(tt[t, v]), v))
+                mib.get("SNIMPY-MIB", t), oid, implied),
+                (len(tt[key]), v))
 
     def testTooLargeOid(self):
         """Handle the special case of octet string as OID with too large octets.
@@ -337,7 +340,8 @@ class TestBasicTypes(unittest.TestCase):
                                  "snimpyIndexImplied").type.fromOid(
                                      mib.get("SNIMPY-MIB",
                                              "snimpyIndexImplied"),
-                                     (104, 0xff00 | 101, 108, 108, 111)),
+                                     (104, 0xff00 | 101, 108, 108, 111),
+                                     implied=True),
                          (5, basictypes.build("SNIMPY-MIB",
                                               "snimpyIndexImplied",
                                               "hello")))
@@ -345,32 +349,37 @@ class TestBasicTypes(unittest.TestCase):
     def testOidGreedy(self):
         """Test greediness of fromOid."""
         tt = {
-            "snimpyIndexVarLen":
-            ((5, 104, 101, 108, 108, 111, 111, 111, 111), (6, "hello")),
-            "snimpyIndexFixedLen":
+            ("snimpyIndexVarLen", False):
+            ((5, 104, 101, 108, 108, 111, 111, 111, 111),
+             (6, "hello")),
+            ("snimpyIndexFixedLen", False):
             ((104, 101, 108, 108, 111, 49, 49, 111), (6, "hello1")),
-            "snimpyIndexImplied":
+            ("snimpyIndexImplied", True):
             ((104, 101, 108, 108, 111, 50), (6, "hello2")),
-            "snimpyComplexFirstIP":
+            ("snimpyIndexImplied", False):
+            ((6, 104, 101, 108, 108, 111, 50), (7, "hello2")),
+            ("snimpyComplexFirstIP", False):
             ((15, 15, 16, 100, 23, 74, 87), (4, "15.15.16.100")),
-            "snimpySimpleIndex": ((17, 19, 20), (1, 17)),
-            "snimpyIndexOidVarLen": ((3, 247, 145, 475568, 475, 263),
-                                     (4, (247, 145, 475568))),
+            ("snimpySimpleIndex", False): ((17, 19, 20), (1, 17)),
+            ("snimpyIndexOidVarLen", False): ((3, 247, 145, 475568, 475, 263),
+                                              (4, (247, 145, 475568))),
         }
-        for t in tt:
+        for key in tt:
+            t, implied = key
             self.assertEqual(mib.get("SNIMPY-MIB", t).type.fromOid(
-                mib.get("SNIMPY-MIB", t), tt[t][0]),
-                tt[t][1])
+                mib.get("SNIMPY-MIB", t), tt[key][0], implied),
+                tt[key][1])
         # Test if too short
-        tt = {"snimpyComplexFirstIP": (17, 19, 20),
-              "snimpyIndexFixedLen": (104, 101, 108),
-              "snimpyIndexVarLen": (6, 102, 103, 104, 105),
-              "snimpyIndexOidVarLen": (3, 247, 145),
+        tt = {"snimpyComplexFirstIP": ((17, 19, 20), False),
+              "snimpyIndexFixedLen": ((104, 101, 108), False),
+              "snimpyIndexVarLen": ((6, 102, 103, 104, 105), False),
+              "snimpyIndexOidVarLen": ((3, 247, 145), False),
+              "snimpyIndexImplied": ((3, 102, 103), False),
               }
         for t in tt:
             self.assertRaises(ValueError,
                               mib.get("SNIMPY-MIB", t).type.fromOid,
-                              mib.get("SNIMPY-MIB", t), tt[t])
+                              mib.get("SNIMPY-MIB", t), tt[t][0], tt[t][1])
 
     def testDisplay(self):
         """Test string transformation"""

@@ -134,7 +134,7 @@ class Type(object):
         """Prepare the instance to be sent on the wire."""
         raise NotImplementedError  # pragma: no cover
 
-    def toOid(self):
+    def toOid(self, implied=False):
         """Convert to an OID.
 
         If this function is implemented, then class function
@@ -149,7 +149,7 @@ class Type(object):
         raise NotImplementedError  # pragma: no cover
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         """Create instance from an OID.
 
         This is the sister function of :meth:`toOid`.
@@ -163,35 +163,26 @@ class Type(object):
         raise NotImplementedError  # pragma: no cover
 
     @classmethod
-    def _fixedOrImplied(cls, entity):
-        """Determine if the given entity is fixed-len or implied.
+    def _fixedLen(cls, entity):
+        """Determine if the given entity is fixed-len
 
-        This function is an helper that is used for String and
+        This function is a helper that is used for String and
         Oid. When converting a variable-length type to an OID, we need
         to prefix it by its len or not depending of what the MIB say.
 
+        Node that the type can be used in an index with IMPLIED keyword.
+        In that case, even when this function returns False, the OID
+        will not be prefixed by its length.
+
         :param entity: entity to check
-        :return: "fixed" if it is fixed-len, "implied" if implied var-len,
-           `False` otherwise
+        :return: `True` if it is fixed-len, `False` otherwise
         """
         if entity.ranges and not isinstance(entity.ranges, (tuple, list)):
             # Fixed length
-            return "fixed"
-
-        # We have a variable-len string/oid. We need to know if it is implied.
-        try:
-            table = entity.table
-        except:
-            raise NotImplementedError(
-                "{0} is not an index of a table".format(entity))
-        indexes = [str(a) for a in table.index]
-        if str(entity) not in indexes:
-            raise NotImplementedError(
-                "{0} is not an index of a table".format(entity))
-        if str(entity) != indexes[-1] or not table.implied:
-            # This index is not implied
+            return True
+        else:
+            # Variable length
             return False
-        return "implied"
 
     def __str__(self):
         return str(self._value)
@@ -230,11 +221,11 @@ class IpAddress(Type):
                 str(".".join(["{0:d}".format(x) for x in self._value])))
         )
 
-    def toOid(self):
+    def toOid(self, implied=False):
         return tuple(self._value)
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 4:
             raise ValueError(
                 "{0!r} is too short for an IP address".format(oid))
@@ -261,31 +252,33 @@ class IpAddress(Type):
 
 class StringOrOctetString(Type):
 
-    def toOid(self):
+    def toOid(self, implied=False):
         # To convert properly to OID, we need to know if it is a
         # fixed-len string, an implied string or a variable-len
         # string.
         b = self._toBytes()
-        if self._fixedOrImplied(self.entity):
+
+        if implied or self._fixedLen(self.entity):
             return tuple(ord2(a) for a in b)
-        return tuple([len(b)] + [ord2(a) for a in b])
+        else:
+            return tuple([len(b)] + [ord2(a) for a in b])
 
     def _toBytes(self):
         raise NotImplementedError
 
     @classmethod
-    def fromOid(cls, entity, oid):
-        type = cls._fixedOrImplied(entity)
-        if type == "implied":
+    def fromOid(cls, entity, oid, implied=False):
+        if implied:
             # Eat everything
             return (len(oid), cls(entity, b"".join([chr2(x) for x in oid])))
-        if type == "fixed":
+        if cls._fixedLen(entity):
             l = entity.ranges
             if len(oid) < l:
                 raise ValueError(
                     "{0} is too short for wanted fixed "
                     "string (need at least {1:d})".format(oid, l))
             return (l, cls(entity, b"".join([chr2(x) for x in oid[:l]])))
+
         # This is var-len
         if not oid:
             raise ValueError("empty OID while waiting for var-len string")
@@ -570,11 +563,11 @@ class Integer(Type, long):
             return rfc1902.Integer(self._value)
         raise OverflowError("too small to be packed")
 
-    def toOid(self):
+    def toOid(self, implied=False):
         return (self._value,)
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError("{0} is too short for an integer".format(oid))
         return (1, cls(entity, oid[0]))
@@ -653,7 +646,7 @@ class Enum(Integer):
         return rfc1902.Integer(self._value)
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError(
                 "{0!r} is too short for an enumeration".format(oid))
@@ -699,18 +692,19 @@ class Oid(Type):
     def pack(self):
         return rfc1902.univ.ObjectIdentifier(self._value)
 
-    def toOid(self):
-        if self._fixedOrImplied(self.entity):
+    def toOid(self, implied=False):
+        if implied or self._fixedLen(self.entity):
             return self._value
-        return tuple([len(self._value)] + list(self._value))
+        else:
+            return tuple([len(self._value)] + list(self._value))
 
     @classmethod
-    def fromOid(cls, entity, oid):
-        if cls._fixedOrImplied(entity) == "fixed":
+    def fromOid(cls, entity, oid, implied=False):
+        if cls._fixedLen(entity):
             # A fixed OID? We don't like this. Provide a real example.
             raise ValueError(
                 "{0!r} seems to be a fixed-len OID index. Odd.".format(entity))
-        if not cls._fixedOrImplied(entity):
+        if not implied:
             # This index is not implied. We need the len
             if len(oid) < 1:
                 raise ValueError(
@@ -723,7 +717,7 @@ class Oid(Type):
                     "(needs at least {1:d})".format(oid, l))
             return (l + 1, cls(entity, oid[1:(l + 1)]))
         else:
-            # Eat everything
+            # This index is implied. Eat everything
             return (len(oid), cls(entity, oid))
 
     def __str__(self):
@@ -794,11 +788,11 @@ class Timeticks(Type):
             self._value.seconds * 100 + \
             self._value.microseconds // 10000
 
-    def toOid(self):
+    def toOid(self, implied=False):
         return (int(self),)
 
     @classmethod
-    def fromOid(cls, entity, oid):
+    def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError("{0!r} is too short for a timetick".format(oid))
         return (1, cls(entity, oid[0]))

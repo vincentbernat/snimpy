@@ -298,6 +298,22 @@ class TestAgent(object):
                                       stringToOid('end of row3')),
                               v2c.Integer(4110)),
 
+            # SNIMPY-MIB::snimpyReuseIndexTable
+            MibTable((1, 3, 6, 1, 2, 1, 45121, 2, 7)),
+            MibTableRow(
+                (1, 3, 6, 1, 2, 1, 45121, 2, 7, 1)).setIndexNames(
+                (0, "__MY_SNIMPY-MIB", "snimpyIndexImplied"),
+                (0, "__MY_SNIMPY-MIB", "snimpySimpleIndex")),
+            # SNIMPY-MIB::snimpyReuseIndexValue
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 7, 1, 1),
+                              flatten(11, stringToOid('end of row1'),
+                                      4),
+                              v2c.Integer(1785)),
+            MibScalarInstance((1, 3, 6, 1, 2, 1, 45121, 2, 7, 1, 1),
+                              flatten(11, stringToOid('end of row1'),
+                                      5),
+                              v2c.Integer(2458)),
+
             # SNIMPY-MIB::snimpyInvalidTable
             MibTable((1, 3, 6, 1, 2, 1, 45121, 2, 5)),
             MibTableRow(
@@ -353,7 +369,10 @@ class TestAgent(object):
                 v2c.Integer()).setMaxAccess("noaccess"),
             snimpyInvalidDescr=MibTableColumn(
                 (1, 3, 6, 1, 2, 1, 45121, 2, 5, 1, 2),
-                v2c.OctetString()).setMaxAccess("readwrite")
+                v2c.OctetString()).setMaxAccess("readwrite"),
+            snimpyReuseIndexValue=MibTableColumn(
+                (1, 3, 6, 1, 2, 1, 45121, 2, 7, 1, 1),
+                v2c.Integer()).setMaxAccess("readwrite")
         )
 
         if self.emptyTable:
