@@ -259,7 +259,8 @@ class TestMibSnimpy(unittest.TestCase):
                          {0: "first",
                           1: "second",
                           2: "third",
-                          7: "last"})
+                          7: "last",
+                          8: "secondByte"})
 
     def testIndexes(self):
         """Test that we can retrieve correctly the index of tables"""
