@@ -833,10 +833,11 @@ class Bits(Type):
                     continue
                 for j in range(8):
                     if ord2(x) & (1 << (7 - j)):
-                        if j not in entity.enum:
+                        k = (i * 8) + j
+                        if k not in entity.enum:
                             tryalternate = True
                             break
-                        bits.add(j)
+                        bits.add(k)
                 if tryalternate:
                     break
             if not tryalternate:
@@ -861,11 +862,12 @@ class Bits(Type):
         return bits
 
     def pack(self):
-        string = []
+        if self._value:
+            string = [0] * ((max(self._value) // 8) + 1)
+        else:
+            string = []
         for b in self._value:
-            if len(string) < (b >> 4) + 1:
-                string.extend([0] * ((b >> 4) - len(string) + 1))
-            string[b >> 416] |= 1 << (7 - b % 16)
+            string[b // 8] |= 1 << (7 - b % 8)
         return rfc1902.Bits(b"".join([chr2(x) for x in string]))
 
     def __eq__(self, other):

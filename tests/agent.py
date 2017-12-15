@@ -239,7 +239,7 @@ class TestAgent(object):
                       v2c.OctetString()).setMaxAccess("readwrite"),
             MibScalarInstance(
                 (1, 3, 6, 1, 2, 1, 45121, 1, 11), (0,),
-                v2c.OctetString(b"\xa0")),
+                v2c.OctetString(b"\xa0\x80")),
             # SNIMPY-MIB::snimpyMacAddress
             MibScalar((1, 3, 6, 1, 2, 1, 45121, 1, 15),
                       v2c.OctetString()).setMaxAccess("readwrite"),

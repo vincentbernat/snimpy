@@ -133,7 +133,8 @@ snimpyBits	OBJECT-TYPE
                   first(0),
 		  second(1),
 		  third(2),
-		  last(7)
+		  last(7),
+		  secondByte(8)
 		}
     MAX-ACCESS  read-only
     STATUS	current

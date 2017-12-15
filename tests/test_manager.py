@@ -88,7 +88,7 @@ class TestManagerGet(TestManager):
 
     def testScalar_Bits(self):
         """Retrieve Bits as a scalar"""
-        self.scalarGetAndCheck("snimpyBits", ["first", "third"])
+        self.scalarGetAndCheck("snimpyBits", ["first", "third", "secondByte"])
 
     def testScalar_MacAddress(self):
         """Retrieve MacAddress as a scalar"""
@@ -334,7 +334,7 @@ class TestManagerSet(TestManager):
 
     def testScalar_Bits(self):
         """Retrieve Bits as a scalar"""
-        self.scalarSetAndCheck("snimpyBits", ["first", "second"])
+        self.scalarSetAndCheck("snimpyBits", ["first", "second", "secondByte"])
 
     def testScalar_MacAddress(self):
         """Retrieve MAC address as a scala"""
