@@ -188,11 +188,8 @@ class Type(object):
         return str(self._value)
 
     def __repr__(self):
-        try:
-            return '<{0}: {1}>'.format(self.__class__.__name__,
-                                       str(self))
-        except:
-            return '<{0} ????>'.format(self.__class__.__name__)
+        return '<{0}: {1}>'.format(self.__class__.__name__,
+                                   str(self))
 
 
 @ordering_with_cmp
@@ -204,14 +201,11 @@ class IpAddress(Type):
     def _internal(cls, entity, value):
         if isinstance(value, (list, tuple)):
             value = ".".join([str(a) for a in value])
-        elif isinstance(value, bytes):
-            try:
-                value = socket.inet_ntoa(value)
-            except:
-                pass
+        elif isinstance(value, bytes) and len(value) == 4:
+            value = socket.inet_ntoa(value)
         try:
             value = socket.inet_ntoa(socket.inet_aton(value))
-        except:
+        except socket.error:
             raise ValueError("{0!r} is not a valid IP".format(value))
         return [int(a) for a in value.split(".")]
 
@@ -238,7 +232,7 @@ class IpAddress(Type):
         if not isinstance(other, IpAddress):
             try:
                 other = IpAddress(self.entity, other)
-            except:
+            except Exception:
                 raise NotImplementedError  # pragma: no cover
         if self._value == other._value:
             return 0
@@ -272,24 +266,25 @@ class StringOrOctetString(Type):
             # Eat everything
             return (len(oid), cls(entity, b"".join([chr2(x) for x in oid])))
         if cls._fixedLen(entity):
-            l = entity.ranges
-            if len(oid) < l:
+            length = entity.ranges
+            if len(oid) < length:
                 raise ValueError(
                     "{0} is too short for wanted fixed "
-                    "string (need at least {1:d})".format(oid, l))
-            return (l, cls(entity, b"".join([chr2(x) for x in oid[:l]])))
+                    "string (need at least {1:d})".format(oid, length))
+            return (length,
+                    cls(entity, b"".join([chr2(x) for x in oid[:length]])))
 
         # This is var-len
         if not oid:
             raise ValueError("empty OID while waiting for var-len string")
-        l = oid[0]
-        if len(oid) < l + 1:
+        length = oid[0]
+        if len(oid) < length + 1:
             raise ValueError(
                 "{0} is too short for variable-len "
-                "string (need at least {1:d})".format(oid, l))
+                "string (need at least {1:d})".format(oid, length))
         return (
-            (l + 1, cls(entity, b"".join([chr2(x) for x in oid[1:(l + 1)]])))
-        )
+            (length + 1,
+             cls(entity, b"".join([chr2(x) for x in oid[1:(length + 1)]]))))
 
     def pack(self):
         return rfc1902.OctetString(self._toBytes())
@@ -637,7 +632,7 @@ class Enum(Integer):
                 return k
         try:
             return long(value)
-        except:
+        except Exception:
             raise ValueError("{0!r} is not a valid "
                              "value for {1}".format(value,
                                                     entity))
@@ -656,7 +651,7 @@ class Enum(Integer):
         if not isinstance(other, self.__class__):
             try:
                 other = self.__class__(self.entity, other)
-            except:
+            except Exception:
                 raise NotImplementedError  # pragma: no cover
         return self._value == other._value
 
@@ -710,12 +705,12 @@ class Oid(Type):
                 raise ValueError(
                     "{0!r} is too short for a not "
                     "implied index".format(entity))
-            l = oid[0]
-            if len(oid) < l + 1:
+            length = oid[0]
+            if len(oid) < length + 1:
                 raise ValueError(
                     "{0!r} has an incorrect size "
-                    "(needs at least {1:d})".format(oid, l))
-            return (l + 1, cls(entity, oid[1:(l + 1)]))
+                    "(needs at least {1:d})".format(oid, length))
+            return (length + 1, cls(entity, oid[1:(length + 1)]))
         else:
             # This index is implied. Eat everything
             return (len(oid), cls(entity, oid))

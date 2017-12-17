@@ -418,7 +418,7 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
     def __contains__(self, object):
         try:
             self._op("get", object)
-        except:
+        except Exception:
             return False
         return True
 
