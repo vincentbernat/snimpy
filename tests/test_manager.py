@@ -120,6 +120,10 @@ class TestManagerGet(TestManager):
                           (2, "eth0", 6),
                           (3, "eth1", 6)])
 
+    def testWalkNotAccessible(self):
+        """Test we can walk a table with the first entry not accessible."""
+        list(self.manager.ifRcvAddressTable)
+
     def testWalkIfDescrWithoutBulk(self):
         """Walk IF-MIB::ifDescr without GETBULK"""
         self.session.bulk = False
