@@ -508,12 +508,18 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
 class ProxyTable(ProxyIter):
     """Proxy for table access.
 
-    We just use the first index as a column. However, the mapping
+    We just use the first accessible index as a column. However, the mapping
     operations are not available.
     """
 
     def __init__(self, session, table, loose):
-        self.proxy = table.columns[0]
+        self.proxy = None
+        for column in table.columns:
+            if column.accessible:
+                self.proxy = column
+                break
+        if self.proxy is None:
+            raise NotImplementedError("No accessible column in the table.")
         self.session = session
         self._loose = loose
 

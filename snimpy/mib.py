@@ -238,6 +238,11 @@ class Node(object):
             element = _smi.smiGetNextNamedNumber(element)
         return result
 
+    @property
+    def accessible(self):
+        return (self.node.access not in (_smi.SMI_ACCESS_NOT_IMPLEMENTED,
+                                         _smi.SMI_ACCESS_NOT_ACCESSIBLE))
+
     def __str__(self):
         return ffi.string(self.node.name).decode("ascii")
 

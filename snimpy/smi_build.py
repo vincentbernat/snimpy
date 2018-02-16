@@ -59,6 +59,14 @@ typedef enum SmiIndexkind {
     ...
 } SmiIndexkind;
 
+typedef enum SmiAccess {
+    SMI_ACCESS_NOT_IMPLEMENTED,
+    SMI_ACCESS_NOT_ACCESSIBLE,
+    SMI_ACCESS_READ_ONLY,
+    SMI_ACCESS_READ_WRITE,
+    ...
+} SmiAccess;
+
 typedef unsigned int SmiNodekind;
 #define SMI_NODEKIND_NODE         ...
 #define SMI_NODEKIND_SCALAR       ...
@@ -75,6 +83,7 @@ typedef struct SmiNode {
     SmiIndexkind        indexkind;
     int                 implied;
     SmiNodekind         nodekind;
+    SmiAccess           access;
     ...;
 } SmiNode;
 
