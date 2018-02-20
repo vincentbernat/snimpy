@@ -256,13 +256,16 @@ class Session(object):
         self._check_exception(value)
         raise NotImplementedError("unable to convert {0}".format(repr(value)))
 
-    def _op(self, cmd, *oids, prepend_args=tuple()):
+    def _op(self, cmd, *oids, **mykwargs):
         """Apply an SNMP operation"""
+        prepend_args = tuple()
+        if "prepend_args" in mykwargs:
+            prepend_args = mykwargs["prepend_args"]
         kwargs = {}
         if self._contextname:
             kwargs['contextName'] = rfc1902.OctetString(self._contextname)
         errorIndication, errorStatus, errorIndex, varBinds = cmd(
-            self._auth, self._transport, *prepend_args, *oids, **kwargs)
+            self._auth, self._transport, *(prepend_args + oids), **kwargs)
         if errorIndication:
             self._check_exception(errorIndication)
             raise SNMPException(str(errorIndication))
