@@ -297,6 +297,16 @@ class TestSnmp1(unittest.TestCase):
                           (ooid + (2,), b"eth0"),
                           (ooid + (3,), b"eth1")))
 
+    def testMultiWalk(self):
+        """Check if we can walk multiple OIDs"""
+        ooid = mib.get("IF-MIB", "ifDescr").oid
+        ooid2 = mib.get("IF-MIB", "ifType").oid
+        results = self.session.walk(ooid, ooid2)
+        self.assertEqual(tuple(results),
+                         ((ooid + (1,), b"lo"), (ooid2 + (1,), 24),
+                          (ooid + (2,), b"eth0"), (ooid2 + (2,), 6),
+                          (ooid + (3,), b"eth1"), (ooid2 + (3,), 6)))
+
     def testSeveralSessions(self):
         """Test with two sessions"""
         agent2 = self.addAgent('private',
