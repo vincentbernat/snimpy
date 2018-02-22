@@ -30,7 +30,8 @@ Here is a simple example of use of this module::
 
 import inspect
 from time import time
-from collections import MutableMapping, Container, Iterable, Sized
+from collections import MutableMapping, Container, Iterable, Sized, namedtuple
+from itertools import islice
 from snimpy import snmp, mib, basictypes
 
 
@@ -109,9 +110,9 @@ class CachedSession(DelegatedSession):
             t, v = self.cache[op, args]
             if time() - t < self.timeout:
                 return v
-        value = getattr(self._session, op)(*args)
+        value = tuple(getattr(self._session, op)(*args))
         self.cache[op, args] = [time(), value]
-        if op == "walkmore":
+        if op == "walk":
             # also cache all the get requests we got for free
             for oid, get_value in value:
                 self.count += 1
@@ -123,8 +124,7 @@ class CachedSession(DelegatedSession):
         return self.getorwalk("get", *args)
 
     def walk(self, *args):
-        assert(len(args) == 1)  # we should ony walk one oid at a time
-        return self.getorwalk("walkmore", *args)
+        return self.getorwalk("walk", *args)
 
     def flush(self):
         keys = list(self.cache.keys())
@@ -386,6 +386,18 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
     `ProxyColumn` and `ProxyTable`.
     """
 
+    def __init__(self, session, columns, loose, oid_suffix=()):
+        self.columns = columns
+        self.session = session
+        self._loose = loose
+        self._oid_suffix = oid_suffix
+        column_names = (str(column) for column in self.columns)
+        self._named = namedtuple(str(self.proxy.table.row), column_names)
+
+    @property
+    def proxy(self):
+        return self.columns[0]
+
     def _op(self, op, index, *args):
         if not isinstance(index, tuple):
             index = (index,)
@@ -400,24 +412,55 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
             ind = indextype[i].type(indextype[i], ind, raw=False)
             implied = self.proxy.table.implied and i == len(index)-1
             oidindex.extend(ind.toOid(implied))
-        result = getattr(
+        oids = []
+        for column in self.columns:
+            oids.append(column.oid + tuple(oidindex))
+        if op == "set":
+            allargs = []
+            for oid, arg in zip(oids, args):
+                allargs.append(oid)
+                allargs.append(arg)
+        else:
+            allargs = tuple(oids) + args
+        results = getattr(
             self.session,
-            op)(self.proxy.oid + tuple(oidindex),
-                *args)
+            op)(*allargs)
         if op != "set":
-            oid, result = result[0]
-            if result is not None:
-                try:
-                    return self.proxy.type(self.proxy, result)
-                except ValueError:
-                    if self._loose:
-                        return result
-                    raise
-            return None
+            values = []
+            for column, (oid, result) in zip(self.columns, results):
+                if result is not None:
+                    try:
+                        values.append(column.type(column, result))
+                    except ValueError:
+                        if self._loose:
+                            values.append(result)
+                        else:
+                            raise
+            if values:
+                return self._named(*values)
+            else:
+                return None
 
-    def __contains__(self, object):
+    def _get(self, index):
+        return self._op("get", index)
+
+    def _set(self, index, values):
+        typed_values = []
+        for value in values:
+            if not isinstance(value, basictypes.Type):
+                typed_values.append(self.proxy.type(self.proxy,
+                                                    value,
+                                                    raw=False))
+            else:
+                typed_values.append(value)
+        return self._op("set", index, *typed_values)
+
+    def __contains__(self, index):
+        if not isinstance(index, tuple):
+            index = (index,)
+        index = self._oid_suffix + index
         try:
-            self._op("get", object)
+            self._get(index)
         except Exception:
             return False
         return True
@@ -430,14 +473,20 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
         len(list(self.iteritems()))
 
     def iteritems(self, table_filter=None):
+        if table_filter is not None and not isinstance(table_filter, tuple):
+            table_filter = (table_filter, )
         count = 0
-        oid = self.proxy.oid
+        oids = (column.oid for column in self.columns)
         indexes = self.proxy.table.index
+        if table_filter is None:
+            table_filter = self._oid_suffix
+        else:
+            table_filter = table_filter + self._oid_suffix
 
+        oid_suffix = []
         if table_filter is not None:
             if len(table_filter) >= len(indexes):
                 raise ValueError("Table filter has too many elements")
-            oid_suffix = []
             # Convert filter elements to correct types
             for i, part in enumerate(table_filter):
                 part = indexes[i].type(indexes[i], part, raw=False)
@@ -445,40 +494,44 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
                 #   index never includes last element
                 #   (see 'len(table_filter) >= len(indexes)')
                 oid_suffix.extend(part.toOid(implied=False))
-            oid += tuple(oid_suffix)
+            oids = (tuple(oid + tuple(oid_suffix)) for oid in oids)
 
-        walk_oid = oid
-        for noid, result in self.session.walk(oid):
-            if noid <= oid:
-                noid = None
-                break
-            oid = noid
-            if not((len(oid) >= len(walk_oid) and
-                    oid[:len(walk_oid)] ==
-                    walk_oid[:len(walk_oid)])):
-                noid = None
-                break
+        results = iter(self.session.walk(*oids))
 
-            # oid should be turned into index
-            index = tuple(oid[len(self.proxy.oid):])
-            target = []
-            for i, x in enumerate(indexes):
-                implied = self.proxy.table.implied and i == len(indexes)-1
-                l, o = x.type.fromOid(x, index, implied)
-                target.append(x.type(x, o))
-                index = index[l:]
-            count = count + 1
-            if result is not None:
-                try:
-                    result = self.proxy.type(self.proxy, result)
-                except ValueError:
-                    if not self._loose:
-                        raise
-            if len(target) == 1:
-                # Should work most of the time
-                yield target[0], result
-            else:
-                yield tuple(target), result
+        try:
+            while True:
+                row = tuple(islice(results, len(self.columns)))
+                if len(row) == 0:
+                    break
+                count += 1
+                values = []
+                # oid should be turned into index
+                # a single row should have a single index
+                index = tuple(row[0][0][len(self.proxy.oid):])
+                target = []
+                for i, x in enumerate(indexes):
+                    implied = self.proxy.table.implied and i == len(indexes)-1
+                    l, o = x.type.fromOid(x, index, implied)
+                    target.append(x.type(x, o))
+                    index = index[l:]
+
+                for (column, (oid, result)) in zip(self.columns, row):
+                    if result is not None:
+                        try:
+                            values.append(column.type(column, result))
+                        except ValueError:
+                            if not self._loose:
+                                raise
+                            else:
+                                values.append(result)
+                namedrow = self._named(*values)
+                if len(target) == 1:
+                    # Should work most of the time
+                    yield target[0], namedrow
+                else:
+                    yield tuple(target), namedrow
+        except StopIteration:
+            pass
 
         if count == 0:
             # We did not find any element. Is it because the column is
@@ -491,10 +544,10 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
                 self.session.get(self.proxy.oid)
             except snmp.SNMPNoSuchInstance:
                 # OK, the set of result is really empty
-                raise StopIteration
+                pass
             except snmp.SNMPNoAccess:
                 # Some implementations seem to return NoAccess (PySNMP is one)
-                raise StopIteration
+                pass
             except snmp.SNMPNoSuchName:
                 # SNMPv1, we don't know
                 pass
@@ -502,39 +555,8 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
                 # The result is empty because the column is unknown
                 raise
 
-        raise StopIteration
-
-
-class ProxyTable(ProxyIter):
-    """Proxy for table access.
-
-    We just use the first accessible index as a column. However, the mapping
-    operations are not available.
-    """
-
-    def __init__(self, session, table, loose):
-        self.proxy = None
-        for column in table.columns:
-            if column.accessible:
-                self.proxy = column
-                break
-        if self.proxy is None:
-            raise NotImplementedError("No accessible column in the table.")
-        self.session = session
-        self._loose = loose
-
-
-class ProxyColumn(ProxyIter, MutableMapping):
-    """Proxy for column access"""
-
-    def __init__(self, session, column, loose, oid_suffix=()):
-        self.proxy = column
-        self.session = session
-        self._loose = loose
-        self._oid_suffix = oid_suffix
-
     def __getitem__(self, index):
-        # If supplied index is partial we return new ProxyColumn
+        # If supplied index is partial we return new Proxy
         # with appended OID suffix
         idx_len = len(self.proxy.table.index)
         suffix_len = len(self._oid_suffix)
@@ -547,36 +569,69 @@ class ProxyColumn(ProxyIter, MutableMapping):
         # Otherwise a read op is made
         if not isinstance(index, tuple):
             index = (index,)
-        return self._op("get", self._oid_suffix + index)
+        return self._get(self._oid_suffix + index)
 
     def __setitem__(self, index, value):
-        if not isinstance(value, basictypes.Type):
-            value = self.proxy.type(self.proxy, value, raw=False)
         if not isinstance(index, tuple):
             index = (index,)
-        self._op("set", self._oid_suffix + index, value)
+        self._set(self._oid_suffix + index, value)
 
     def __delitem__(self, index):
-        raise NotImplementedError("cannot suppress a column")
-
-    def __contains__(self, index):
-        if not isinstance(index, tuple):
-            index = (index,)
-        return ProxyIter.__contains__(self, self._oid_suffix + index)
+        raise NotImplementedError("cannot suppress")
 
     def _partial(self, index):
         """Create new ProxyColumn based on current one,
         but with appended OID suffix"""
         new_suffix = self._oid_suffix + index
-        return ProxyColumn(self.session, self.proxy, self._loose, new_suffix)
+        return self.__class__(self.session, self.columns,
+                              self._loose, new_suffix)
+
+
+class ProxyTable(ProxyIter):
+    """Proxy for table access.
+
+    Iterates over all columns at once.
+    """
+
+    def __init__(self, session, table, loose, oid_suffix=()):
+        if isinstance(table, tuple):
+            columns = table
+        else:
+            columns = tuple(column for column in table.columns
+                            if column.accessible)
+        ProxyIter.__init__(self, session, columns, loose, oid_suffix)
+
+    def __iter__(self):
+        return iter(ProxyColumn(self.session, self.columns[0],
+                                self._loose, self._oid_suffix))
+
+    def __setitem__(self, index, value):
+        raise NotImplementedError("cannot change a table row")
+
+
+class ProxyColumn(ProxyIter, MutableMapping):
+    """Proxy for column access"""
+
+    def __init__(self, session, column, loose, oid_suffix=()):
+        if isinstance(column, tuple):
+            columns = column
+        else:
+            columns = (column, )
+        ProxyIter.__init__(self, session, columns, loose, oid_suffix)
 
     def iteritems(self, table_filter=None):
-        resulting_filter = self._oid_suffix
-        if table_filter is not None:
-            if not isinstance(table_filter, tuple):
-                table_filter = (table_filter,)
-            resulting_filter += table_filter
-        return ProxyIter.iteritems(self, resulting_filter)
+        for oid, row in ProxyIter.iteritems(self, table_filter=table_filter):
+            yield (oid, row[0])
+
+    def _get(self, index):
+        result = ProxyIter._get(self, index)
+        if result is None:
+            return result
+        else:
+            return result[0]
+
+    def _set(self, index, value):
+        return ProxyIter._set(self, index, (value, ))
 
 
 loaded = []

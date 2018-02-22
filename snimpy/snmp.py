@@ -30,6 +30,7 @@ import re
 import socket
 import inspect
 import threading
+from itertools import cycle
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902, rfc1905
 from pysnmp.smi import error
@@ -255,13 +256,16 @@ class Session(object):
         self._check_exception(value)
         raise NotImplementedError("unable to convert {0}".format(repr(value)))
 
-    def _op(self, cmd, *oids):
+    def _op(self, cmd, *oids, **mykwargs):
         """Apply an SNMP operation"""
+        prepend_args = tuple()
+        if "prepend_args" in mykwargs:
+            prepend_args = mykwargs["prepend_args"]
         kwargs = {}
         if self._contextname:
             kwargs['contextName'] = rfc1902.OctetString(self._contextname)
         errorIndication, errorStatus, errorIndex, varBinds = cmd(
-            self._auth, self._transport, *oids, **kwargs)
+            self._auth, self._transport, *(prepend_args + oids), **kwargs)
         if errorIndication:
             self._check_exception(errorIndication)
             raise SNMPException(str(errorIndication))
@@ -276,11 +280,14 @@ class Session(object):
         if cmd in [self._cmdgen.getCmd, self._cmdgen.setCmd]:
             results = [(tuple(name), val) for name, val in varBinds]
         else:
+            # TODO use the iterable version of pysnmp commands
+            # so the whole table is not kept in memory
             results = [(tuple(name), val)
                        for row in varBinds for name, val in row]
             if len(results) > 0 and isinstance(results[-1][1],
                                                rfc1905.EndOfMibView):
-                results = results[:-1]
+                # Assuming all oids will get to end of MIB at the same time
+                results = results[:-len(oids)]
         if len(results) == 0:
             if cmd not in [self._cmdgen.nextCmd, self._cmdgen.bulkCmd]:
                 raise SNMPException("empty answer")
@@ -302,13 +309,12 @@ class Session(object):
 
         :param oids: a list of OID to retrieve. An OID is a tuple.
         :return: a list of tuples with the retrieved OID and the raw value.
-
         """
         if self._version == 1 or not self.bulk:
             return self._op(self._cmdgen.nextCmd, *oids)
-        args = [0, self.bulk] + list(oids)
         try:
-            return self._op(self._cmdgen.bulkCmd, *args)
+            return self._op(self._cmdgen.bulkCmd, *oids,
+                            prepend_args=(0, self.bulk))
         except SNMPTooBig:
             # Let's try to ask for less values. We will never increase
             # bulk again. We cannot increase it just after the walk
@@ -328,10 +334,9 @@ class Session(object):
         :return: a list of tuples with the retrieved OID and the raw value.
         """
         return ((noid, result)
-                for oid in oids
-                for noid, result in self.walkmore(oid)
-                if (len(noid) >= len(oid) and
-                    noid[:len(oid)] == oid[:len(oid)]))
+                for (oid, (noid, result)) in zip(cycle(oids),
+                                                 self.walkmore(*oids))
+                if len(noid) >= len(oid) and noid[:len(oid)] == oid[:len(oid)])
 
     def set(self, *args):
 

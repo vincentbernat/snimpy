@@ -340,6 +340,10 @@ class Table(Node):
         return child
 
     @property
+    def row(self):
+        return Row(self._row)
+
+    @property
     def implied(self):
         """Is the last index implied? An implied index is an index whose size
         is not fixed but who is not prefixed by its size because this
@@ -377,6 +381,27 @@ class Table(Node):
             lindex.append(Column(nelement))
             element = _smi.smiGetNextElement(element)
         return lindex
+
+
+class Row(Node):
+
+    @property
+    def table(self):
+        """Get table associated with this column.
+
+        :return: The :class:`Table` instance associated to this
+            column.
+        """
+        parent = _smi.smiGetParentNode(self.node)
+        if parent == ffi.NULL:
+            raise SMIException("unable to get parent of {0}".format(
+                ffi.string(self.node.name)))
+        if parent.nodekind != _smi.SMI_NODEKIND_TABLE:
+            raise SMIException("parent {0} of {1} is not a table".format(
+                ffi.string(parent.name),
+                ffi.string(self.node.name)))
+        t = Table(parent)
+        return t
 
 
 class Column(Node):
@@ -519,6 +544,7 @@ def _kind2object(kind):
         _smi.SMI_NODEKIND_SCALAR: Scalar,
         _smi.SMI_NODEKIND_TABLE: Table,
         _smi.SMI_NODEKIND_NOTIFICATION: Notification,
+        _smi.SMI_NODEKIND_ROW: Row,
         _smi.SMI_NODEKIND_COLUMN: Column
     }.get(kind, Node)
 

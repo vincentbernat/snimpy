@@ -120,6 +120,29 @@ class TestManagerGet(TestManager):
                           (2, "eth0", 6),
                           (3, "eth1", 6)])
 
+    def testWalkIndexTable(self):
+        """Test we can walk rows of SNIMPY-MIB::snimpyIndexTable"""
+        results = [row for idx, row in self.manager.snimpyIndexTable.iteritems()]
+        self.assertEqual([tuple(row) for row in results],
+                         [("row1", 4571),
+                          ("row2", 78741),
+                          ("row3", 4110)])
+        self.assertEqual(results[0].snimpyIndexVarLen, "row1")
+
+    def testPartialWalkIndexTable(self):
+        """Test we can walk rows of part of SNIMPY-MIB::snimpyIndexTable"""
+        results = [row for idx, row in self.manager.snimpyIndexTable["row2"].iteritems()]
+        self.assertEqual([tuple(row) for row in results],
+                         [("row2", 78741)])
+        self.assertEqual(results[0].snimpyIndexVarLen, "row2")
+
+    def testGetIndexTable(self):
+        """Test we can get a row of SNIMPY-MIB::snimpyIndexTable"""
+        row = self.manager.snimpyIndexTable["row3", (120, 1, 2, 3), "gamma7", "end of row3"]
+        self.assertEqual(tuple(row),
+                         ("row3", 4110))
+        self.assertEqual(row.snimpyIndexVarLen, "row3")
+
     def testWalkNotAccessible(self):
         """Test we can walk a table with the first entry not accessible."""
         list(self.manager.ifRcvAddressTable)
