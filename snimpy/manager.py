@@ -110,9 +110,9 @@ class CachedSession(DelegatedSession):
             t, v = self.cache[op, args]
             if time() - t < self.timeout:
                 return v
-        value = getattr(self._session, op)(*args)
+        value = tuple(getattr(self._session, op)(*args))
         self.cache[op, args] = [time(), value]
-        if op == "walkmore":
+        if op == "walk":
             # also cache all the get requests we got for free
             for oid, get_value in value:
                 self.count += 1
@@ -124,7 +124,7 @@ class CachedSession(DelegatedSession):
         return self.getorwalk("get", *args)
 
     def walk(self, *args):
-        return self.getorwalk("walkmore", *args)
+        return self.getorwalk("walk", *args)
 
     def flush(self):
         keys = list(self.cache.keys())
