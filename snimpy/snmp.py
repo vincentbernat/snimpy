@@ -313,7 +313,8 @@ class Session(object):
         if self._version == 1 or not self.bulk:
             return self._op(self._cmdgen.nextCmd, *oids)
         try:
-            return self._op(self._cmdgen.bulkCmd, *oids, prepend_args=(0, self.bulk))
+            return self._op(self._cmdgen.bulkCmd, *oids,
+                            prepend_args=(0, self.bulk))
         except SNMPTooBig:
             # Let's try to ask for less values. We will never increase
             # bulk again. We cannot increase it just after the walk
@@ -333,7 +334,8 @@ class Session(object):
         :return: a list of tuples with the retrieved OID and the raw value.
         """
         return ((noid, result)
-                for (oid, (noid, result)) in zip(cycle(oids), self.walkmore(*oids))
+                for (oid, (noid, result)) in zip(cycle(oids),
+                                                 self.walkmore(*oids))
                 if len(noid) >= len(oid) and noid[:len(oid)] == oid[:len(oid)])
 
     def set(self, *args):

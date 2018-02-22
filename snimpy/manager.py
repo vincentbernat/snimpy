@@ -448,7 +448,9 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
         typed_values = []
         for value in values:
             if not isinstance(value, basictypes.Type):
-                typed_values.append(self.proxy.type(self.proxy, value, raw=False))
+                typed_values.append(self.proxy.type(self.proxy,
+                                                    value,
+                                                    raw=False))
             else:
                 typed_values.append(value)
         return self._op("set", index, *typed_values)
@@ -581,7 +583,8 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
         """Create new ProxyColumn based on current one,
         but with appended OID suffix"""
         new_suffix = self._oid_suffix + index
-        return self.__class__(self.session, self.columns, self._loose, new_suffix)
+        return self.__class__(self.session, self.columns,
+                              self._loose, new_suffix)
 
 
 class ProxyTable(ProxyIter):
@@ -594,11 +597,13 @@ class ProxyTable(ProxyIter):
         if isinstance(table, tuple):
             columns = table
         else:
-            columns = tuple(column for column in table.columns if column.accessible)
+            columns = tuple(column for column in table.columns
+                            if column.accessible)
         ProxyIter.__init__(self, session, columns, loose, oid_suffix)
 
     def __iter__(self):
-        return iter(ProxyColumn(self.session, self.columns[0], self._loose, self._oid_suffix))
+        return iter(ProxyColumn(self.session, self.columns[0],
+                                self._loose, self._oid_suffix))
 
     def __setitem__(self, index, value):
         raise NotImplementedError("cannot change a table row")
