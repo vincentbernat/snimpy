@@ -26,11 +26,15 @@ class TestConf(unittest.TestCase):
     def test_loading_custom_configuration(self):
         conffile = tempfile.NamedTemporaryFile(delete=False)
         try:
-            conffile.write("""
+            conffile.write(
+                """
 mibs = [ "IF-MIB", "LLDP-MIB" ]
 ipython = False
 unknown = "hey!"
-""".encode("ascii"))
+""".encode(
+                    "ascii"
+                )
+            )
             conffile.close()
             conf = Conf().load(conffile.name)
             self.assertEqual(conf.mibs, ["IF-MIB", "LLDP-MIB"])

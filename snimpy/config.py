@@ -37,9 +37,12 @@ class Conf:
             pass
         else:
             try:
-                confuser = imp.load_module("confuser", conffile,
-                                           os.path.expanduser(userconf),
-                                           ("conf", 'r', imp.PY_SOURCE))
+                confuser = imp.load_module(
+                    "confuser",
+                    conffile,
+                    os.path.expanduser(userconf),
+                    ("conf", "r", imp.PY_SOURCE),
+                )
                 for k in confuser.__dict__:
                     if not k.startswith("__"):
                         setattr(self, k, confuser.__dict__[k])

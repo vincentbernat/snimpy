@@ -60,10 +60,12 @@ class SNMPReadOnly(SNMPException):
 
 # Dynamically build remaining (v2) exceptions
 for name, obj in inspect.getmembers(error):
-    if name.endswith("Error") and \
-       inspect.isclass(obj) and \
-       issubclass(obj, error.MibOperationError) and \
-       obj != error.MibOperationError:
+    if (
+        name.endswith("Error")
+        and inspect.isclass(obj)
+        and issubclass(obj, error.MibOperationError)
+        and obj != error.MibOperationError
+    ):
         name = str("SNMP{0}".format(name[:-5]))
         globals()[name] = type(name, (SNMPException,), {})
 del name
@@ -78,16 +80,20 @@ class Session(object):
 
     _tls = threading.local()
 
-    def __init__(self, host,
-                 community="public", version=2,
-                 secname=None,
-                 authprotocol=None,
-                 authpassword=None,
-                 privprotocol=None,
-                 privpassword=None,
-                 contextname=None,
-                 bulk=40,
-                 none=False):
+    def __init__(
+        self,
+        host,
+        community="public",
+        version=2,
+        secname=None,
+        authprotocol=None,
+        authpassword=None,
+        privprotocol=None,
+        privpassword=None,
+        contextname=None,
+        bulk=40,
+        none=False,
+    ):
         """Create a new SNMP session.
 
         :param host: The hostname or IP address of the agent to
@@ -144,7 +150,8 @@ class Session(object):
         # Put authentication stuff in self._auth
         if version in [1, 2]:
             self._auth = cmdgen.CommunityData(
-                community, community, version - 1)
+                community, community, version - 1
+            )
         elif version == 3:
             if secname is None:
                 secname = community
@@ -153,11 +160,14 @@ class Session(object):
                     None: cmdgen.usmNoAuthProtocol,
                     "MD5": cmdgen.usmHMACMD5AuthProtocol,
                     "SHA": cmdgen.usmHMACSHAAuthProtocol,
-                    "SHA1": cmdgen.usmHMACSHAAuthProtocol
+                    "SHA1": cmdgen.usmHMACSHAAuthProtocol,
                 }[authprotocol]
             except KeyError:
-                raise ValueError("{0} is not an acceptable authentication "
-                                 "protocol".format(authprotocol))
+                raise ValueError(
+                    "{0} is not an acceptable authentication "
+                    "protocol".format(authprotocol)
+                )
+
             try:
                 privprotocol = {
                     None: cmdgen.usmNoPrivProtocol,
@@ -169,50 +179,55 @@ class Session(object):
                     "AES256": cmdgen.usmAesCfb256Protocol,
                 }[privprotocol]
             except KeyError:
-                raise ValueError("{0} is not an acceptable privacy "
-                                 "protocol".format(privprotocol))
-            self._auth = cmdgen.UsmUserData(secname,
-                                            authpassword,
-                                            privpassword,
-                                            authprotocol,
-                                            privprotocol)
+                raise ValueError(
+                    "{0} is not an acceptable privacy "
+                    "protocol".format(privprotocol)
+                )
+
+            self._auth = cmdgen.UsmUserData(
+                secname, authpassword, privpassword, authprotocol, privprotocol
+            )
         else:
             raise ValueError("unsupported SNMP version {0}".format(version))
 
         # Put transport stuff into self._transport
-        mo = re.match(r'^(?:'
-                      r'\[(?P<ipv6>[\d:A-Fa-f]+)\]|'
-                      r'(?P<ipv4>[\d\.]+)|'
-                      r'(?P<any>.*?))'
-                      r'(?::(?P<port>\d+))?$',
-                      host)
+        mo = re.match(
+            r"^(?:"
+            r"\[(?P<ipv6>[\d:A-Fa-f]+)\]|"
+            r"(?P<ipv4>[\d\.]+)|"
+            r"(?P<any>.*?))"
+            r"(?::(?P<port>\d+))?$",
+            host,
+        )
         if mo.group("port"):
             port = int(mo.group("port"))
         else:
             port = 161
         if mo.group("ipv6"):
-            self._transport = cmdgen.Udp6TransportTarget((mo.group("ipv6"),
-                                                          port))
+            self._transport = cmdgen.Udp6TransportTarget(
+                (mo.group("ipv6"), port)
+            )
         elif mo.group("ipv4"):
-            self._transport = cmdgen.UdpTransportTarget((mo.group("ipv4"),
-                                                         port))
+            self._transport = cmdgen.UdpTransportTarget(
+                (mo.group("ipv4"), port)
+            )
         else:
-            results = socket.getaddrinfo(mo.group("any"),
-                                         port,
-                                         0,
-                                         socket.SOCK_DGRAM,
-                                         socket.IPPROTO_UDP)
+            results = socket.getaddrinfo(
+                mo.group("any"), port, 0, socket.SOCK_DGRAM, socket.IPPROTO_UDP
+            )
             # We should try to connect to each result to determine if
             # the given family is available. However, we cannot do
             # that over UDP. Let's implement a safe choice. If we have
             # an IPv4 address, use that. If not, use IPv6. If we want
             # to add an option to force IPv6, it is a good place.
             if [x for x in results if x[0] == socket.AF_INET]:
-                self._transport = cmdgen.UdpTransportTarget((mo.group("any"),
-                                                             port))
+                self._transport = cmdgen.UdpTransportTarget(
+                    (mo.group("any"), port)
+                )
             else:
-                self._transport = cmdgen.Udp6TransportTarget((mo.group("any"),
-                                                              port))
+                self._transport = cmdgen.Udp6TransportTarget(
+                    (mo.group("any"), port)
+                )
 
         # Bulk stuff
         self.bulk = bulk
@@ -221,8 +236,10 @@ class Session(object):
         """Check if the given ASN1 value is an exception"""
         if isinstance(value, rfc1905.NoSuchObject):
             raise SNMPNoSuchObject("No such object was found")  # noqa: F821
+
         if isinstance(value, rfc1905.NoSuchInstance):
             raise SNMPNoSuchInstance("No such instance exists")  # noqa: F821
+
         if isinstance(value, rfc1905.EndOfMibView):
             raise SNMPEndOfMibView("End of MIB was reached")  # noqa: F821
 
@@ -234,24 +251,27 @@ class Session(object):
             value = value.getOid()
         except AttributeError:
             pass
-        convertors = {rfc1902.Integer: int,
-                      rfc1902.Integer32: int,
-                      rfc1902.OctetString: bytes,
-                      rfc1902.IpAddress: value.prettyOut,
-                      rfc1902.Counter32: int,
-                      rfc1902.Counter64: int,
-                      rfc1902.Gauge32: int,
-                      rfc1902.Unsigned32: int,
-                      rfc1902.TimeTicks: int,
-                      rfc1902.Bits: str,
-                      rfc1902.Opaque: str,
-                      rfc1902.univ.ObjectIdentifier: tuple}
+        convertors = {
+            rfc1902.Integer: int,
+            rfc1902.Integer32: int,
+            rfc1902.OctetString: bytes,
+            rfc1902.IpAddress: value.prettyOut,
+            rfc1902.Counter32: int,
+            rfc1902.Counter64: int,
+            rfc1902.Gauge32: int,
+            rfc1902.Unsigned32: int,
+            rfc1902.TimeTicks: int,
+            rfc1902.Bits: str,
+            rfc1902.Opaque: str,
+            rfc1902.univ.ObjectIdentifier: tuple,
+        }
         if self._none:
             convertors[rfc1905.NoSuchObject] = lambda x: None
             convertors[rfc1905.NoSuchInstance] = lambda x: None
         for cl, fn in convertors.items():
             if isinstance(value, cl):
                 return fn(value)
+
         self._check_exception(value)
         raise NotImplementedError("unable to convert {0}".format(repr(value)))
 
@@ -259,31 +279,38 @@ class Session(object):
         """Apply an SNMP operation"""
         kwargs = {}
         if self._contextname:
-            kwargs['contextName'] = rfc1902.OctetString(self._contextname)
+            kwargs["contextName"] = rfc1902.OctetString(self._contextname)
         errorIndication, errorStatus, errorIndex, varBinds = cmd(
-            self._auth, self._transport, *oids, **kwargs)
+            self._auth, self._transport, *oids, **kwargs
+        )
         if errorIndication:
             self._check_exception(errorIndication)
             raise SNMPException(str(errorIndication))
+
         if errorStatus:
             # We try to find a builtin exception with the same message
             exc = str(errorStatus.prettyPrint())
-            exc = re.sub(r'\W+', '', exc)
+            exc = re.sub(r"\W+", "", exc)
             exc = "SNMP{0}".format(exc[0].upper() + exc[1:])
             if str(exc) in globals():
                 raise globals()[exc]
+
             raise SNMPException(errorStatus.prettyPrint())
+
         if cmd in [self._cmdgen.getCmd, self._cmdgen.setCmd]:
             results = [(tuple(name), val) for name, val in varBinds]
         else:
-            results = [(tuple(name), val)
-                       for row in varBinds for name, val in row]
-            if len(results) > 0 and isinstance(results[-1][1],
-                                               rfc1905.EndOfMibView):
+            results = [
+                (tuple(name), val) for row in varBinds for name, val in row
+            ]
+            if len(results) > 0 and isinstance(
+                results[-1][1], rfc1905.EndOfMibView
+            ):
                 results = results[:-1]
         if len(results) == 0:
             if cmd not in [self._cmdgen.nextCmd, self._cmdgen.bulkCmd]:
                 raise SNMPException("empty answer")
+
         return tuple([(oid, self._convert(val)) for oid, val in results])
 
     def get(self, *oids):
@@ -306,9 +333,11 @@ class Session(object):
         """
         if self._version == 1 or not self.bulk:
             return self._op(self._cmdgen.nextCmd, *oids)
+
         args = [0, self.bulk] + list(oids)
         try:
             return self._op(self._cmdgen.bulkCmd, *args)
+
         except SNMPTooBig:
             # Let's try to ask for less values. We will never increase
             # bulk again. We cannot increase it just after the walk
@@ -318,6 +347,7 @@ class Session(object):
             if nbulk != self.bulk:
                 self.bulk = nbulk
                 return self.walk(*oids)
+
             raise
 
     def walk(self, *oids):
@@ -327,11 +357,12 @@ class Session(object):
         :param oid: OIDs used as a start point
         :return: a list of tuples with the retrieved OID and the raw value.
         """
-        return ((noid, result)
-                for oid in oids
-                for noid, result in self.walkmore(oid)
-                if (len(noid) >= len(oid) and
-                    noid[:len(oid)] == oid[:len(oid)]))
+        return (
+            (noid, result)
+            for oid in oids
+            for noid, result in self.walkmore(oid)
+            if (len(noid) >= len(oid) and noid[: len(oid)] == oid[: len(oid)])
+        )
 
     def set(self, *args):
 
@@ -345,14 +376,14 @@ class Session(object):
         """
         if len(args) % 2 != 0:
             raise ValueError("expect an even number of arguments for SET")
+
         varbinds = zip(*[args[0::2], [v.pack() for v in args[1::2]]])
         return self._op(self._cmdgen.setCmd, *varbinds)
 
     def __repr__(self):
         return "{0}(host={1},version={2})".format(
-            self.__class__.__name__,
-            self._host,
-            self._version)
+            self.__class__.__name__, self._host, self._version
+        )
 
     @property
     def timeout(self):
@@ -371,6 +402,7 @@ class Session(object):
         value = int(value)
         if value <= 0:
             raise ValueError("timeout is a positive integer")
+
         self._transport.timeout = value / 1000000.
 
     @property
@@ -390,6 +422,7 @@ class Session(object):
         value = int(value)
         if value < 0:
             raise ValueError("retries is a non-negative integer")
+
         self._transport.retries = value
 
     @property
@@ -411,9 +444,12 @@ class Session(object):
         if value is False:
             self._bulk = False
             return
+
         value = int(value)
         if value <= 0:
-            raise ValueError("{0} is not an appropriate value "
-                             "for max repeater parameter".format(
-                                 value))
+            raise ValueError(
+                "{0} is not an appropriate value "
+                "for max repeater parameter".format(value)
+            )
+
         self._bulk = value

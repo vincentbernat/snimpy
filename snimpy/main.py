@@ -46,16 +46,18 @@ def interact(argv=sys.argv):  # pragma: no cover
     conf = Conf().load()
 
     banner = "\033[1mSnimpy\033[0m ({0}) -- {1}.\n".format(
-        snimpy.__version__, snimpy.__doc__)
+        snimpy.__version__, snimpy.__doc__
+    )
     banner += "  load        -> load an additional MIB\n"
     banner += "  M           -> manager object"
 
-    local = {"conf": conf,
-             "M": manager.Manager,
-             "load": manager.load,
-             "timedelta": timedelta,
-             "snmp": manager.snmp
-             }
+    local = {
+        "conf": conf,
+        "M": manager.Manager,
+        "load": manager.load,
+        "timedelta": timedelta,
+        "snmp": manager.snmp,
+    }
 
     if len(argv) <= 1:
         manager.Manager._complete = True
@@ -67,20 +69,21 @@ def interact(argv=sys.argv):  # pragma: no cover
 
     if len(argv) > 1:
         argv = argv[1:]
-        exec(compile(open(argv[0]).read(), argv[0], 'exec')) in local
+        exec(compile(open(argv[0]).read(), argv[0], "exec")) in local
         return
 
     try:
         try:
             try:
                 # ipython >= 1.0
-                from IPython.terminal.embed import \
-                    InteractiveShellEmbed
+                from IPython.terminal.embed import InteractiveShellEmbed
             except ImportError:
                 # ipython >= 0.11
-                from IPython.frontend.terminal.embed import \
+                from IPython.frontend.terminal.embed import (
                     InteractiveShellEmbed
+                )
             import IPython
+
             if IPython.version_info < (4,):
                 from IPython.config.loader import Config
             else:
@@ -95,16 +98,19 @@ def interact(argv=sys.argv):  # pragma: no cover
                         return [
                             (Token.Prompt, "Snimpy["),
                             (Token.PromptNum, str(self.shell.execution_count)),
-                            (Token.Prompt, ']> '),
+                            (Token.Prompt, "]> "),
                         ]
 
                     def out_prompt_tokens(self):
                         return [
                             (Token.OutPrompt, "Snimpy["),
-                            (Token.OutPromptNum,
-                             str(self.shell.execution_count)),
-                            (Token.OutPrompt, ']: '),
+                            (
+                                Token.OutPromptNum,
+                                str(self.shell.execution_count),
+                            ),
+                            (Token.OutPrompt, "]: "),
                         ]
+
             except ImportError:
                 SnimpyPrompt = None
                 try:
@@ -118,9 +124,8 @@ def interact(argv=sys.argv):  # pragma: no cover
             if conf.ipythonprofile:
                 cfg.InteractiveShellEmbed.profile = conf.ipythonprofile
             shell = InteractiveShellEmbed(
-                config=cfg,
-                banner1=banner,
-                user_ns=local)
+                config=cfg, banner1=banner, user_ns=local
+            )
             # Not interested by traceback in this module
             shell.InteractiveTB.tb_offset += 1
             if SnimpyPrompt is not None:
@@ -128,12 +133,16 @@ def interact(argv=sys.argv):  # pragma: no cover
         except ImportError:
             # ipython < 0.11
             from IPython.Shell import IPShellEmbed
-            argv = ["-prompt_in1", "Snimpy [\\#]> ",
-                    "-prompt_out", "Snimpy [\\#]: "]
+
+            argv = [
+                "-prompt_in1",
+                "Snimpy [\\#]> ",
+                "-prompt_out",
+                "Snimpy [\\#]: ",
+            ]
             if conf.ipythonprofile:
                 argv += ["-profile", conf.ipythonprofile]
-            shell = IPShellEmbed(argv=argv,
-                                 banner=banner, user_ns=local)
+            shell = IPShellEmbed(argv=argv, banner=banner, user_ns=local)
             # Not interested by traceback in this module
             shell.IP.InteractiveTB.tb_offset += 1
     except ImportError:
@@ -151,11 +160,15 @@ def interact(argv=sys.argv):  # pragma: no cover
             if conf.histfile:
                 try:
                     readline.read_history_file(
-                        os.path.expanduser(conf.histfile))
+                        os.path.expanduser(conf.histfile)
+                    )
                 except IOError:
                     pass
-                atexit.register(lambda: readline.write_history_file(
-                    os.path.expanduser(conf.histfile)))
+                atexit.register(
+                    lambda: readline.write_history_file(
+                        os.path.expanduser(conf.histfile)
+                    )
+                )
 
             readline.set_completer(rlcompleter.Completer(local).complete)
             readline.parse_and_bind("tab: menu-complete")

@@ -4,6 +4,7 @@ import time
 from datetime import timedelta
 from snimpy.manager import load, Manager, snmp
 import agent
+
 if sys.version_info < (2, 7):
     import unittest2 as unittest
 else:
@@ -11,13 +12,15 @@ else:
 
 
 class TestManager(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
-        load('IF-MIB')
-        load('SNMPv2-MIB')
-        load(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "SNIMPY-MIB.mib"))
+        load("IF-MIB")
+        load("SNMPv2-MIB")
+        load(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "SNIMPY-MIB.mib"
+            )
+        )
         cls.agent = agent.TestAgent()
 
     @classmethod
@@ -25,9 +28,11 @@ class TestManager(unittest.TestCase):
         cls.agent.terminate()
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
-                               community="public",
-                               version=2)
+        self.manager = Manager(
+            host="127.0.0.1:{0}".format(self.agent.port),
+            community="public",
+            version=2,
+        )
         self.session = self.manager._session
 
 
@@ -41,8 +46,7 @@ class TestManagerGet(TestManager):
         self.assertEqual(self.manager.ifNumber, 3)
 
     def scalarGetAndCheck(self, name, value):
-        self.assertEqual(getattr(self.manager, name),
-                         value)
+        self.assertEqual(getattr(self.manager, name), value)
 
     def testScalar_IpAddress(self):
         """Retrieve IpAdress as a scalar"""
@@ -81,10 +85,8 @@ class TestManagerGet(TestManager):
         """Retrieve a TimeTicks as a scalar"""
         self.scalarGetAndCheck(
             "snimpyTimeticks",
-            timedelta(days=1,
-                      hours=9,
-                      minutes=38,
-                      seconds=31))
+            timedelta(days=1, hours=9, minutes=38, seconds=31),
+        )
 
     def testScalar_Bits(self):
         """Retrieve Bits as a scalar"""
@@ -96,29 +98,31 @@ class TestManagerGet(TestManager):
 
     def testContains_IfDescr(self):
         """Test proxy column membership checking code"""
-        self.assertEqual(2 in self.manager.ifDescr,
-                         True)
-        # FIXME: this currently fails under TestManagerWithNone
-        # self.assertEqual(10 in self.manager.ifDescr,
-        #                 False)
+        self.assertEqual(2 in self.manager.ifDescr, True)
+
+    # FIXME: this currently fails under TestManagerWithNone
+    # self.assertEqual(10 in self.manager.ifDescr,
+    #                 False)
 
     def testWalkIfDescr(self):
         """Test we can walk IF-MIB::ifDescr and IF-MIB::ifTpe"""
-        results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
-                   for idx in self.manager.ifIndex]
-        self.assertEqual(results,
-                         [(1, "lo", 24),
-                          (2, "eth0", 6),
-                          (3, "eth1", 6)])
+        results = [
+            (idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
+            for idx in self.manager.ifIndex
+        ]
+        self.assertEqual(
+            results, [(1, "lo", 24), (2, "eth0", 6), (3, "eth1", 6)]
+        )
 
     def testWalkIfTable(self):
         """Test we can walk IF-MIB::ifTable"""
-        results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
-                   for idx in self.manager.ifTable]
-        self.assertEqual(results,
-                         [(1, "lo", 24),
-                          (2, "eth0", 6),
-                          (3, "eth1", 6)])
+        results = [
+            (idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
+            for idx in self.manager.ifTable
+        ]
+        self.assertEqual(
+            results, [(1, "lo", 24), (2, "eth0", 6), (3, "eth1", 6)]
+        )
 
     def testWalkIfDescrWithoutBulk(self):
         """Walk IF-MIB::ifDescr without GETBULK"""
@@ -132,102 +136,128 @@ class TestManagerGet(TestManager):
 
     def testWalkComplexIndexes(self):
         """Test if we can walk a table with complex indexes"""
-        results = [(idx, self.manager.snimpyIndexInt[idx])
-                   for idx in self.manager.snimpyIndexInt]
-        self.assertEqual(results,
-                         [(("row1", (1, 2, 3),
-                            "alpha5", "end of row1"), 4571),
-                          (("row2", (1, 0, 2, 3),
-                            "beta32", "end of row2"), 78741),
-                          (("row3", (120, 1, 2, 3),
-                            "gamma7", "end of row3"), 4110)])
+        results = [
+            (idx, self.manager.snimpyIndexInt[idx])
+            for idx in self.manager.snimpyIndexInt
+        ]
+        self.assertEqual(
+            results,
+            [
+                (("row1", (1, 2, 3), "alpha5", "end of row1"), 4571),
+                (("row2", (1, 0, 2, 3), "beta32", "end of row2"), 78741),
+                (("row3", (120, 1, 2, 3), "gamma7", "end of row3"), 4110),
+            ],
+        )
 
     def testWalkTableWithComplexIndexes(self):
         """Test if we can walk a table with complex indexes"""
-        results = [(idx, self.manager.snimpyIndexInt[idx])
-                   for idx in self.manager.snimpyIndexTable]
-        self.assertEqual(results,
-                         [(("row1", (1, 2, 3),
-                            "alpha5", "end of row1"), 4571),
-                          (("row2", (1, 0, 2, 3),
-                            "beta32", "end of row2"), 78741),
-                          (("row3", (120, 1, 2, 3),
-                            "gamma7", "end of row3"), 4110)])
+        results = [
+            (idx, self.manager.snimpyIndexInt[idx])
+            for idx in self.manager.snimpyIndexTable
+        ]
+        self.assertEqual(
+            results,
+            [
+                (("row1", (1, 2, 3), "alpha5", "end of row1"), 4571),
+                (("row2", (1, 0, 2, 3), "beta32", "end of row2"), 78741),
+                (("row3", (120, 1, 2, 3), "gamma7", "end of row3"), 4110),
+            ],
+        )
 
     def testWalkReuseIndexes(self):
         """Test if we can walk a table with re-used indexes"""
-        results = [(idx, self.manager.snimpyReuseIndexValue[idx])
-                   for idx in self.manager.snimpyReuseIndexValue]
-        self.assertEqual(results,
-                         [(("end of row1", 4), 1785),
-                          (("end of row1", 5), 2458)])
+        results = [
+            (idx, self.manager.snimpyReuseIndexValue[idx])
+            for idx in self.manager.snimpyReuseIndexValue
+        ]
+        self.assertEqual(
+            results, [(("end of row1", 4), 1785), (("end of row1", 5), 2458)]
+        )
 
     def testWalkTableWithReuseIndexes(self):
         """Test if we can walk a table with re-used indexes"""
-        results = [(idx, self.manager.snimpyReuseIndexValue[idx])
-                   for idx in self.manager.snimpyReuseIndexTable]
-        self.assertEqual(results,
-                         [(("end of row1", 4), 1785),
-                          (("end of row1", 5), 2458)])
+        results = [
+            (idx, self.manager.snimpyReuseIndexValue[idx])
+            for idx in self.manager.snimpyReuseIndexTable
+        ]
+        self.assertEqual(
+            results, [(("end of row1", 4), 1785), (("end of row1", 5), 2458)]
+        )
 
     def testWalkPartialIndexes(self):
         """Test if we can walk a slice of a table given a partial index"""
-        results = [(idx, self.manager.ifRcvAddressType[idx])
-                   for idx in self.manager.ifRcvAddressStatus[2]]
-        self.assertEqual(results,
-                         [((2, "61:62:63:64:65:66"), 1),
-                          ((2, "67:68:69:6a:6b:6c"), 1)])
-        results = [(idx, self.manager.ifRcvAddressType[idx])
-                   for idx in self.manager.ifRcvAddressStatus[(3,)]]
-        self.assertEqual(results,
-                         [((3, "6d:6e:6f:70:71:72"), 1)])
+        results = [
+            (idx, self.manager.ifRcvAddressType[idx])
+            for idx in self.manager.ifRcvAddressStatus[2]
+        ]
+        self.assertEqual(
+            results,
+            [((2, "61:62:63:64:65:66"), 1), ((2, "67:68:69:6a:6b:6c"), 1)],
+        )
+        results = [
+            (idx, self.manager.ifRcvAddressType[idx])
+            for idx in self.manager.ifRcvAddressStatus[(3,)]
+        ]
+        self.assertEqual(results, [((3, "6d:6e:6f:70:71:72"), 1)])
         results = list(self.manager.ifRcvAddressType.iteritems(3))
-        self.assertEqual(results,
-                         [((3, "6d:6e:6f:70:71:72"), 1)])
+        self.assertEqual(results, [((3, "6d:6e:6f:70:71:72"), 1)])
 
     def testWalkInvalidPartialIndexes(self):
         """Try to get a table slice with an incorrect index filter"""
-        self.assertRaises(ValueError,
-                          lambda: list(
-                              self.manager.ifRcvAddressStatus.iteritems(
-                                  (3, "6d:6e:6f:70:71:72"))))
+        self.assertRaises(
+            ValueError,
+            lambda: list(
+                self.manager.ifRcvAddressStatus.iteritems(
+                    (3, "6d:6e:6f:70:71:72")
+                )
+            ),
+        )
 
     def testContains_Partial(self):
         """Test proxy column membership checking code with partial indexes"""
         self.assertEqual(
-                "61:62:63:64:65:66" in self.manager.ifRcvAddressStatus[2],
-                True)
-        # FIXME: this currently fails under TestManagerWithNone
-        # self.assertEqual(
-        #        "6d:6e:6f:70:71:72" in self.manager.ifRcvAddressStatus[2],
-        #        False)
+            "61:62:63:64:65:66" in self.manager.ifRcvAddressStatus[2], True
+        )
+
+    # FIXME: this currently fails under TestManagerWithNone
+    # self.assertEqual(
+    #        "6d:6e:6f:70:71:72" in self.manager.ifRcvAddressStatus[2],
+    #        False)
 
     def testScalar_MultipleSubscripts(self):
         """Retrieve a scalar value using multiple subscript syntax
         (attr[x][y])"""
-        self.assertEqual(self.manager.ifRcvAddressType[2]["67:68:69:6a:6b:6c"],
-                         1)
+        self.assertEqual(
+            self.manager.ifRcvAddressType[2]["67:68:69:6a:6b:6c"], 1
+        )
 
     def testGetInexistentStuff(self):
         """Try to access stuff that does not exist on the agent"""
-        self.assertRaises(snmp.SNMPNoSuchObject,
-                          getattr, self.manager, "snimpyNotImplemented")
-        self.assertRaises(snmp.SNMPNoSuchObject,
-                          self.manager.ifName.__getitem__, 47)
-        self.assertRaises(snmp.SNMPNoSuchInstance,
-                          self.manager.ifDescr.__getitem__, 47)
+        self.assertRaises(
+            snmp.SNMPNoSuchObject,
+            getattr,
+            self.manager,
+            "snimpyNotImplemented",
+        )
+        self.assertRaises(
+            snmp.SNMPNoSuchObject, self.manager.ifName.__getitem__, 47
+        )
+        self.assertRaises(
+            snmp.SNMPNoSuchInstance, self.manager.ifDescr.__getitem__, 47
+        )
 
     def testAccessInexistentStuff(self):
         """Try to access stuff that don't exist in MIB"""
-        self.assertRaises(AttributeError,
-                          getattr, self.manager, "iDoNotExist")
+        self.assertRaises(AttributeError, getattr, self.manager, "iDoNotExist")
 
     def testAccessIncorrectIndex(self):
         """Try to access with incorrect indexes"""
-        self.assertRaises(ValueError,
-                          self.manager.ifDescr.__getitem__, (47, 18))
-        self.assertRaises(ValueError,
-                          self.manager.ifDescr.__getitem__, "nothing")
+        self.assertRaises(
+            ValueError, self.manager.ifDescr.__getitem__, (47, 18)
+        )
+        self.assertRaises(
+            ValueError, self.manager.ifDescr.__getitem__, "nothing"
+        )
 
     def testAccessEmptyTable(self):
         """Try to walk an empty table"""
@@ -238,12 +268,14 @@ class TestManagerGet(TestManager):
         """Try to walk a non-existent table"""
         agent2 = agent.TestAgent(emptyTable=False)
         try:
-            manager = Manager(host="127.0.0.1:{0}".format(agent2.port),
-                              community="public",
-                              version=2)
+            manager = Manager(
+                host="127.0.0.1:{0}".format(agent2.port),
+                community="public",
+                version=2,
+            )
             [(idx,) for idx in manager.snimpyEmptyDescr]
         except snmp.SNMPNoSuchObject:
-            pass                # That's OK
+            pass  # That's OK
         else:
             self.assertFalse("should raise SNMPNoSuchObject exception")
         finally:
@@ -262,18 +294,20 @@ class TestManagerRestrictModule(TestManager):
 
     def testGetSpecificModule(self):
         """Get a scalar from a specific module only"""
-        self.assertEqual(self.manager['IF-MIB'].ifNumber, 3)
-        self.assertEqual(self.manager['SNMPv2-MIB'].sysDescr,
-                         "Snimpy Test Agent public")
+        self.assertEqual(self.manager["IF-MIB"].ifNumber, 3)
+        self.assertEqual(
+            self.manager["SNMPv2-MIB"].sysDescr, "Snimpy Test Agent public"
+        )
 
     def testGetInexistentModule(self):
         """Get a scalar from a non loaded module"""
-        self.assertRaises(KeyError, lambda: self.manager['IF-MIB2'])
+        self.assertRaises(KeyError, lambda: self.manager["IF-MIB2"])
 
     def testGetInexistentScalarFromModule(self):
         """Get a non-existent scalar from a specific module"""
-        self.assertRaises(AttributeError,
-                          lambda: self.manager['IF-MIB'].sysDescr)
+        self.assertRaises(
+            AttributeError, lambda: self.manager["IF-MIB"].sysDescr
+        )
 
 
 class TestManagerSet(TestManager):
@@ -287,8 +321,7 @@ class TestManagerSet(TestManager):
 
     def scalarSetAndCheck(self, name, value):
         setattr(self.manager, name, value)
-        self.assertEqual(getattr(self.manager, name),
-                         value)
+        self.assertEqual(getattr(self.manager, name), value)
 
     def testScalar_IpAddress(self):
         """Retrieve IpAdress as a scalar"""
@@ -327,10 +360,8 @@ class TestManagerSet(TestManager):
         """Retrieve a TimeTicks as a scalar"""
         self.scalarSetAndCheck(
             "snimpyTimeticks",
-            timedelta(days=1,
-                      hours=17,
-                      minutes=38,
-                      seconds=31))
+            timedelta(days=1, hours=17, minutes=38, seconds=31),
+        )
 
     def testScalar_Bits(self):
         """Retrieve Bits as a scalar"""
@@ -361,6 +392,7 @@ class TestManagerSet(TestManager):
                 m.snimpyString = "Abort sir!"
                 m.snimpyInteger = 37
                 raise RuntimeError("Abort now!")
+
         except RuntimeError as e:
             self.assertEqual(str(e), "Abort now!")
         self.assertNotEqual(m.snimpyString, "Abort sir!")
@@ -368,26 +400,34 @@ class TestManagerSet(TestManager):
 
     def testSetInexistentStuff(self):
         """Try to access stuff that does not exist on the agent"""
-        self.assertRaises(snmp.SNMPNotWritable,
-                          setattr, self.manager, "snimpyNotImplemented",
-                          "Hello")
-        self.assertRaises(snmp.SNMPNotWritable,
-                          self.manager.ifName.__setitem__, 47, "Wouh")
-        self.assertRaises(snmp.SNMPNotWritable,
-                          self.manager.ifDescr.__setitem__, 47, "Noooo")
+        self.assertRaises(
+            snmp.SNMPNotWritable,
+            setattr,
+            self.manager,
+            "snimpyNotImplemented",
+            "Hello",
+        )
+        self.assertRaises(
+            snmp.SNMPNotWritable, self.manager.ifName.__setitem__, 47, "Wouh"
+        )
+        self.assertRaises(
+            snmp.SNMPNotWritable, self.manager.ifDescr.__setitem__, 47, "Noooo"
+        )
 
     def testAccessInexistentStuff(self):
         """Try to access stuff that don't exist in MIB"""
-        self.assertRaises(AttributeError,
-                          setattr, self.manager, "iDoNotExist", 47)
+        self.assertRaises(
+            AttributeError, setattr, self.manager, "iDoNotExist", 47
+        )
 
     def testAccessIncorrectIndex(self):
         """Try to access with incorrect indexes"""
-        self.assertRaises(ValueError,
-                          self.manager.ifDescr.__setitem__, (47, 18), "Nooo")
-        self.assertRaises(ValueError,
-                          self.manager.ifDescr.__setitem__,
-                          "nothing", "Neither")
+        self.assertRaises(
+            ValueError, self.manager.ifDescr.__setitem__, (47, 18), "Nooo"
+        )
+        self.assertRaises(
+            ValueError, self.manager.ifDescr.__setitem__, "nothing", "Neither"
+        )
 
 
 class TestManagerWithNone(TestManagerGet):
@@ -395,9 +435,12 @@ class TestManagerWithNone(TestManagerGet):
     """Test a manager answering None for inexistent stuff"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
-                               community="public",
-                               version=2, none=True)
+        self.manager = Manager(
+            host="127.0.0.1:{0}".format(self.agent.port),
+            community="public",
+            version=2,
+            none=True,
+        )
         self.session = self.manager._session._session
 
     def testGetInexistentStuff(self):
@@ -412,9 +455,12 @@ class TestCachingManager(TestManagerGet):
     """Test if caching manager works like regular manager"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
-                               community="public",
-                               version=2, cache=1)
+        self.manager = Manager(
+            host="127.0.0.1:{0}".format(self.agent.port),
+            community="public",
+            version=2,
+            cache=1,
+        )
         self.session = self.manager._session._session
 
     def testGetChangingStuff(self):
@@ -443,9 +489,12 @@ class TestCachingManagerWithModificatons(TestManager):
     """Test if caching manager works with modifications"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
-                               community="public",
-                               version=2, cache=1)
+        self.manager = Manager(
+            host="127.0.0.1:{0}".format(self.agent.port),
+            community="public",
+            version=2,
+            cache=1,
+        )
         self.session = self.manager._session._session
 
     def testCacheScalar(self):
@@ -474,21 +523,21 @@ class TestManagerInvalidValues(TestManager):
 
     def testInvalidValue(self):
         """Check if an invalid value raises an exception"""
-        self.assertRaises(ValueError,
-                          getattr, self.manager,
-                          "snimpyMacAddressInvalid")
+        self.assertRaises(
+            ValueError, getattr, self.manager, "snimpyMacAddressInvalid"
+        )
 
     def testInvalidValueInTable(self):
         """Check if an invalid value in a table raises an exception"""
-        self.assertRaises(ValueError,
-                          self.manager.snimpyInvalidDescr.__getitem__,
-                          2)
+        self.assertRaises(
+            ValueError, self.manager.snimpyInvalidDescr.__getitem__, 2
+        )
 
     def testInvalidValueWhileIterating(self):
         """Check if an invalid value while walking raises an exception"""
-        self.assertRaises(ValueError,
-                          list,
-                          self.manager.snimpyInvalidDescr.iteritems())
+        self.assertRaises(
+            ValueError, list, self.manager.snimpyInvalidDescr.iteritems()
+        )
 
 
 class TestManagerLoose(TestManager):
@@ -496,25 +545,30 @@ class TestManagerLoose(TestManager):
     """Test when the agent is returning invalid values with loose mode"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
-                               community="public",
-                               version=2, loose=True)
+        self.manager = Manager(
+            host="127.0.0.1:{0}".format(self.agent.port),
+            community="public",
+            version=2,
+            loose=True,
+        )
         self.session = self.manager._session
 
     def testInvalidValue(self):
         """Check if an invalid value is correctly returned"""
-        self.assertEqual(self.manager.snimpyMacAddressInvalid,
-                         b"\xf1\x12\x13\x14\x15\x16")
+        self.assertEqual(
+            self.manager.snimpyMacAddressInvalid, b"\xf1\x12\x13\x14\x15\x16"
+        )
 
     def testInvalidValueInTable(self):
         """Check if an invalid value in a table is correctly returned"""
-        self.assertEqual(self.manager.snimpyInvalidDescr[1],
-                         "Hello")
-        self.assertEqual(self.manager.snimpyInvalidDescr[2],
-                         b"\xf1\x12\x13\x14\x15\x16")
+        self.assertEqual(self.manager.snimpyInvalidDescr[1], "Hello")
+        self.assertEqual(
+            self.manager.snimpyInvalidDescr[2], b"\xf1\x12\x13\x14\x15\x16"
+        )
 
     def testInvalidValueWhileIterating(self):
         """Check if an invalid value while walking works"""
-        self.assertEqual(list(self.manager.snimpyInvalidDescr.iteritems()),
-                         [(1, "Hello"),
-                          (2, b"\xf1\x12\x13\x14\x15\x16")])
+        self.assertEqual(
+            list(self.manager.snimpyInvalidDescr.iteritems()),
+            [(1, "Hello"), (2, b"\xf1\x12\x13\x14\x15\x16")],
+        )

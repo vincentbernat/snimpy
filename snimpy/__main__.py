@@ -18,4 +18,5 @@
 
 if __name__ == "__main__":  # pragma: no cover
     from snimpy import main
+
     main.interact()

@@ -163,9 +163,8 @@ _SOURCE = """
 
 ffi = FFI()
 ffi.cdef(_CDEF)
-if hasattr(ffi, 'set_source'):
-    ffi.set_source("snimpy._smi", _SOURCE,
-                   libraries=["smi"])
+if hasattr(ffi, "set_source"):
+    ffi.set_source("snimpy._smi", _SOURCE, libraries=["smi"])
 
 
 def get_lib():

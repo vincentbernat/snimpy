@@ -80,13 +80,17 @@ class NoneSession(DelegatedSession):
     def get(self, *args):
         try:
             return self._session.get(*args)
-        except (snmp.SNMPNoSuchName,
-                snmp.SNMPNoSuchObject,
-                snmp.SNMPNoSuchInstance):
+
+        except (
+            snmp.SNMPNoSuchName,
+            snmp.SNMPNoSuchObject,
+            snmp.SNMPNoSuchInstance,
+        ):
             if len(args) > 1:
                 # We can't handle this case yet because we don't know
                 # which value is unavailable.
                 raise
+
             return ((args[0], None),)
 
 
@@ -109,13 +113,14 @@ class CachedSession(DelegatedSession):
             t, v = self.cache[op, args]
             if time() - t < self.timeout:
                 return v
+
         value = getattr(self._session, op)(*args)
         self.cache[op, args] = [time(), value]
         if op == "walkmore":
             # also cache all the get requests we got for free
             for oid, get_value in value:
                 self.count += 1
-                self.cache["get", (oid, )] = [time(), ((oid, get_value), )]
+                self.cache["get", (oid,)] = [time(), ((oid, get_value),)]
         self.flush()
         return value
 
@@ -123,7 +128,7 @@ class CachedSession(DelegatedSession):
         return self.getorwalk("get", *args)
 
     def walk(self, *args):
-        assert(len(args) == 1)  # we should ony walk one oid at a time
+        assert len(args) == 1  # we should ony walk one oid at a time
         return self.getorwalk("walkmore", *args)
 
     def flush(self):
@@ -224,17 +229,25 @@ class Manager(object):
     # do we want this object to be populated with all nodes?
     _complete = False
 
-    def __init__(self,
-                 host="localhost",
-                 community="public", version=2,
-                 cache=False, none=False,
-                 timeout=None, retries=None,
-                 loose=False, bulk=40,
-                 # SNMPv3
-                 secname=None,
-                 authprotocol=None, authpassword=None,
-                 privprotocol=None, privpassword=None,
-                 contextname=None):
+    def __init__(
+        self,
+        host="localhost",
+        community="public",
+        version=2,
+        cache=False,
+        none=False,
+        timeout=None,
+        retries=None,
+        loose=False,
+        bulk=40,
+        # SNMPv3
+        secname=None,
+        authprotocol=None,
+        authpassword=None,
+        privprotocol=None,
+        privpassword=None,
+        contextname=None,
+    ):
         """Create a new SNMP manager. Some of the parameters are explained in
         :meth:`snmp.Session.__init__`.
 
@@ -275,12 +288,18 @@ class Manager(object):
         if host is None:
             host = Manager._host
         self._host = host
-        self._session = snmp.Session(host, community, version,
-                                     secname,
-                                     authprotocol, authpassword,
-                                     privprotocol, privpassword,
-                                     contextname=contextname,
-                                     bulk=bulk)
+        self._session = snmp.Session(
+            host,
+            community,
+            version,
+            secname,
+            authprotocol,
+            authpassword,
+            privprotocol,
+            privpassword,
+            contextname=contextname,
+            bulk=bulk,
+        )
         if timeout is not None:
             self._session.timeout = int(timeout * 1000000)
         if retries is not None:
@@ -299,15 +318,16 @@ class Manager(object):
         # constructor in a generic way
         frame = inspect.currentframe()
         args, _, _, values = inspect.getargvalues(frame)
-        self._constructor_args = dict((a, values[a])
-                                      for a in args
-                                      if a != 'self')
+        self._constructor_args = dict(
+            (a, values[a]) for a in args if a != "self"
+        )
 
     def _locate(self, attribute):
         for m in self._loaded:
             try:
                 a = mib.get(m, attribute)
                 return (m, a)
+
             except mib.SMIException:
                 pass
         raise AttributeError("{0} is not an attribute".format(attribute))
@@ -315,39 +335,49 @@ class Manager(object):
     def __getattribute__(self, attribute):
         if attribute.startswith("_"):
             return object.__getattribute__(self, attribute)
+
         m, a = self._locate(attribute)
         if isinstance(a, mib.Scalar):
             oid, result = self._session.get(a.oid + (0,))[0]
             if result is not None:
                 try:
                     return a.type(a, result)
+
                 except ValueError:
                     if self._loose:
                         return result
+
                     raise
+
             return None
+
         elif isinstance(a, mib.Column):
             return ProxyColumn(self._session, a, self._loose)
+
         elif isinstance(a, mib.Table):
             return ProxyTable(self._session, a, self._loose)
+
         raise NotImplementedError
 
     def __setattr__(self, attribute, value):
         if attribute.startswith("_"):
             return object.__setattr__(self, attribute, value)
+
         m, a = self._locate(attribute)
         if not isinstance(value, basictypes.Type):
             value = a.type(a, value, raw=False)
         if isinstance(a, mib.Scalar):
             self._session.set(a.oid + (0,), value)
             return
+
         raise AttributeError("{0} is not writable".format(attribute))
 
     def __getitem__(self, modulename):
-        modulename = modulename.encode('ascii')
+        modulename = modulename.encode("ascii")
         for m in loaded:
             if modulename == m:
                 return MibRestrictedManager(self, [m])
+
         raise KeyError("{0} is not a loaded module".format(modulename))
 
     def __repr__(self):
@@ -374,8 +404,9 @@ class Proxy:
     """A proxy for some base type, notably a column or a table."""
 
     def __repr__(self):
-        return "<{0} for {1}>".format(self.__class__.__name__,
-                                      repr(self.proxy)[1:-1])
+        return "<{0} for {1}>".format(
+            self.__class__.__name__, repr(self.proxy)[1:-1]
+        )
 
 
 class ProxyIter(Proxy, Sized, Iterable, Container):
@@ -393,26 +424,30 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
         if len(indextype) != len(index):
             raise ValueError(
                 "{0} column uses the following "
-                "indexes: {1!r}".format(self.proxy, indextype))
+                "indexes: {1!r}".format(self.proxy, indextype)
+            )
+
         oidindex = []
         for i, ind in enumerate(index):
             # Cast to the correct type since we need "toOid()"
             ind = indextype[i].type(indextype[i], ind, raw=False)
-            implied = self.proxy.table.implied and i == len(index)-1
+            implied = self.proxy.table.implied and i == len(index) - 1
             oidindex.extend(ind.toOid(implied))
-        result = getattr(
-            self.session,
-            op)(self.proxy.oid + tuple(oidindex),
-                *args)
+        result = getattr(self.session, op)(
+            self.proxy.oid + tuple(oidindex), *args
+        )
         if op != "set":
             oid, result = result[0]
             if result is not None:
                 try:
                     return self.proxy.type(self.proxy, result)
+
                 except ValueError:
                     if self._loose:
                         return result
+
                     raise
+
             return None
 
     def __contains__(self, object):
@@ -420,6 +455,7 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
             self._op("get", object)
         except Exception:
             return False
+
         return True
 
     def __iter__(self):
@@ -437,6 +473,7 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
         if table_filter is not None:
             if len(table_filter) >= len(indexes):
                 raise ValueError("Table filter has too many elements")
+
             oid_suffix = []
             # Convert filter elements to correct types
             for i, part in enumerate(table_filter):
@@ -452,18 +489,22 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
             if noid <= oid:
                 noid = None
                 break
+
             oid = noid
-            if not((len(oid) >= len(walk_oid) and
-                    oid[:len(walk_oid)] ==
-                    walk_oid[:len(walk_oid)])):
+            if not (
+                (
+                    len(oid) >= len(walk_oid)
+                    and oid[: len(walk_oid)] == walk_oid[: len(walk_oid)]
+                )
+            ):
                 noid = None
                 break
 
             # oid should be turned into index
-            index = tuple(oid[len(self.proxy.oid):])
+            index = tuple(oid[len(self.proxy.oid) :])
             target = []
             for i, x in enumerate(indexes):
-                implied = self.proxy.table.implied and i == len(indexes)-1
+                implied = self.proxy.table.implied and i == len(indexes) - 1
                 l, o = x.type.fromOid(x, index, implied)
                 target.append(x.type(x, o))
                 index = index[l:]
@@ -474,9 +515,11 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
                 except ValueError:
                     if not self._loose:
                         raise
+
             if len(target) == 1:
                 # Should work most of the time
                 yield target[0], result
+
             else:
                 yield tuple(target), result
 
@@ -492,9 +535,11 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
             except snmp.SNMPNoSuchInstance:
                 # OK, the set of result is really empty
                 raise StopIteration
+
             except snmp.SNMPNoAccess:
                 # Some implementations seem to return NoAccess (PySNMP is one)
                 raise StopIteration
+
             except snmp.SNMPNoSuchName:
                 # SNMPv1, we don't know
                 pass
@@ -535,6 +580,7 @@ class ProxyColumn(ProxyIter, MutableMapping):
         if isinstance(index, tuple):
             if len(index) + suffix_len < idx_len:
                 return self._partial(index)
+
         elif idx_len > suffix_len + 1:
             return self._partial((index,))
 
@@ -586,7 +632,5 @@ def load(mibname):
     if m not in loaded:
         loaded.append(m)
         if Manager._complete:
-            for o in mib.getScalars(m) + \
-                    mib.getColumns(m) + \
-                    mib.getTables(m):
+            for o in mib.getScalars(m) + mib.getColumns(m) + mib.getTables(m):
                 setattr(Manager, str(o), 1)

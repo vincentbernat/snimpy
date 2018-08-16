@@ -36,6 +36,7 @@ from snimpy import mib
 
 PYTHON3 = sys.version_info >= (3, 0)
 if PYTHON3:
+
     def ord2(x):
         return x
 
@@ -52,12 +53,14 @@ else:
 
 
 def ordering_with_cmp(cls):
-    ops = {'__lt__': lambda self, other: self.__cmp__(other) < 0,
-           '__gt__': lambda self, other: self.__cmp__(other) > 0,
-           '__le__': lambda self, other: self.__cmp__(other) <= 0,
-           '__ge__': lambda self, other: self.__cmp__(other) >= 0,
-           '__eq__': lambda self, other: self.__cmp__(other) == 0,
-           '__ne__': lambda self, other: self.__cmp__(other) != 0}
+    ops = {
+        "__lt__": lambda self, other: self.__cmp__(other) < 0,
+        "__gt__": lambda self, other: self.__cmp__(other) > 0,
+        "__le__": lambda self, other: self.__cmp__(other) <= 0,
+        "__ge__": lambda self, other: self.__cmp__(other) >= 0,
+        "__eq__": lambda self, other: self.__cmp__(other) == 0,
+        "__ne__": lambda self, other: self.__cmp__(other) != 0,
+    }
     for opname, opfunc in ops.items():
         opfunc.__name__ = opname
         opfunc.__doc__ = getattr(int, opname).__doc__
@@ -82,8 +85,9 @@ class Type(object):
         :return: an instance of the new typed value
         """
         if entity.type != cls:
-            raise ValueError("MIB node is {0}. We are {1}".format(entity.type,
-                                                                  cls))
+            raise ValueError(
+                "MIB node is {0}. We are {1}".format(entity.type, cls)
+            )
 
         if cls == OctetString and entity.fmt is not None:
             # Promotion of OctetString to String if we have unicode stuff
@@ -180,6 +184,7 @@ class Type(object):
         if entity.ranges and not isinstance(entity.ranges, (tuple, list)):
             # Fixed length
             return True
+
         else:
             # Variable length
             return False
@@ -188,8 +193,7 @@ class Type(object):
         return str(self._value)
 
     def __repr__(self):
-        return '<{0}: {1}>'.format(self.__class__.__name__,
-                                   str(self))
+        return "<{0}: {1}>".format(self.__class__.__name__, str(self))
 
 
 @ordering_with_cmp
@@ -207,12 +211,12 @@ class IpAddress(Type):
             value = socket.inet_ntoa(socket.inet_aton(value))
         except socket.error:
             raise ValueError("{0!r} is not a valid IP".format(value))
+
         return [int(a) for a in value.split(".")]
 
     def pack(self):
-        return (
-            rfc1902.IpAddress(
-                str(".".join(["{0:d}".format(x) for x in self._value])))
+        return rfc1902.IpAddress(
+            str(".".join(["{0:d}".format(x) for x in self._value]))
         )
 
     def toOid(self, implied=False):
@@ -222,7 +226,9 @@ class IpAddress(Type):
     def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 4:
             raise ValueError(
-                "{0!r} is too short for an IP address".format(oid))
+                "{0!r} is too short for an IP address".format(oid)
+            )
+
         return (4, cls(entity, oid[:4]))
 
     def __str__(self):
@@ -234,10 +240,13 @@ class IpAddress(Type):
                 other = IpAddress(self.entity, other)
             except Exception:
                 raise NotImplementedError  # pragma: no cover
+
         if self._value == other._value:
             return 0
+
         if self._value < other._value:
             return -1
+
         return 1
 
     def __getitem__(self, nb):
@@ -245,7 +254,6 @@ class IpAddress(Type):
 
 
 class StringOrOctetString(Type):
-
     def toOid(self, implied=False):
         # To convert properly to OID, we need to know if it is a
         # fixed-len string, an implied string or a variable-len
@@ -254,6 +262,7 @@ class StringOrOctetString(Type):
 
         if implied or self._fixedLen(self.entity):
             return tuple(ord2(a) for a in b)
+
         else:
             return tuple([len(b)] + [ord2(a) for a in b])
 
@@ -265,26 +274,35 @@ class StringOrOctetString(Type):
         if implied:
             # Eat everything
             return (len(oid), cls(entity, b"".join([chr2(x) for x in oid])))
+
         if cls._fixedLen(entity):
             length = entity.ranges
             if len(oid) < length:
                 raise ValueError(
                     "{0} is too short for wanted fixed "
-                    "string (need at least {1:d})".format(oid, length))
-            return (length,
-                    cls(entity, b"".join([chr2(x) for x in oid[:length]])))
+                    "string (need at least {1:d})".format(oid, length)
+                )
+
+            return (
+                length,
+                cls(entity, b"".join([chr2(x) for x in oid[:length]])),
+            )
 
         # This is var-len
         if not oid:
             raise ValueError("empty OID while waiting for var-len string")
+
         length = oid[0]
         if len(oid) < length + 1:
             raise ValueError(
                 "{0} is too short for variable-len "
-                "string (need at least {1:d})".format(oid, length))
+                "string (need at least {1:d})".format(oid, length)
+            )
+
         return (
-            (length + 1,
-             cls(entity, b"".join([chr2(x) for x in oid[1:(length + 1)]]))))
+            length + 1,
+            cls(entity, b"".join([chr2(x) for x in oid[1 : (length + 1)]])),
+        )
 
     def pack(self):
         return rfc1902.OctetString(self._toBytes())
@@ -303,8 +321,10 @@ class OctetString(StringOrOctetString, bytes):
         # Internally, we are using bytes
         if isinstance(value, bytes):
             return value
+
         if isinstance(value, unicode):
             return value.encode("ascii")
+
         return bytes(value)
 
     def _toBytes(self):
@@ -317,7 +337,9 @@ class OctetString(StringOrOctetString, bytes):
         for v in value:
             if not isinstance(v, (int, long)):
                 raise NotImplementedError(
-                    "on string, bit-operation are limited to integers")
+                    "on string, bit-operation are limited to integers"
+                )
+
             if len(nvalue) < (v >> 3) + 1:
                 nvalue.extend([0] * ((v >> 3) + 1 - len(self._value)))
             nvalue[v >> 3] |= 1 << (7 - v % 8)
@@ -330,11 +352,15 @@ class OctetString(StringOrOctetString, bytes):
         for v in value:
             if not isinstance(v, int) and not isinstance(v, long):
                 raise NotImplementedError(
-                    "on string, bit-operation are limited to integers")
+                    "on string, bit-operation are limited to integers"
+                )
+
             if len(nvalue) < (v >> 3) + 1:
                 continue
+
             nvalue[v >> 3] &= ~(1 << (7 - v % 8))
         return self.__class__(self.entity, b"".join([chr2(i) for i in nvalue]))
+
         return self
 
     def __and__(self, value):
@@ -344,11 +370,15 @@ class OctetString(StringOrOctetString, bytes):
         for v in value:
             if not isinstance(v, (int, long)):
                 raise NotImplementedError(
-                    "on string, bit-operation are limited to integers")
+                    "on string, bit-operation are limited to integers"
+                )
+
             if len(nvalue) < (v >> 3) + 1:
                 return False
-            if not(nvalue[v >> 3] & (1 << (7 - v % 8))):
+
+            if not (nvalue[v >> 3] & (1 << (7 - v % 8))):
                 return False
+
         return True
 
 
@@ -385,16 +415,14 @@ class String(StringOrOctetString, unicode):
         j += 1
 
         # seperator
-        if j < len(fmt) and \
-                fmt[j] != "*" and not fmt[j].isdigit():
+        if j < len(fmt) and fmt[j] != "*" and not fmt[j].isdigit():
             sep = fmt[j]
             j += 1
         else:
             sep = ""
 
         # terminator
-        if j < len(fmt) and \
-                fmt[j] != "*" and not fmt[j].isdigit():
+        if j < len(fmt) and fmt[j] != "*" and not fmt[j].isdigit():
             term = fmt[j]
             j += 1
         else:
@@ -404,15 +432,16 @@ class String(StringOrOctetString, unicode):
 
     @classmethod
     def _fromBytes(cls, value, fmt):
-        i = 0               # Position in value
-        j = 0               # Position in fmt
+        i = 0  # Position in value
+        j = 0  # Position in fmt
         result = ""
         term = None
         sep = None
         while i < len(value):
             if j < len(fmt):
                 j, dorepeat, length, format, sep, term = cls._parseOctetFormat(
-                    fmt, j)
+                    fmt, j
+                )
 
             # building
             if dorepeat:
@@ -421,13 +450,15 @@ class String(StringOrOctetString, unicode):
             else:
                 repeat = 1
             for r in range(repeat):
-                bb = value[i:i + length]
+                bb = value[i : i + length]
                 i += length
-                if format in ['o', 'x', 'd']:
+                if format in ["o", "x", "d"]:
                     if length > 4:
                         raise ValueError(
                             "don't know how to handle integers "
-                            "more than 4 bytes long")
+                            "more than 4 bytes long"
+                        )
+
                     bb = b"\x00" * (4 - length) + bb
                     number = struct.unpack(b"!l", bb)[0]
                     if format == "o":
@@ -436,16 +467,18 @@ class String(StringOrOctetString, unicode):
                         result += "".join(oct(number).partition("o")[0:3:2])
                     elif format == "x":
                         result += hex(number)[2:]
-                    else:       # format == "d":
+                    else:  # format == "d":
                         result += str(number)
                 elif format == "a":
                     result += bb.decode("ascii")
                 elif format == "t":
                     result += bb.decode("utf-8")
                 else:
-                    raise ValueError("{0!r} cannot be represented with "
-                                     "the given display string ({1})".format(
-                                         bb, fmt))
+                    raise ValueError(
+                        "{0!r} cannot be represented with "
+                        "the given display string ({1})".format(bb, fmt)
+                    )
+
                 result += sep
             if sep and term:
                 result = result[:-1]
@@ -469,27 +502,34 @@ class String(StringOrOctetString, unicode):
                 j, dorepeat, length, format, sep, term = parsed
                 if format == "o":
                     fmatch = "(?P<o>[0-7]{{1,{0}}})".format(
-                        int(length * 2.66667) + 1)
+                        int(length * 2.66667) + 1
+                    )
                 elif format == "x":
                     fmatch = "(?P<x>[0-9A-Fa-f]{{1,{0}}})".format(length * 2)
                 elif format == "d":
                     fmatch = "(?P<d>[0-9]{{1,{0}}})".format(
-                        int(length * 2.4083) + 1)
+                        int(length * 2.4083) + 1
+                    )
                 elif format == "a":
                     fmatch = "(?P<a>(?:.|\n){{1,{0}}})".format(length)
                 elif format == "t":
                     fmatch = "(?P<t>(?:.|\n){{1,{0}}})".format(length)
                 else:
-                    raise ValueError("{0!r} cannot be parsed due to an "
-                                     "incorrect format ({1})".format(
-                                         self._value, fmt))
+                    raise ValueError(
+                        "{0!r} cannot be parsed due to an "
+                        "incorrect format ({1})".format(self._value, fmt)
+                    )
+
             repeats = []
             while True:
                 mo = re.match(fmatch, self._value[i:])
                 if not mo:
-                    raise ValueError("{0!r} cannot be parsed because it "
-                                     "does not match format {1} at "
-                                     "index {2}".format(self._value, fmt, i))
+                    raise ValueError(
+                        "{0!r} cannot be parsed because it "
+                        "does not match format {1} at "
+                        "index {2}".format(self._value, fmt, i)
+                    )
+
                 if format in ["o", "x", "d"]:
                     if format == "o":
                         r = int(mo.group("o"), 8)
@@ -510,17 +550,24 @@ class String(StringOrOctetString, unicode):
                         elif term and self._value[i] == term:
                             i += 1
                             break
+
                     else:
                         break
+
                 else:
                     break
+
             if dorepeat:
                 bb += chr2(len(repeats))
                 bb += b"".join(repeats)
             else:
                 bb += result
-                if i < len(self._value) and (sep and self._value[i] == sep or
-                                             term and self._value[i] == term):
+                if i < len(self._value) and (
+                    sep
+                    and self._value[i] == sep
+                    or term
+                    and self._value[i] == term
+                ):
                     i += 1
 
         return bb
@@ -531,8 +578,10 @@ class String(StringOrOctetString, unicode):
         # case if the value is an OctetString to do the conversion.
         if isinstance(value, OctetString):
             return cls._fromBytes(value._value, entity.fmt)
+
         if PYTHON3 and isinstance(value, bytes):
             return value.decode("utf-8")
+
         return unicode(value)
 
     def __str__(self):
@@ -550,12 +599,16 @@ class Integer(Type, long):
     def pack(self):
         if self._value >= (1 << 64):
             raise OverflowError("too large to be packed")
+
         if self._value >= (1 << 32):
             return rfc1902.Counter64(self._value)
+
         if self._value >= 0:
             return rfc1902.Integer(self._value)
+
         if self._value >= -(1 << 31):
             return rfc1902.Integer(self._value)
+
         raise OverflowError("too small to be packed")
 
     def toOid(self, implied=False):
@@ -565,17 +618,21 @@ class Integer(Type, long):
     def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError("{0} is too short for an integer".format(oid))
+
         return (1, cls(entity, oid[0]))
 
     def __str__(self):
         if self.entity.fmt:
             if self.entity.fmt[0] == "x":
                 return hex(self._value)
+
             if self.entity.fmt[0] == "o":
                 return oct(self._value)
+
             if self.entity.fmt[0] == "b":
                 if self._value == 0:
                     return "0"
+
                 if self._value > 0:
                     v = self._value
                     r = ""
@@ -583,14 +640,18 @@ class Integer(Type, long):
                         r = str(v % 2) + r
                         v = v >> 1
                     return r
-            elif self.entity.fmt[0] == "d" and \
-                    len(self.entity.fmt) > 2 and \
-                    self.entity.fmt[1] == "-":
+
+            elif (
+                self.entity.fmt[0] == "d"
+                and len(self.entity.fmt) > 2
+                and self.entity.fmt[1] == "-"
+            ):
                 dec = int(self.entity.fmt[2:])
                 result = str(self._value)
                 if len(result) < dec + 1:
                     result = "0" * (dec + 1 - len(result)) + result
                 return "{0}.{1}".format(result[:-2], result[-2:])
+
         return str(self._value)
 
 
@@ -601,8 +662,10 @@ class Unsigned32(Integer):
     def pack(self):
         if self._value >= (1 << 32):
             raise OverflowError("too large to be packed")
+
         if self._value < 0:
             raise OverflowError("too small to be packed")
+
         return rfc1902.Unsigned32(self._value)
 
 
@@ -613,8 +676,10 @@ class Unsigned64(Integer):
     def pack(self):
         if self._value >= (1 << 64):
             raise OverflowError("too large to be packed")
+
         if self._value < 0:
             raise OverflowError("too small to be packed")
+
         return rfc1902.Counter64(self._value)
 
 
@@ -627,15 +692,18 @@ class Enum(Integer):
     def _internal(cls, entity, value):
         if value in entity.enum:
             return value
+
         for (k, v) in entity.enum.items():
-            if (v == value):
+            if v == value:
                 return k
+
         try:
             return long(value)
+
         except Exception:
-            raise ValueError("{0!r} is not a valid "
-                             "value for {1}".format(value,
-                                                    entity))
+            raise ValueError(
+                "{0!r} is not a valid " "value for {1}".format(value, entity)
+            )
 
     def pack(self):
         return rfc1902.Integer(self._value)
@@ -644,7 +712,9 @@ class Enum(Integer):
     def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError(
-                "{0!r} is too short for an enumeration".format(oid))
+                "{0!r} is too short for an enumeration".format(oid)
+            )
+
         return (1, cls(entity, oid[0]))
 
     def __eq__(self, other):
@@ -653,16 +723,18 @@ class Enum(Integer):
                 other = self.__class__(self.entity, other)
             except Exception:
                 raise NotImplementedError  # pragma: no cover
+
         return self._value == other._value
 
     def __ne__(self, other):
-        return not(self.__eq__(other))
+        return not (self.__eq__(other))
 
     def __str__(self):
         if self._value in self.entity.enum:
-            return (
-                "{0}({1:d})".format(self.entity.enum[self._value], self._value)
+            return "{0}({1:d})".format(
+                self.entity.enum[self._value], self._value
             )
+
         else:
             return str(self._value)
 
@@ -676,13 +748,17 @@ class Oid(Type):
     def _internal(cls, entity, value):
         if isinstance(value, (list, tuple)):
             return tuple([int(v) for v in value])
+
         elif isinstance(value, str):
             return tuple([ord2(i) for i in value.split(".") if i])
+
         elif isinstance(value, mib.Node):
             return tuple(value.oid)
+
         else:
             raise TypeError(
-                "don't know how to convert {0!r} to OID".format(value))
+                "don't know how to convert {0!r} to OID".format(value)
+            )
 
     def pack(self):
         return rfc1902.univ.ObjectIdentifier(self._value)
@@ -690,6 +766,7 @@ class Oid(Type):
     def toOid(self, implied=False):
         if implied or self._fixedLen(self.entity):
             return self._value
+
         else:
             return tuple([len(self._value)] + list(self._value))
 
@@ -698,19 +775,26 @@ class Oid(Type):
         if cls._fixedLen(entity):
             # A fixed OID? We don't like this. Provide a real example.
             raise ValueError(
-                "{0!r} seems to be a fixed-len OID index. Odd.".format(entity))
+                "{0!r} seems to be a fixed-len OID index. Odd.".format(entity)
+            )
+
         if not implied:
             # This index is not implied. We need the len
             if len(oid) < 1:
                 raise ValueError(
                     "{0!r} is too short for a not "
-                    "implied index".format(entity))
+                    "implied index".format(entity)
+                )
+
             length = oid[0]
             if len(oid) < length + 1:
                 raise ValueError(
                     "{0!r} has an incorrect size "
-                    "(needs at least {1:d})".format(oid, length))
-            return (length + 1, cls(entity, oid[1:(length + 1)]))
+                    "(needs at least {1:d})".format(oid, length)
+                )
+
+            return (length + 1, cls(entity, oid[1 : (length + 1)]))
+
         else:
             # This index is implied. Eat everything
             return (len(oid), cls(entity, oid))
@@ -723,8 +807,10 @@ class Oid(Type):
             other = Oid(self.entity, other)
         if tuple(self._value) == tuple(other._value):
             return 0
+
         if self._value > other._value:
             return 1
+
         return -1
 
     def __getitem__(self, index):
@@ -734,8 +820,9 @@ class Oid(Type):
         """Test if item is a sub-oid of this OID"""
         if not isinstance(item, Oid):
             item = Oid(self.entity, item)
-        return tuple(item._value[:len(self._value)]) == \
-            tuple(self._value[:len(self._value)])
+        return tuple(item._value[: len(self._value)]) == tuple(
+            self._value[: len(self._value)]
+        )
 
 
 class Boolean(Enum):
@@ -747,14 +834,17 @@ class Boolean(Enum):
         if isinstance(value, bool):
             if value:
                 return Enum._internal(entity, "true")
+
             else:
                 return Enum._internal(entity, "false")
+
         else:
             return Enum._internal(entity, value)
 
     def __nonzero__(self):
         if self._value == 1:
             return True
+
         else:
             return False
 
@@ -772,16 +862,21 @@ class Timeticks(Type):
         if isinstance(value, (int, long)):
             # Value in centiseconds
             return timedelta(0, value / 100.)
+
         elif isinstance(value, timedelta):
             return value
+
         else:
             raise TypeError(
-                "dunno how to handle {0!r} ({1})".format(value, type(value)))
+                "dunno how to handle {0!r} ({1})".format(value, type(value))
+            )
 
     def __int__(self):
-        return self._value.days * 3600 * 24 * 100 + \
-            self._value.seconds * 100 + \
-            self._value.microseconds // 10000
+        return (
+            self._value.days * 3600 * 24 * 100
+            + self._value.seconds * 100
+            + self._value.microseconds // 10000
+        )
 
     def toOid(self, implied=False):
         return (int(self),)
@@ -790,6 +885,7 @@ class Timeticks(Type):
     def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError("{0!r} is too short for a timetick".format(oid))
+
         return (1, cls(entity, oid[0]))
 
     def pack(self):
@@ -806,11 +902,15 @@ class Timeticks(Type):
         elif not isinstance(other, timedelta):
             raise NotImplementedError(
                 "only compare to int or "
-                "timedelta, not {0}".format(type(other)))
+                "timedelta, not {0}".format(type(other))
+            )
+
         if self._value == other:
             return 0
+
         if self._value < other:
             return -1
+
         return 1
 
 
@@ -826,17 +926,21 @@ class Bits(Type):
             for i, x in enumerate(value):
                 if ord2(x) == 0:
                     continue
+
                 for j in range(8):
                     if ord2(x) & (1 << (7 - j)):
                         k = (i * 8) + j
                         if k not in entity.enum:
                             tryalternate = True
                             break
+
                         bits.add(k)
                 if tryalternate:
                     break
+
             if not tryalternate:
                 return bits
+
             else:
                 bits = set()
         elif not isinstance(value, (tuple, list, set, frozenset)):
@@ -848,12 +952,14 @@ class Bits(Type):
                 found = True
             else:
                 for (k, t) in entity.enum.items():
-                    if (t == v):
+                    if t == v:
                         bits.add(k)
                         found = True
                         break
+
             if not found:
                 raise ValueError("{0!r} is not a valid bit value".format(v))
+
         return bits
 
     def pack(self):
