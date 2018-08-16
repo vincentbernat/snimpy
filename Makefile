@@ -28,7 +28,8 @@ clean-pyc:
 	find . -name '__pycache__' -type d -exec rm -rf {} +
 
 lint:
-	flake8 snimpy tests
+	black --line-length 79 --check --verbose --exclude _version.py snimpy tests
+	flake8 --ignore=E203,W503 snimpy tests
 
 test:
 	python -m nose
