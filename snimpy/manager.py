@@ -491,18 +491,16 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
                 self.session.get(self.proxy.oid)
             except snmp.SNMPNoSuchInstance:
                 # OK, the set of result is really empty
-                raise StopIteration
+                return
             except snmp.SNMPNoAccess:
                 # Some implementations seem to return NoAccess (PySNMP is one)
-                raise StopIteration
+                return
             except snmp.SNMPNoSuchName:
                 # SNMPv1, we don't know
                 pass
             except snmp.SNMPNoSuchObject:
                 # The result is empty because the column is unknown
                 raise
-
-        raise StopIteration
 
 
 class ProxyTable(ProxyIter):
