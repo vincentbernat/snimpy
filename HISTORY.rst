@@ -3,6 +3,12 @@
 History
 -------
 
+0.8.13 (2018-10-12)
++++++++++++++++++++
+
+ * Compatibility with Python 3.7.
+ * Fix an issue with implied index when reusing indexes between tables.
+
 0.8.12 (2017-10-02)
 +++++++++++++++++++
 
