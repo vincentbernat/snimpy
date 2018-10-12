@@ -2,6 +2,7 @@ import unittest
 import os
 import threading
 import multiprocessing
+import platform
 from datetime import timedelta
 from snimpy import basictypes, snmp, mib
 import agent
@@ -312,6 +313,8 @@ class TestSnmp1(unittest.TestCase):
         self.assertEqual(a1, b"Snimpy Test Agent public")
         self.assertEqual(a2, b"Snimpy Test Agent private")
 
+    @unittest.skipIf(platform.python_implementation() == "PyPy",
+                     "unreliable test with Pypy")
     def testMultipleThreads(self):
         """Test with multiple sessions in different threads."""
         count = 20
