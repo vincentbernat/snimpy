@@ -462,7 +462,7 @@ def reset():
     """Reset libsmi to its initial state."""
     _smi.smiExit()
     if _smi.smiInit(b"snimpy") < 0:
-            raise SMIException("unable to init libsmi")
+        raise SMIException("unable to init libsmi")
     _smi.smiSetErrorLevel(1)
     _smi.smiSetErrorHandler(_logError)
     try:
