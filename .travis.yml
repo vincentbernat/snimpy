@@ -19,6 +19,9 @@ matrix:
     - python: "3.7"
       env: TOX_ENV=py37
       dist: xenial
+    - python: "3.8"
+      env: TOX_ENV=py38
+      dist: xenial
     - python: "pypy"
       env: TOX_ENV=pypy
     - python: "pypy"
