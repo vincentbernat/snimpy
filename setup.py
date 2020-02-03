@@ -1,9 +1,7 @@
 import os
 import sys
-from distutils.command.build import build
 from setuptools import setup
 from setuptools.command.test import test
-from setuptools.command.install import install
 import snimpy
 
 rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -50,7 +48,7 @@ if __name__ == "__main__":
           },
           data_files=[('share/man/man1', ['man/snimpy.1'])],
           zip_safe=False,
-          cffi_modules=["snimpy/smi_build.py:ffi"],
+          cffi_modules=(not rtd and ["snimpy/smi_build.py:ffi"] or []),
           install_requires=["cffi >= 1.0.0", "pysnmp >= 4", "setuptools"],
           setup_requires=["cffi >= 1.0.0", "vcversioner"],
           tests_require=list(filter(None, ["cffi >= 1.0.0",
@@ -63,6 +61,7 @@ if __name__ == "__main__":
           cmdclass={
               "test": SnimpyTestCommand
           },
+          pbr=False,
           vcversioner={
               'version_module_paths': ['snimpy/_version.py'],
           },

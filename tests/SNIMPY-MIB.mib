@@ -42,6 +42,7 @@ UnicodeString ::= TEXTUAL-CONVENTION
 
 snimpyScalars OBJECT IDENTIFIER ::= { snimpy 1 }
 snimpyTables  OBJECT IDENTIFIER ::= { snimpy 2 }
+snimpyTraps   OBJECT IDENTIFIER ::= { snimpy 3 }
 
 snimpyIpAddress OBJECT-TYPE
     SYNTAX 	IpAddress
@@ -132,7 +133,8 @@ snimpyBits	OBJECT-TYPE
                   first(0),
 		  second(1),
 		  third(2),
-		  last(7)
+		  last(7),
+		  secondByte(8)
 		}
     MAX-ACCESS  read-only
     STATUS	current
@@ -325,7 +327,7 @@ SnimpyIndexEntry ::=
 
 snimpyIndexVarLen OBJECT-TYPE
     SYNTAX      DisplayString (SIZE (1..10))
-    MAX-ACCESS  not-accessible
+    MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
             "Variable length index"
@@ -465,5 +467,94 @@ snimpyInvalidDescr OBJECT-TYPE
     DESCRIPTION
             "Blah blah"
     ::= { snimpyInvalidEntry 2 }
+
+-- A table that may be empty
+
+snimpyEmptyTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpyEmptyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table"
+    ::= { snimpyTables 6 }
+
+snimpyEmptyEntry OBJECT-TYPE
+    SYNTAX      SnimpyEmptyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our empty table"
+    INDEX   { snimpyEmptyIndex }
+    ::= { snimpyEmptyTable 1 }
+
+SnimpyEmptyEntry ::=
+    SEQUENCE {
+        snimpyEmptyIndex       Integer32,
+        snimpyEmptyDescr       DisplayString
+    }
+
+snimpyEmptyIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..30)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Index for snimpy empty table"
+    ::= { snimpyEmptyEntry 1 }
+
+snimpyEmptyDescr OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Blah blah"
+    ::= { snimpyEmptyEntry 2 }
+
+-- A table whose index re-uses objects from other tables' indexes
+
+snimpyReuseIndexTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpyReuseIndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table whose index re-uses objects from
+             other tables' indexes"
+    ::= { snimpyTables 7 }
+
+snimpyReuseIndexEntry OBJECT-TYPE
+    SYNTAX      SnimpyReuseIndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our snimpyReuseIndexTable table
+             note that snimpyIndexImplied is not the last item
+             so it cannot be implied"
+    INDEX   { snimpyIndexImplied, snimpySimpleIndex }
+    ::= { snimpyReuseIndexTable 1 }
+
+SnimpyReuseIndexEntry ::=
+    SEQUENCE {
+        snimpyReuseIndexValue       INTEGER
+    }
+
+snimpyReuseIndexValue OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Integer value"
+    ::= { snimpyReuseIndexEntry 1 }
+
+-- A notification
+
+snimpyNotification NOTIFICATION-TYPE
+    OBJECTS { snimpySimpleIndex,
+              snimpySimpleDescr,
+              snimpySimpleType,
+              snimpySimplePhys,
+              snimpyIpAddress }
+    STATUS  current
+    DESCRIPTION
+            "A notification"
+    ::= { snimpyTraps 1 }
 
 END

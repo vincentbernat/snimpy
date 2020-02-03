@@ -1,16 +1,16 @@
 import sys
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
 import os
 import tempfile
-import code  # nopep8
+import code  # noqa: F401
 import mock
 import platform
 from snimpy.main import interact
 from multiprocessing import Process
 import agent
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestMain(unittest.TestCase):

@@ -21,14 +21,15 @@ environment variable::
 
 On Debian/Ubuntu, you can install libsmi with::
 
-    $ sudo apt-get install libsmi2-dev
+    $ sudo apt-get install libffi-dev libsmi2-dev snmp-mibs-downloader
 
 On RedHat and similar, you can use::
 
-    $ sudo yum install libsmi-devel
+    $ sudo yum install libffi-devel libsmi-devel
 
 On OS X, if you are using homebrew_, you can use::
 
+    $ brew install libffi
     $ brew install libsmi
 
 .. _libsmi: http://www.ibr.cs.tu-bs.de/projects/libsmi/

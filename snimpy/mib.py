@@ -23,7 +23,7 @@ wrapper is merely here to serve *Snimpy* use and is therefore
 incomplete.
 
 .. _libsmi: http://www.ibr.cs.tu-bs.de/projects/libsmi/
-.. _CFFI: http://cffi.readthedocs.org/
+.. _CFFI: http://cffi.readthedocs.io/
 """
 
 try:
@@ -69,6 +69,8 @@ class Node(object):
             t = self._override_type
         else:
             t = _smi.smiGetNodeType(self.node)
+        if t == ffi.NULL:
+            raise SMIException("unable to retrieve type of node")
         target = {
             _smi.SMI_BASETYPE_INTEGER32: basictypes.Integer,
             _smi.SMI_BASETYPE_INTEGER64: basictypes.Integer,
@@ -112,7 +114,7 @@ class Node(object):
 
         if t is None or t == ffi.NULL:
             raise SMIException("unable to retrieve the declared type "
-                               "of the node '{}'".format(self.node.name))
+                               "of the node '{0}'".format(self.node.name))
 
         return ffi.string(t.name)
 
@@ -235,6 +237,11 @@ class Node(object):
                 element.name).decode("ascii")
             element = _smi.smiGetNextNamedNumber(element)
         return result
+
+    @property
+    def accessible(self):
+        return (self.node.access not in (_smi.SMI_ACCESS_NOT_IMPLEMENTED,
+                                         _smi.SMI_ACCESS_NOT_ACCESSIBLE))
 
     def __str__(self):
         return ffi.string(self.node.name).decode("ascii")
@@ -403,6 +410,41 @@ class Column(Node):
         return t
 
 
+class Notification(Node):
+
+    """MIB notification node. This class represent a notification."""
+
+    @property
+    def objects(self):
+        """Get objects for a notification.
+
+        :return: The list of objects (as :class:`Column`,
+            :class:`Node` or :class:`Scalar` instances) of the notification.
+        """
+        child = self.node
+        lindex = []
+        element = _smi.smiGetFirstElement(child)
+        while element != ffi.NULL:
+            nelement = _smi.smiGetElementNode(element)
+            if nelement == ffi.NULL:
+                raise SMIException("cannot get object "
+                                   "associated with {0}".format(
+                                       ffi.string(self.node.name)))
+            if nelement.nodekind == _smi.SMI_NODEKIND_COLUMN:
+                lindex.append(Column(nelement))
+            elif nelement.nodekind == _smi.SMI_NODEKIND_NODE:
+                lindex.append(Node(nelement))
+            elif nelement.nodekind == _smi.SMI_NODEKIND_SCALAR:
+                lindex.append(Scalar(nelement))
+            else:
+                raise SMIException("object {0} for {1} is "
+                                   "not a node".format(
+                                       ffi.string(nelement.name),
+                                       ffi.string(self.node.name)))
+            element = _smi.smiGetNextElement(element)
+        return lindex
+
+
 _lastError = None
 
 
@@ -420,7 +462,7 @@ def reset():
     """Reset libsmi to its initial state."""
     _smi.smiExit()
     if _smi.smiInit(b"snimpy") < 0:
-            raise SMIException("unable to init libsmi")
+        raise SMIException("unable to init libsmi")
     _smi.smiSetErrorLevel(1)
     _smi.smiSetErrorHandler(_logError)
     try:
@@ -476,6 +518,7 @@ def _kind2object(kind):
         _smi.SMI_NODEKIND_NODE: Node,
         _smi.SMI_NODEKIND_SCALAR: Scalar,
         _smi.SMI_NODEKIND_TABLE: Table,
+        _smi.SMI_NODEKIND_NOTIFICATION: Notification,
         _smi.SMI_NODEKIND_COLUMN: Column
     }.get(kind, Node)
 
@@ -587,6 +630,16 @@ def getColumns(mib):
     :rtype: list of :class:`Column` instances
     """
     return _get_kind(mib, _smi.SMI_NODEKIND_COLUMN)
+
+
+def getNotifications(mib):
+    """Return all notifications from a givem MIB.
+
+    :param mib: The MIB name
+    :return: The list of all notifications for the MIB
+    :rtype: list of :class:`Notification` instances
+    """
+    return _get_kind(mib, _smi.SMI_NODEKIND_NOTIFICATION)
 
 
 def load(mib):

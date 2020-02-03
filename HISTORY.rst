@@ -3,10 +3,48 @@
 History
 -------
 
-0.8.7 (????-??-??)
+0.8.13 (2018-10-12)
++++++++++++++++++++
+
+ * Compatibility with Python 3.7.
+ * Fix an issue with implied index when reusing indexes between tables.
+
+0.8.12 (2017-10-02)
++++++++++++++++++++
+
+ * Support for more recent versions of IPython.
+ * Support for SNMPv3 context name.
+ * Support for notification nodes (MIB only).
+
+0.8.11 (2016-08-13)
++++++++++++++++++++
+
+ * Fix IPython interactive shell.
+ * Fix IPv6 handling for sessions.
+ * Ability for a session to return None instead of raising an exception.
+
+0.8.10 (2016-02-16)
++++++++++++++++++++
+
+ * Ability to walk a table (if the first index is accessible).
+ * Ability to do a partial walk (courtesy of Alex Unigovsky).
+
+0.8.8 (2015-11-15)
+++++++++++++++++++
+
+ * Fix thread-safety problem introduced in 0.8.6. This also undo any
+   improvement advertised in 0.8.6 when using multiple
+   threads. However, performance should be kept when using a single
+   thread.
+
+0.8.7 (2015-11-14)
 ++++++++++++++++++
 
  * Ability to specify a module name when querying a manager.
+ * Compatibility with PySNMP 4.3
+ * Array-like interface for OIDs.
+ * Ability to restrict lookups to a specific MIB: m['IF-MIB'].ifDescr.
+ * Fix multithread support with SNMPv3 (with a performance impact).
 
 0.8.6 (2015-06-24)
 ++++++++++++++++++

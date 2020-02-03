@@ -50,18 +50,30 @@ entities. For a scalar, getting and setting a value is a simple as::
 
 For a column, you get a dictionary-like interface::
 
-    for index in m.ifDescr: 
+    for index in m.ifTable: 
 	print(repr(m.ifDescr[index]))
     m.ifAdminStatus[3] = "down"
 
-If you want to group several write into a single request, you can do
-it with `with` keyword::
+If you care about efficiency, note that the above snippet will walk
+the table twice: once to retrieve the index to loop over and once to
+retrieve the values. This could be avoided with::
 
-    with M("localhost", "private") as m:
-        m.sysName = "toto"
-        m.ifAdminStatus[20] = "down"
+    for index, value in m.ifDescr.iteritems():
+	print(repr(value))
 
-There is also a caching mechanism which is disabled by default::
+Furthermore, you can pass partial index values to `iteritems()` to
+limit walked table rows to a specific subset::
+
+    for index, value in m.ipNetToMediaPhysAddress.iteritems(10):
+	print(repr(value))
+
+If you don't need values you can use subscript syntax for this as well::
+
+    for index in m.ipNetToMediaPhysAddress[10]:
+	print(repr(index))
+
+Another way to avoid those extra SNMP requests is to enable the
+caching mechanism which is disabled by default::
 
     import time
     m = M("localhost", cache=True)
@@ -76,6 +88,21 @@ There is also a caching mechanism which is disabled by default::
 You can also specify the number of seconds data should be cached::
 
     m = M("localhost", cache=20)
+
+Also note that iterating over a table require an accessible index. Old
+MIB usually have accessible indexes. If this is not the case, you'll
+have to iterate on a column instead. For example, the first example
+could be written as::
+
+    for index in m.ifDescr:
+	print(repr(m.ifDescr[index]))
+
+If you want to group several write into a single request, you can do
+it with `with` keyword::
+
+    with M("localhost", "private") as m:
+        m.sysName = "toto"
+        m.ifAdminStatus[20] = "down"
 
 It's also possible to set a custom timeout and a custom value for the
 number of retries. For example, to wait 2.5 seconds before timeout

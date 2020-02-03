@@ -15,13 +15,16 @@ class TestMibSnimpy(unittest.TestCase):
                               "SNIMPY-MIB.mib"))
         self.nodes = ["snimpy",
                       "snimpyScalars",
-                      "snimpyTables"]
+                      "snimpyTables",
+                      "snimpyTraps"]
         self.nodes.sort()
         self.tables = ["snimpyComplexTable",
                        "snimpyInetAddressTable",
                        "snimpySimpleTable",
                        "snimpyIndexTable",
-                       "snimpyInvalidTable"]
+                       "snimpyInvalidTable",
+                       "snimpyEmptyTable",
+                       "snimpyReuseIndexTable"]
         self.tables.sort()
         self.columns = ["snimpyComplexFirstIP",
                         "snimpyComplexSecondIP",
@@ -40,7 +43,10 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyIndexImplied",
                         "snimpyIndexInt",
                         "snimpyInvalidIndex",
-                        "snimpyInvalidDescr"
+                        "snimpyInvalidDescr",
+                        "snimpyEmptyIndex",
+                        "snimpyEmptyDescr",
+                        "snimpyReuseIndexValue"
                         ]
         self.columns.sort()
         self.scalars = ["snimpyIpAddress",
@@ -60,6 +66,8 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyMacAddress",
                         "snimpyMacAddressInvalid"]
         self.scalars.sort()
+        self.notifications = ["snimpyNotification"]
+        self.notifications.sort()
 
         self.expected_modules = [u"SNMPv2-SMI",
                                  u"SNMPv2-TC",
@@ -105,6 +113,14 @@ class TestMibSnimpy(unittest.TestCase):
         for n in scalars:
             self.assert_(isinstance(n, mib.Scalar))
 
+    def testGetNotifications(self):
+        """Test that we can get all notifications"""
+        notifications = mib.getNotifications('SNIMPY-MIB')
+        snotifications = sorted([str(a) for a in notifications])
+        self.assertEqual(self.notifications, snotifications)
+        for n in notifications:
+            self.assert_(isinstance(n, mib.Notification))
+
     def testGet(self):
         """Test that we can get all named attributes"""
         for i in self.scalars:
@@ -119,6 +135,10 @@ class TestMibSnimpy(unittest.TestCase):
         for i in self.nodes:
             self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
             self.assert_(isinstance(mib.get('SNIMPY-MIB', i), mib.Node))
+        for i in self.notifications:
+            self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
+            self.assert_(isinstance(mib.get('SNIMPY-MIB', i),
+                         mib.Notification))
 
     def testGetByOid(self):
         """Test that we can get all named attributes by OID."""
@@ -138,6 +158,11 @@ class TestMibSnimpy(unittest.TestCase):
             nodebyname = mib.get('SNIMPY-MIB', i)
             self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
             self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Node))
+        for i in self.notifications:
+            nodebyname = mib.get('SNIMPY-MIB', i)
+            self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
+            self.assert_(isinstance(mib.getByOid(nodebyname.oid),
+                                    mib.Notification))
 
     def testGetByOid_UnknownOid(self):
         """Test that unknown OIDs raise an exception."""
@@ -150,6 +175,7 @@ class TestMibSnimpy(unittest.TestCase):
         self.assertEqual(b"InetAddress",
                          mib.ffi.string(mib._getType(b"InetAddress").name))
         self.assertEqual(None, mib._getType("SomeUnknownType.kjgf"))
+        self.assertEqual(None, mib._getType("snimpySimpleTable"))
 
     def testTableColumnRelation(self):
         """Test that we can get the column from the table and vice-versa"""
@@ -196,6 +222,11 @@ class TestMibSnimpy(unittest.TestCase):
         for t in tt:
             self.assertEqual(mib.get('SNIMPY-MIB', t).type, tt[t])
 
+        # Also check we get an exception when no type available
+        def call():
+            mib.get('SNIMPY-MIB', 'snimpySimpleTable').type
+        self.assertRaises(mib.SMIException, call)
+
     def testRanges(self):
         tt = {"snimpyIpAddress": 4,
               "snimpyString": (0, 255),
@@ -228,7 +259,8 @@ class TestMibSnimpy(unittest.TestCase):
                          {0: "first",
                           1: "second",
                           2: "third",
-                          7: "last"})
+                          7: "last",
+                          8: "secondByte"})
 
     def testIndexes(self):
         """Test that we can retrieve correctly the index of tables"""

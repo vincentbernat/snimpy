@@ -18,7 +18,7 @@
 
 """This module just exports libsmi through CFFI_.
 
-.. _CFFI: http://cffi.readthedocs.org/
+.. _CFFI: http://cffi.readthedocs.io/
 """
 
 from cffi import FFI
@@ -59,12 +59,21 @@ typedef enum SmiIndexkind {
     ...
 } SmiIndexkind;
 
+typedef enum SmiAccess {
+    SMI_ACCESS_NOT_IMPLEMENTED,
+    SMI_ACCESS_NOT_ACCESSIBLE,
+    SMI_ACCESS_READ_ONLY,
+    SMI_ACCESS_READ_WRITE,
+    ...
+} SmiAccess;
+
 typedef unsigned int SmiNodekind;
 #define SMI_NODEKIND_NODE         ...
 #define SMI_NODEKIND_SCALAR       ...
 #define SMI_NODEKIND_TABLE        ...
 #define SMI_NODEKIND_ROW          ...
 #define SMI_NODEKIND_COLUMN       ...
+#define SMI_NODEKIND_NOTIFICATION ...
 
 typedef struct SmiNode {
     SmiIdentifier       name;
@@ -74,6 +83,7 @@ typedef struct SmiNode {
     SmiIndexkind        indexkind;
     int                 implied;
     SmiNodekind         nodekind;
+    SmiAccess           access;
     ...;
 } SmiNode;
 
@@ -169,6 +179,7 @@ if hasattr(ffi, 'set_source'):
 
 def get_lib():
     return ffi.verify(_SOURCE, libraries=["smi"])
+
 
 if __name__ == "__main__":
     ffi.compile()

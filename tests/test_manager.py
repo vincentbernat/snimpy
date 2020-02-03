@@ -1,13 +1,13 @@
 import sys
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
 import os
 import time
 from datetime import timedelta
 from snimpy.manager import load, Manager, snmp
 import agent
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestManager(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestManagerGet(TestManager):
 
     def testGetScalar(self):
         """Retrieve some simple scalar values"""
-        self.assertEqual(self.manager.sysDescr, "Snimpy Test Agent")
+        self.assertEqual(self.manager.sysDescr, "Snimpy Test Agent public")
         self.assertEqual(self.manager.ifNumber, 3)
 
     def scalarGetAndCheck(self, name, value):
@@ -88,20 +88,46 @@ class TestManagerGet(TestManager):
 
     def testScalar_Bits(self):
         """Retrieve Bits as a scalar"""
-        self.scalarGetAndCheck("snimpyBits", ["first", "third"])
+        self.scalarGetAndCheck("snimpyBits", ["first", "third", "secondByte"])
 
     def testScalar_MacAddress(self):
         """Retrieve MacAddress as a scalar"""
         self.scalarGetAndCheck("snimpyMacAddress", "11:12:13:14:15:16")
 
-    def testWalkIfTable(self):
-        """Test we can walk IF-MIB::ifTable"""
+    def testContains_IfDescr(self):
+        """Test proxy column membership checking code"""
+        self.assertEqual(2 in self.manager.ifDescr,
+                         True)
+        # FIXME: this currently fails under TestManagerWithNone
+        # self.assertEqual(10 in self.manager.ifDescr,
+        #                 False)
+
+    def testWalkIfDescr(self):
+        """Test we can walk IF-MIB::ifDescr and IF-MIB::ifTpe"""
         results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
                    for idx in self.manager.ifIndex]
         self.assertEqual(results,
                          [(1, "lo", 24),
                           (2, "eth0", 6),
                           (3, "eth1", 6)])
+
+    def testWalkIfTable(self):
+        """Test we can walk IF-MIB::ifTable"""
+        results = [(idx, self.manager.ifDescr[idx], self.manager.ifType[idx])
+                   for idx in self.manager.ifTable]
+        self.assertEqual(results,
+                         [(1, "lo", 24),
+                          (2, "eth0", 6),
+                          (3, "eth1", 6)])
+
+    def testWalkNotAccessible(self):
+        """Test we can walk a table with the first entry not accessible."""
+        list(self.manager.ifRcvAddressTable)
+
+    def testWalkIfDescrWithoutBulk(self):
+        """Walk IF-MIB::ifDescr without GETBULK"""
+        self.session.bulk = False
+        self.testWalkIfDescr()
 
     def testWalkIfTableWithoutBulk(self):
         """Walk IF-MIB::ifTable without GETBULK"""
@@ -119,6 +145,72 @@ class TestManagerGet(TestManager):
                             "beta32", "end of row2"), 78741),
                           (("row3", (120, 1, 2, 3),
                             "gamma7", "end of row3"), 4110)])
+
+    def testWalkTableWithComplexIndexes(self):
+        """Test if we can walk a table with complex indexes"""
+        results = [(idx, self.manager.snimpyIndexInt[idx])
+                   for idx in self.manager.snimpyIndexTable]
+        self.assertEqual(results,
+                         [(("row1", (1, 2, 3),
+                            "alpha5", "end of row1"), 4571),
+                          (("row2", (1, 0, 2, 3),
+                            "beta32", "end of row2"), 78741),
+                          (("row3", (120, 1, 2, 3),
+                            "gamma7", "end of row3"), 4110)])
+
+    def testWalkReuseIndexes(self):
+        """Test if we can walk a table with re-used indexes"""
+        results = [(idx, self.manager.snimpyReuseIndexValue[idx])
+                   for idx in self.manager.snimpyReuseIndexValue]
+        self.assertEqual(results,
+                         [(("end of row1", 4), 1785),
+                          (("end of row1", 5), 2458)])
+
+    def testWalkTableWithReuseIndexes(self):
+        """Test if we can walk a table with re-used indexes"""
+        results = [(idx, self.manager.snimpyReuseIndexValue[idx])
+                   for idx in self.manager.snimpyReuseIndexTable]
+        self.assertEqual(results,
+                         [(("end of row1", 4), 1785),
+                          (("end of row1", 5), 2458)])
+
+    def testWalkPartialIndexes(self):
+        """Test if we can walk a slice of a table given a partial index"""
+        results = [(idx, self.manager.ifRcvAddressType[idx])
+                   for idx in self.manager.ifRcvAddressStatus[2]]
+        self.assertEqual(results,
+                         [((2, "61:62:63:64:65:66"), 1),
+                          ((2, "67:68:69:6a:6b:6c"), 1)])
+        results = [(idx, self.manager.ifRcvAddressType[idx])
+                   for idx in self.manager.ifRcvAddressStatus[(3,)]]
+        self.assertEqual(results,
+                         [((3, "6d:6e:6f:70:71:72"), 1)])
+        results = list(self.manager.ifRcvAddressType.iteritems(3))
+        self.assertEqual(results,
+                         [((3, "6d:6e:6f:70:71:72"), 1)])
+
+    def testWalkInvalidPartialIndexes(self):
+        """Try to get a table slice with an incorrect index filter"""
+        self.assertRaises(ValueError,
+                          lambda: list(
+                              self.manager.ifRcvAddressStatus.iteritems(
+                                  (3, "6d:6e:6f:70:71:72"))))
+
+    def testContains_Partial(self):
+        """Test proxy column membership checking code with partial indexes"""
+        self.assertEqual(
+                "61:62:63:64:65:66" in self.manager.ifRcvAddressStatus[2],
+                True)
+        # FIXME: this currently fails under TestManagerWithNone
+        # self.assertEqual(
+        #        "6d:6e:6f:70:71:72" in self.manager.ifRcvAddressStatus[2],
+        #        False)
+
+    def testScalar_MultipleSubscripts(self):
+        """Retrieve a scalar value using multiple subscript syntax
+        (attr[x][y])"""
+        self.assertEqual(self.manager.ifRcvAddressType[2]["67:68:69:6a:6b:6c"],
+                         1)
 
     def testGetInexistentStuff(self):
         """Try to access stuff that does not exist on the agent"""
@@ -141,6 +233,26 @@ class TestManagerGet(TestManager):
         self.assertRaises(ValueError,
                           self.manager.ifDescr.__getitem__, "nothing")
 
+    def testAccessEmptyTable(self):
+        """Try to walk an empty table"""
+        results = [(idx,) for idx in self.manager.snimpyEmptyDescr]
+        self.assertEqual(results, [])
+
+    def testAccessNotExistentTable(self):
+        """Try to walk a non-existent table"""
+        agent2 = agent.TestAgent(emptyTable=False)
+        try:
+            manager = Manager(host="127.0.0.1:{0}".format(agent2.port),
+                              community="public",
+                              version=2)
+            [(idx,) for idx in manager.snimpyEmptyDescr]
+        except snmp.SNMPNoSuchObject:
+            pass                # That's OK
+        else:
+            self.assertFalse("should raise SNMPNoSuchObject exception")
+        finally:
+            agent2.terminate()
+
     def testGetChangingStuff(self):
         """Get stuff with varying values"""
         initial = self.manager.ifInOctets[2]
@@ -156,7 +268,7 @@ class TestManagerRestrictModule(TestManager):
         """Get a scalar from a specific module only"""
         self.assertEqual(self.manager['IF-MIB'].ifNumber, 3)
         self.assertEqual(self.manager['SNMPv2-MIB'].sysDescr,
-                         "Snimpy Test Agent")
+                         "Snimpy Test Agent public")
 
     def testGetInexistentModule(self):
         """Get a scalar from a non loaded module"""
@@ -226,7 +338,7 @@ class TestManagerSet(TestManager):
 
     def testScalar_Bits(self):
         """Retrieve Bits as a scalar"""
-        self.scalarSetAndCheck("snimpyBits", ["first", "second"])
+        self.scalarSetAndCheck("snimpyBits", ["first", "second", "secondByte"])
 
     def testScalar_MacAddress(self):
         """Retrieve MAC address as a scala"""

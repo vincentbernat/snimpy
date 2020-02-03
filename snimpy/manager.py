@@ -30,7 +30,7 @@ Here is a simple example of use of this module::
 
 import inspect
 from time import time
-from collections import MutableMapping
+from collections import MutableMapping, Container, Iterable, Sized
 from snimpy import snmp, mib, basictypes
 
 
@@ -111,7 +111,7 @@ class CachedSession(DelegatedSession):
                 return v
         value = getattr(self._session, op)(*args)
         self.cache[op, args] = [time(), value]
-        if op == "walk":
+        if op == "walkmore":
             # also cache all the get requests we got for free
             for oid, get_value in value:
                 self.count += 1
@@ -124,7 +124,7 @@ class CachedSession(DelegatedSession):
 
     def walk(self, *args):
         assert(len(args) == 1)  # we should ony walk one oid at a time
-        return self.getorwalk("walk", *args)
+        return self.getorwalk("walkmore", *args)
 
     def flush(self):
         keys = list(self.cache.keys())
@@ -180,6 +180,26 @@ class Manager(object):
         >>> for idx in m.ifDescr:
         ...     print(m.ifDescr[idx])
 
+    You can get a slice of index values from a table by iterating on
+    a row name subscripted by a partial index::
+
+        >>> load("IF-MIB")
+        >>> m = Manager("localhost", "private")
+        >>> for idx in m.ipNetToMediaPhysAddress[1]:
+        ...     print(idx)
+        (<Integer: 1>, <IpAddress: 127.0.0.1>)
+
+    You can use multivalue indexes in two ways: using Pythonic
+    multi-dimensional dict syntax, or by providing a tuple containing
+    index values::
+
+        >>> load("IF-MIB")
+        >>> m = Manager("localhost", "private")
+        >>> m.ipNetToMediaPhysAddress[1]['127.0.0.1']
+        <String: aa:bb:cc:dd:ee:ff>
+        >>> m.ipNetToMediaPhysAddress[1, '127.0.0.1']
+        <String: aa:bb:cc:dd:ee:ff>
+
     A context manager is also provided. Any modification issued inside
     the context will be delayed until the end of the context and then
     grouped into a single SNMP PDU to be executed atomically::
@@ -213,7 +233,8 @@ class Manager(object):
                  # SNMPv3
                  secname=None,
                  authprotocol=None, authpassword=None,
-                 privprotocol=None, privpassword=None):
+                 privprotocol=None, privpassword=None,
+                 contextname=None):
         """Create a new SNMP manager. Some of the parameters are explained in
         :meth:`snmp.Session.__init__`.
 
@@ -258,6 +279,7 @@ class Manager(object):
                                      secname,
                                      authprotocol, authpassword,
                                      privprotocol, privpassword,
+                                     contextname=contextname,
                                      bulk=bulk)
         if timeout is not None:
             self._session.timeout = int(timeout * 1000000)
@@ -306,6 +328,8 @@ class Manager(object):
             return None
         elif isinstance(a, mib.Column):
             return ProxyColumn(self._session, a, self._loose)
+        elif isinstance(a, mib.Table):
+            return ProxyTable(self._session, a, self._loose)
         raise NotImplementedError
 
     def __setattr__(self, attribute, value):
@@ -347,20 +371,20 @@ class Manager(object):
 
 
 class Proxy:
+    """A proxy for some base type, notably a column or a table."""
 
     def __repr__(self):
         return "<{0} for {1}>".format(self.__class__.__name__,
                                       repr(self.proxy)[1:-1])
 
 
-class ProxyColumn(Proxy, MutableMapping):
+class ProxyIter(Proxy, Sized, Iterable, Container):
+    """Proxy for an iterable sequence.
 
-    """Proxy for column access"""
-
-    def __init__(self, session, column, loose):
-        self.proxy = column
-        self.session = session
-        self._loose = loose
+    This a proxy offering the ABC of an iterable sequence (something
+    like a set but without set operations). This will be used by both
+    `ProxyColumn` and `ProxyTable`.
+    """
 
     def _op(self, op, index, *args):
         if not isinstance(index, tuple):
@@ -374,7 +398,8 @@ class ProxyColumn(Proxy, MutableMapping):
         for i, ind in enumerate(index):
             # Cast to the correct type since we need "toOid()"
             ind = indextype[i].type(indextype[i], ind, raw=False)
-            oidindex.extend(ind.toOid())
+            implied = self.proxy.table.implied and i == len(index)-1
+            oidindex.extend(ind.toOid(implied))
         result = getattr(
             self.session,
             op)(self.proxy.oid + tuple(oidindex),
@@ -390,24 +415,10 @@ class ProxyColumn(Proxy, MutableMapping):
                     raise
             return None
 
-    def __getitem__(self, index):
-        return self._op("get", index)
-
-    def __setitem__(self, index, value):
-        if not isinstance(value, basictypes.Type):
-            value = self.proxy.type(self.proxy, value, raw=False)
-        self._op("set", index, value)
-
-    def __delitem__(self, index):
-        raise NotImplementedError("cannot suppress a column")
-
-    def keys(self):
-        return [k for k in self]
-
-    def has_key(self, object):
+    def __contains__(self, object):
         try:
             self._op("get", object)
-        except:
+        except Exception:
             return False
         return True
 
@@ -418,27 +429,42 @@ class ProxyColumn(Proxy, MutableMapping):
     def __len__(self):
         len(list(self.iteritems()))
 
-    def iteritems(self):
+    def iteritems(self, table_filter=None):
         count = 0
         oid = self.proxy.oid
         indexes = self.proxy.table.index
 
+        if table_filter is not None:
+            if len(table_filter) >= len(indexes):
+                raise ValueError("Table filter has too many elements")
+            oid_suffix = []
+            # Convert filter elements to correct types
+            for i, part in enumerate(table_filter):
+                part = indexes[i].type(indexes[i], part, raw=False)
+                # implied = False:
+                #   index never includes last element
+                #   (see 'len(table_filter) >= len(indexes)')
+                oid_suffix.extend(part.toOid(implied=False))
+            oid += tuple(oid_suffix)
+
+        walk_oid = oid
         for noid, result in self.session.walk(oid):
             if noid <= oid:
                 noid = None
                 break
             oid = noid
-            if not((len(oid) >= len(self.proxy.oid) and
-                    oid[:len(self.proxy.oid)] ==
-                    self.proxy.oid[:len(self.proxy.oid)])):
+            if not((len(oid) >= len(walk_oid) and
+                    oid[:len(walk_oid)] ==
+                    walk_oid[:len(walk_oid)])):
                 noid = None
                 break
 
             # oid should be turned into index
-            index = oid[len(self.proxy.oid):]
+            index = tuple(oid[len(self.proxy.oid):])
             target = []
-            for x in indexes:
-                l, o = x.type.fromOid(x, tuple(index))
+            for i, x in enumerate(indexes):
+                implied = self.proxy.table.implied and i == len(indexes)-1
+                l, o = x.type.fromOid(x, index, implied)
                 target.append(x.type(x, o))
                 index = index[l:]
             count = count + 1
@@ -465,7 +491,10 @@ class ProxyColumn(Proxy, MutableMapping):
                 self.session.get(self.proxy.oid)
             except snmp.SNMPNoSuchInstance:
                 # OK, the set of result is really empty
-                raise StopIteration
+                return
+            except snmp.SNMPNoAccess:
+                # Some implementations seem to return NoAccess (PySNMP is one)
+                return
             except snmp.SNMPNoSuchName:
                 # SNMPv1, we don't know
                 pass
@@ -473,7 +502,79 @@ class ProxyColumn(Proxy, MutableMapping):
                 # The result is empty because the column is unknown
                 raise
 
-        raise StopIteration
+
+class ProxyTable(ProxyIter):
+    """Proxy for table access.
+
+    We just use the first accessible index as a column. However, the mapping
+    operations are not available.
+    """
+
+    def __init__(self, session, table, loose):
+        self.proxy = None
+        for column in table.columns:
+            if column.accessible:
+                self.proxy = column
+                break
+        if self.proxy is None:
+            raise NotImplementedError("No accessible column in the table.")
+        self.session = session
+        self._loose = loose
+
+
+class ProxyColumn(ProxyIter, MutableMapping):
+    """Proxy for column access"""
+
+    def __init__(self, session, column, loose, oid_suffix=()):
+        self.proxy = column
+        self.session = session
+        self._loose = loose
+        self._oid_suffix = oid_suffix
+
+    def __getitem__(self, index):
+        # If supplied index is partial we return new ProxyColumn
+        # with appended OID suffix
+        idx_len = len(self.proxy.table.index)
+        suffix_len = len(self._oid_suffix)
+        if isinstance(index, tuple):
+            if len(index) + suffix_len < idx_len:
+                return self._partial(index)
+        elif idx_len > suffix_len + 1:
+            return self._partial((index,))
+
+        # Otherwise a read op is made
+        if not isinstance(index, tuple):
+            index = (index,)
+        return self._op("get", self._oid_suffix + index)
+
+    def __setitem__(self, index, value):
+        if not isinstance(value, basictypes.Type):
+            value = self.proxy.type(self.proxy, value, raw=False)
+        if not isinstance(index, tuple):
+            index = (index,)
+        self._op("set", self._oid_suffix + index, value)
+
+    def __delitem__(self, index):
+        raise NotImplementedError("cannot suppress a column")
+
+    def __contains__(self, index):
+        if not isinstance(index, tuple):
+            index = (index,)
+        return ProxyIter.__contains__(self, self._oid_suffix + index)
+
+    def _partial(self, index):
+        """Create new ProxyColumn based on current one,
+        but with appended OID suffix"""
+        new_suffix = self._oid_suffix + index
+        return ProxyColumn(self.session, self.proxy, self._loose, new_suffix)
+
+    def iteritems(self, table_filter=None):
+        resulting_filter = self._oid_suffix
+        if table_filter is not None:
+            if not isinstance(table_filter, tuple):
+                table_filter = (table_filter,)
+            resulting_filter += table_filter
+        return ProxyIter.iteritems(self, resulting_filter)
 
 
 loaded = []
@@ -490,5 +591,6 @@ def load(mibname):
         loaded.append(m)
         if Manager._complete:
             for o in mib.getScalars(m) + \
-                    mib.getColumns(m):
+                    mib.getColumns(m) + \
+                    mib.getTables(m):
                 setattr(Manager, str(o), 1)

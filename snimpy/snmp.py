@@ -29,6 +29,7 @@ type coercing.
 import re
 import socket
 import inspect
+import threading
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902, rfc1905
 from pysnmp.smi import error
@@ -56,6 +57,7 @@ class SNMPBadValue(SNMPException):
 class SNMPReadOnly(SNMPException):
     pass
 
+
 # Dynamically build remaining (v2) exceptions
 for name, obj in inspect.getmembers(error):
     if name.endswith("Error") and \
@@ -74,6 +76,8 @@ class Session(object):
     session. From such an instance, one can get information from the
     associated agent."""
 
+    _tls = threading.local()
+
     def __init__(self, host,
                  community="public", version=2,
                  secname=None,
@@ -81,7 +85,9 @@ class Session(object):
                  authpassword=None,
                  privprotocol=None,
                  privpassword=None,
-                 bulk=40):
+                 contextname=None,
+                 bulk=40,
+                 none=False):
         """Create a new SNMP session.
 
         :param host: The hostname or IP address of the agent to
@@ -111,14 +117,29 @@ class Session(object):
         :type privprotocol: None or str
         :param privpassword: Privacy password if privacy protocol is
             not `None`.
+        :type contextname: str
+        :param contextname: Context name for SNMPv3 messages.
         :type privpassword: str
         :param bulk: Max repetition value for `GETBULK` requests. Set
             to `0` to disable.
         :type bulk: int
+        :param none: When enabled, will return None for not found
+            values (instead of raising an exception)
+        :type none: bool
         """
         self._host = host
         self._version = version
-        self._cmdgen = cmdgen.CommandGenerator()
+        self._none = none
+        if version == 3:
+            self._cmdgen = cmdgen.CommandGenerator()
+            self._contextname = contextname
+        else:
+            if not hasattr(self._tls, "cmdgen"):
+                self._tls.cmdgen = cmdgen.CommandGenerator()
+            self._cmdgen = self._tls.cmdgen
+            self._contextname = None
+        if version == 1 and none:
+            raise ValueError("None-GET requests not compatible with SNMPv1")
 
         # Put authentication stuff in self._auth
         if version in [1, 2]:
@@ -160,7 +181,7 @@ class Session(object):
 
         # Put transport stuff into self._transport
         mo = re.match(r'^(?:'
-                      r'\[(?P<ipv6>[\d:]+)\]|'
+                      r'\[(?P<ipv6>[\d:A-Fa-f]+)\]|'
                       r'(?P<ipv4>[\d\.]+)|'
                       r'(?P<any>.*?))'
                       r'(?::(?P<port>\d+))?$',
@@ -199,26 +220,36 @@ class Session(object):
     def _check_exception(self, value):
         """Check if the given ASN1 value is an exception"""
         if isinstance(value, rfc1905.NoSuchObject):
-            raise SNMPNoSuchObject("No such object was found")  # nopep8
+            raise SNMPNoSuchObject("No such object was found")  # noqa: F821
         if isinstance(value, rfc1905.NoSuchInstance):
-            raise SNMPNoSuchInstance("No such instance exists")  # nopep8
+            raise SNMPNoSuchInstance("No such instance exists")  # noqa: F821
         if isinstance(value, rfc1905.EndOfMibView):
-            raise SNMPEndOfMibView("End of MIB was reached")  # nopep8
+            raise SNMPEndOfMibView("End of MIB was reached")  # noqa: F821
 
     def _convert(self, value):
         """Convert a PySNMP value to some native Python type"""
-        for cl, fn in {rfc1902.Integer: int,
-                       rfc1902.Integer32: int,
-                       rfc1902.OctetString: bytes,
-                       rfc1902.IpAddress: value.prettyOut,
-                       rfc1902.Counter32: int,
-                       rfc1902.Counter64: int,
-                       rfc1902.Gauge32: int,
-                       rfc1902.Unsigned32: int,
-                       rfc1902.TimeTicks: int,
-                       rfc1902.Bits: str,
-                       rfc1902.Opaque: str,
-                       rfc1902.univ.ObjectIdentifier: tuple}.items():
+        try:
+            # With PySNMP 4.3+, an OID is a ObjectIdentity. We try to
+            # extract it while being compatible with earlier releases.
+            value = value.getOid()
+        except AttributeError:
+            pass
+        convertors = {rfc1902.Integer: int,
+                      rfc1902.Integer32: int,
+                      rfc1902.OctetString: bytes,
+                      rfc1902.IpAddress: value.prettyOut,
+                      rfc1902.Counter32: int,
+                      rfc1902.Counter64: int,
+                      rfc1902.Gauge32: int,
+                      rfc1902.Unsigned32: int,
+                      rfc1902.TimeTicks: int,
+                      rfc1902.Bits: str,
+                      rfc1902.Opaque: str,
+                      rfc1902.univ.ObjectIdentifier: tuple}
+        if self._none:
+            convertors[rfc1905.NoSuchObject] = lambda x: None
+            convertors[rfc1905.NoSuchInstance] = lambda x: None
+        for cl, fn in convertors.items():
             if isinstance(value, cl):
                 return fn(value)
         self._check_exception(value)
@@ -226,8 +257,11 @@ class Session(object):
 
     def _op(self, cmd, *oids):
         """Apply an SNMP operation"""
+        kwargs = {}
+        if self._contextname:
+            kwargs['contextName'] = rfc1902.OctetString(self._contextname)
         errorIndication, errorStatus, errorIndex, varBinds = cmd(
-            self._auth, self._transport, *oids)
+            self._auth, self._transport, *oids, **kwargs)
         if errorIndication:
             self._check_exception(errorIndication)
             raise SNMPException(str(errorIndication))
@@ -244,11 +278,12 @@ class Session(object):
         else:
             results = [(tuple(name), val)
                        for row in varBinds for name, val in row]
+            if len(results) > 0 and isinstance(results[-1][1],
+                                               rfc1905.EndOfMibView):
+                results = results[:-1]
         if len(results) == 0:
             if cmd not in [self._cmdgen.nextCmd, self._cmdgen.bulkCmd]:
                 raise SNMPException("empty answer")
-            # This seems to be filtered
-            raise SNMPEndOfMibView("no more stuff after this OID")  # nopep8
         return tuple([(oid, self._convert(val)) for oid, val in results])
 
     def get(self, *oids):
@@ -259,7 +294,7 @@ class Session(object):
         """
         return self._op(self._cmdgen.getCmd, *oids)
 
-    def walk(self, *oids):
+    def walkmore(self, *oids):
         """Retrieve OIDs values using GETBULK or GETNEXT. The method is called
         "walk" but this is either a GETBULK or a GETNEXT. The later is
         only used for SNMPv1 or if bulk has been disabled using
@@ -285,7 +320,21 @@ class Session(object):
                 return self.walk(*oids)
             raise
 
+    def walk(self, *oids):
+        """Walk from given OIDs but don't return any "extra" results. Only
+        results in the subtree will be returned.
+
+        :param oid: OIDs used as a start point
+        :return: a list of tuples with the retrieved OID and the raw value.
+        """
+        return ((noid, result)
+                for oid in oids
+                for noid, result in self.walkmore(oid)
+                if (len(noid) >= len(oid) and
+                    noid[:len(oid)] == oid[:len(oid)]))
+
     def set(self, *args):
+
         """Set an OID value using SET. This function takes an odd number of
         arguments. They are working by pair. The first member is an
         OID and the second one is :class:`basictypes.Type` instace
