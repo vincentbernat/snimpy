@@ -666,6 +666,9 @@ class Enum(Integer):
         else:
             return str(self._value)
 
+    def __hash__(self):
+        return self._value
+
 
 @ordering_with_cmp
 class Oid(Type):
