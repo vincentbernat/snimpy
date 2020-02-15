@@ -54,7 +54,7 @@ if __name__ == "__main__":
           tests_require=list(filter(None, ["cffi >= 1.0.0",
                                            "pysnmp >= 4",
                                            "nose",
-                                           sys.version_info < (3, ) and
+                                           sys.version_info < (3, 6) and
                                            "mock < 4" or "mock",
                                            sys.version_info < (2, 7) and
                                            "unittest2"])),
