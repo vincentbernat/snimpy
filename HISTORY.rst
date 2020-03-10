@@ -3,6 +3,12 @@
 History
 -------
 
+0.8.14 (????-??-??)
++++++++++++++++++++
+
+ * Add ``items()`` in addition to ``iteritems()`` This is an iterator
+   on Python 3 and return a list of items in Python 2.
+
 0.8.13 (2018-10-12)
 +++++++++++++++++++
 
