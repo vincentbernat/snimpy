@@ -28,6 +28,7 @@ Here is a simple example of use of this module::
     <String: lo>
 """
 
+import sys
 import inspect
 from time import time
 from collections import MutableMapping, Container, Iterable, Sized
@@ -429,6 +430,11 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
     def __len__(self):
         len(list(self.iteritems()))
 
+    def items(self, *args, **kwargs):
+        if sys.version_info >= (3, 0):
+            return self.iteritems(*args, **kwargs)
+        return list(self.iteritems(*args, **kwargs))
+
     def iteritems(self, table_filter=None):
         count = 0
         oid = self.proxy.oid
@@ -567,6 +573,11 @@ class ProxyColumn(ProxyIter, MutableMapping):
         but with appended OID suffix"""
         new_suffix = self._oid_suffix + index
         return ProxyColumn(self.session, self.proxy, self._loose, new_suffix)
+
+    def items(self, *args, **kwargs):
+        if sys.version_info >= (3, 0):
+            return self.iteritems(*args, **kwargs)
+        return list(self.iteritems(*args, **kwargs))
 
     def iteritems(self, table_filter=None):
         resulting_filter = self._oid_suffix

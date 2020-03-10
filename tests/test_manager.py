@@ -188,6 +188,9 @@ class TestManagerGet(TestManager):
         results = list(self.manager.ifRcvAddressType.iteritems(3))
         self.assertEqual(results,
                          [((3, "6d:6e:6f:70:71:72"), 1)])
+        results = list(self.manager.ifRcvAddressType.items(3))
+        self.assertEqual(results,
+                         [((3, "6d:6e:6f:70:71:72"), 1)])
 
     def testWalkInvalidPartialIndexes(self):
         """Try to get a table slice with an incorrect index filter"""
