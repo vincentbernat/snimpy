@@ -3,7 +3,7 @@
 History
 -------
 
-0.8.14 (????-??-??)
+0.8.14 (2020-04-26)
 +++++++++++++++++++
 
  * Add ``items()`` in addition to ``iteritems()`` This is an iterator
