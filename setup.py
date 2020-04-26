@@ -38,6 +38,7 @@ if __name__ == "__main__":
           url='https://github.com/vincentbernat/snimpy',
           description=snimpy.__doc__,
           long_description=readme + '\n\n' + history,
+          long_description_content_type='text/x-rst',
           author=snimpy.__author__,
           author_email=snimpy.__email__,
           packages=["snimpy"],

@@ -103,12 +103,11 @@ History
 
 * Major rewrite.
 * SNMP support is now provided through PySNMP_.
-* MIB parsing is still done with libsmi_ but through CFFI instead of a
+* MIB parsing is still done with ``libsmi`` but through CFFI instead of a
   C module.
 * More unittests. Many bugfixes.
 
 .. _PySNMP: http://pysnmp.sourceforge.net/
-.. _libsmi: http://www.ibr.cs.tu-bs.de/projects/libsmi/
 
 0.6.4 (2013-03-21)
 ++++++++++++++++++
