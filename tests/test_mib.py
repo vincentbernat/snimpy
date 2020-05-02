@@ -1,11 +1,6 @@
 import unittest
 import os
-import sys
 from snimpy import mib, basictypes
-
-PYTHON3 = sys.version_info >= (3, 0)
-if PYTHON3:
-    unicode = str
 
 
 class TestMibSnimpy(unittest.TestCase):
@@ -85,7 +80,7 @@ class TestMibSnimpy(unittest.TestCase):
         self.assertEqual(self.nodes,
                          snodes)
         for n in nodes:
-            self.assert_(isinstance(n, mib.Node))
+            self.assertTrue(isinstance(n, mib.Node))
 
     def testGetTables(self):
         """Test that we can get all tables"""
@@ -94,7 +89,7 @@ class TestMibSnimpy(unittest.TestCase):
         self.assertEqual(self.tables,
                          stables)
         for n in tables:
-            self.assert_(isinstance(n, mib.Table))
+            self.assertTrue(isinstance(n, mib.Table))
 
     def testGetColumns(self):
         """Test that we can get all columns"""
@@ -103,7 +98,7 @@ class TestMibSnimpy(unittest.TestCase):
         self.assertEqual(self.columns,
                          scolumns)
         for n in columns:
-            self.assert_(isinstance(n, mib.Column))
+            self.assertTrue(isinstance(n, mib.Column))
 
     def testGetScalars(self):
         """Test that we can get all scalars"""
@@ -111,7 +106,7 @@ class TestMibSnimpy(unittest.TestCase):
         sscalars = sorted([str(a) for a in scalars])
         self.assertEqual(self.scalars, sscalars)
         for n in scalars:
-            self.assert_(isinstance(n, mib.Scalar))
+            self.assertTrue(isinstance(n, mib.Scalar))
 
     def testGetNotifications(self):
         """Test that we can get all notifications"""
@@ -119,50 +114,53 @@ class TestMibSnimpy(unittest.TestCase):
         snotifications = sorted([str(a) for a in notifications])
         self.assertEqual(self.notifications, snotifications)
         for n in notifications:
-            self.assert_(isinstance(n, mib.Notification))
+            self.assertTrue(isinstance(n, mib.Notification))
 
     def testGet(self):
         """Test that we can get all named attributes"""
         for i in self.scalars:
             self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
-            self.assert_(isinstance(mib.get('SNIMPY-MIB', i), mib.Scalar))
+            self.assertTrue(isinstance(mib.get('SNIMPY-MIB', i), mib.Scalar))
         for i in self.tables:
             self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
-            self.assert_(isinstance(mib.get('SNIMPY-MIB', i), mib.Table))
+            self.assertTrue(isinstance(mib.get('SNIMPY-MIB', i), mib.Table))
         for i in self.columns:
             self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
-            self.assert_(isinstance(mib.get('SNIMPY-MIB', i), mib.Column))
+            self.assertTrue(isinstance(mib.get('SNIMPY-MIB', i), mib.Column))
         for i in self.nodes:
             self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
-            self.assert_(isinstance(mib.get('SNIMPY-MIB', i), mib.Node))
+            self.assertTrue(isinstance(mib.get('SNIMPY-MIB', i), mib.Node))
         for i in self.notifications:
             self.assertEqual(str(mib.get('SNIMPY-MIB', i)), i)
-            self.assert_(isinstance(mib.get('SNIMPY-MIB', i),
-                         mib.Notification))
+            self.assertTrue(isinstance(mib.get('SNIMPY-MIB', i),
+                                       mib.Notification))
 
     def testGetByOid(self):
         """Test that we can get all named attributes by OID."""
         for i in self.scalars:
             nodebyname = mib.get('SNIMPY-MIB', i)
             self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
-            self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Scalar))
+            self.assertTrue(isinstance(mib.getByOid(nodebyname.oid),
+                                       mib.Scalar))
         for i in self.tables:
             nodebyname = mib.get('SNIMPY-MIB', i)
             self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
-            self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Table))
+            self.assertTrue(isinstance(mib.getByOid(nodebyname.oid),
+                                       mib.Table))
         for i in self.columns:
             nodebyname = mib.get('SNIMPY-MIB', i)
             self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
-            self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Column))
+            self.assertTrue(isinstance(mib.getByOid(nodebyname.oid),
+                                       mib.Column))
         for i in self.nodes:
             nodebyname = mib.get('SNIMPY-MIB', i)
             self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
-            self.assert_(isinstance(mib.getByOid(nodebyname.oid), mib.Node))
+            self.assertTrue(isinstance(mib.getByOid(nodebyname.oid), mib.Node))
         for i in self.notifications:
             nodebyname = mib.get('SNIMPY-MIB', i)
             self.assertEqual(str(mib.getByOid(nodebyname.oid)), i)
-            self.assert_(isinstance(mib.getByOid(nodebyname.oid),
-                                    mib.Notification))
+            self.assertTrue(isinstance(mib.getByOid(nodebyname.oid),
+                                       mib.Notification))
 
     def testGetByOid_UnknownOid(self):
         """Test that unknown OIDs raise an exception."""
@@ -182,9 +180,9 @@ class TestMibSnimpy(unittest.TestCase):
         for i in self.tables:
             table = mib.get('SNIMPY-MIB', i)
             for r in table.columns:
-                self.assert_(isinstance(r, mib.Column))
+                self.assertTrue(isinstance(r, mib.Column))
                 self.assertEqual(str(r.table), str(i))
-                self.assert_(str(r).startswith(str(i).replace("Table", "")))
+                self.assertTrue(str(r).startswith(str(i).replace("Table", "")))
             columns = sorted([str(rr)
                               for rr in self.columns
                               if str(rr).startswith(str(i).replace("Table",
@@ -195,7 +193,7 @@ class TestMibSnimpy(unittest.TestCase):
         for r in self.columns:
             column = mib.get('SNIMPY-MIB', r)
             table = column.table
-            self.assert_(isinstance(table, mib.Table))
+            self.assertTrue(isinstance(table, mib.Table))
             prefix = str(table).replace("Table", "")
             self.assertEqual(prefix, str(r)[:len(prefix)])
 
@@ -432,7 +430,7 @@ class TestSmi(unittest.TestCase):
     def testGetPath(self):
         """Test we can get default SMI path"""
         current = mib.path()
-        self.assertTrue(type(current), unicode)
+        self.assertTrue(type(current), str)
         self.assertNotEqual(mib.path(), u"")
 
     def testSetPath(self):

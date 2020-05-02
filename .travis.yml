@@ -2,10 +2,6 @@ language: python
 sudo: require
 matrix:
   include:
-    - python: "2.7"
-      env: TOX_ENV=py27
-    - python: "2.7"
-      env: TOX_ENV=py27-pysnmp42
     - python: "3.4"
       env: TOX_ENV=py34
     - python: "3.5"
@@ -20,10 +16,6 @@ matrix:
       env: TOX_ENV=py37
     - python: "3.8"
       env: TOX_ENV=py38
-    - python: "pypy"
-      env: TOX_ENV=pypy
-    - python: "pypy"
-      env: TOX_ENV=pypy-pysnmp42
     - python: "3.6"
       env: TOX_ENV=lint
     - python: "3.6"

@@ -1,13 +1,9 @@
-import sys
 import os
 import time
 from datetime import timedelta
 from snimpy.manager import load, Manager, snmp
 import agent
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
+import unittest
 
 
 class TestManager(unittest.TestCase):
