@@ -167,7 +167,7 @@ class TestSnmp1(unittest.TestCase):
     def testGetInteger(self):
         """Get an integer value"""
         oid, a = self.session.get(mib.get('IF-MIB', 'ifNumber').oid + (0,))[0]
-        self.assert_(a > 1)     # At least lo and another interface
+        self.assertTrue(a > 1)     # At least lo and another interface
 
     def testGetEnum(self):
         """Get an enum value"""
@@ -198,8 +198,8 @@ class TestSnmp1(unittest.TestCase):
             self.session.get((1, 2, 3))
             self.assertFalse("we should have got an exception")
         except snmp.SNMPException as ex:
-            self.assert_(isinstance(ex, snmp.SNMPNoSuchName) or
-                         isinstance(ex, snmp.SNMPNoSuchObject))
+            self.assertTrue(isinstance(ex, snmp.SNMPNoSuchName) or
+                            isinstance(ex, snmp.SNMPNoSuchObject))
 
     def testSetIpAddress(self):
         """Set IpAddress."""
@@ -270,7 +270,7 @@ class TestSnmp1(unittest.TestCase):
         self.assertEqual(oid2, ooid2)
         self.assertEqual(oid3, ooid3)
         self.assertEqual(a1, b"Snimpy Test Agent public")
-        self.assert_(a2 > 1)
+        self.assertTrue(a2 > 1)
         b = basictypes.build('IF-MIB', 'ifType', a3)
         self.assertEqual(b, "softwareLoopback")
 

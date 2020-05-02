@@ -20,7 +20,7 @@ class TestBasicTypes(unittest.TestCase):
     def testInteger(self):
         """Test integer basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyInteger", 18)
-        self.assert_(isinstance(a, basictypes.Integer))
+        self.assertTrue(isinstance(a, basictypes.Integer))
         self.assertEqual(a, 18)
         self.assertEqual(a + 10, 28)
         a = basictypes.build("SNIMPY-MIB", "snimpyInteger", 4)
@@ -28,9 +28,9 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a * 4, 16)
         a = basictypes.build("SNIMPY-MIB", "snimpyInteger", 5)
         self.assertEqual(a, 5)
-        self.assert_(a < 6)
-        # self.assert_(a > 4.6) # type coercion does not work
-        self.assert_(a > 4)
+        self.assertTrue(a < 6)
+        # self.assertTrue(a > 4.6) # type coercion does not work
+        self.assertTrue(a > 4)
         self.assertRaises(TypeError,
                           basictypes.build, ("SNIMPY-MIB",
                                              "snimpyInteger", [1, 2, 3]))
@@ -38,13 +38,13 @@ class TestBasicTypes(unittest.TestCase):
     def testString(self):
         """Test string basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyString", b"hello")
-        self.assert_(isinstance(a, basictypes.String))
+        self.assertTrue(isinstance(a, basictypes.String))
         self.assertEqual(a, "hello")
         self.assertEqual(a + " john", "hello john")
         self.assertEqual(a * 2, "hellohello")
         a = basictypes.build("SNIMPY-MIB", "snimpyString", b"hello john")
-        self.assert_("john" in a)
-        self.assert_("steve" not in a)
+        self.assertTrue("john" in a)
+        self.assertTrue("steve" not in a)
         self.assertEqual(a[1], 'e')
         self.assertEqual(a[1:4], 'ell')
         self.assertEqual(len(a), 10)
@@ -52,7 +52,7 @@ class TestBasicTypes(unittest.TestCase):
     def testStringFromBytes(self):
         """Test string basic type when built from bytes"""
         a = basictypes.build("SNIMPY-MIB", "snimpyString", b"hello")
-        self.assert_(isinstance(a, basictypes.String))
+        self.assertTrue(isinstance(a, basictypes.String))
         self.assertEqual(a, "hello")
         self.assertEqual(a + " john", "hello john")
         self.assertEqual(a * 2, "hellohello")
@@ -79,7 +79,7 @@ class TestBasicTypes(unittest.TestCase):
     def testOctetString(self):
         """Test octet string basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyOctetString", b"hello\x41")
-        self.assert_(isinstance(a, basictypes.OctetString))
+        self.assertTrue(isinstance(a, basictypes.OctetString))
         self.assertEqual(a, b"hello\x41")
         self.assertEqual(len(a), 6)
 
@@ -89,13 +89,13 @@ class TestBasicTypes(unittest.TestCase):
             "SNIMPY-MIB",
             "snimpyIpAddress",
             socket.inet_aton("10.0.4.5"))
-        self.assert_(isinstance(a, basictypes.IpAddress))
+        self.assertTrue(isinstance(a, basictypes.IpAddress))
         self.assertEqual(a, "10.0.4.5")
         self.assertEqual(a, "10.00.4.05")
         self.assertEqual(a, [10, 0, 4, 5])
         self.assertEqual(a[2], 4)
-        self.assert_(a < "10.1.2.4")
-        self.assert_(a > "10.0.0.1")
+        self.assertTrue(a < "10.1.2.4")
+        self.assertTrue(a > "10.0.0.1")
         a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", [1, 2, 3, 5])
         self.assertEqual(a, "1.2.3.5")
         a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", "10.0.4.5")
@@ -123,12 +123,12 @@ class TestBasicTypes(unittest.TestCase):
     def testEnum(self):
         """Test enum basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyEnum", 1)
-        self.assert_(isinstance(a, basictypes.Enum))
+        self.assertTrue(isinstance(a, basictypes.Enum))
         self.assertEqual(a, 1)
         self.assertEqual(a, "up")
         a = basictypes.build("SNIMPY-MIB", "snimpyEnum", "down")
         self.assertEqual(a, "down")
-        self.assert_(a != "up")
+        self.assertTrue(a != "up")
         self.assertEqual(a, 2)
         self.assertEqual(str(a), "down(2)")
         self.assertRaises(ValueError,
@@ -142,15 +142,15 @@ class TestBasicTypes(unittest.TestCase):
         """Test OID basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyObjectId",
                              mib.get("SNIMPY-MIB", "snimpyInteger"))
-        self.assert_(isinstance(a, basictypes.Oid))
+        self.assertTrue(isinstance(a, basictypes.Oid))
         self.assertEqual(a, mib.get("SNIMPY-MIB", "snimpyInteger"))
         self.assertEqual(a, mib.get("SNIMPY-MIB", "snimpyInteger").oid)
         # Suboid
-        self.assert_((list(mib.get("SNIMPY-MIB",
-                                   "snimpyInteger").oid) + [2, 3]) in a)
-        self.assert_((list(mib.get("SNIMPY-MIB",
-                                   "snimpyInteger").oid)[:-1] +
-                      [29, 3]) not in a)
+        self.assertTrue((list(mib.get("SNIMPY-MIB",
+                                      "snimpyInteger").oid) + [2, 3]) in a)
+        self.assertTrue((list(mib.get("SNIMPY-MIB",
+                                      "snimpyInteger").oid)[:-1] +
+                         [29, 3]) not in a)
         # Ability to extract a component
         self.assertEqual(a[0], 1)
         self.assertEqual(a[1], 3)
@@ -161,16 +161,16 @@ class TestBasicTypes(unittest.TestCase):
         a = basictypes.build("SNIMPY-MIB", "snimpyObjectId",
                              (1, 2, 3, 4))
         self.assertEqual(a, (1, 2, 3, 4))
-        self.assert_((1, 2, 3, 4, 5) in a)
-        self.assert_((3, 4, 5, 6) not in a)
+        self.assertTrue((1, 2, 3, 4, 5) in a)
+        self.assertTrue((3, 4, 5, 6) not in a)
 
     def testBoolean(self):
         """Test boolean basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyBoolean", True)
-        self.assert_(isinstance(a, basictypes.Boolean))
+        self.assertTrue(isinstance(a, basictypes.Boolean))
         self.assertEqual(a, True)
-        self.assert_(a)
-        self.assert_(not(not(a)))
+        self.assertTrue(a)
+        self.assertTrue(not(not(a)))
         self.assertEqual(not(a), False)
         a = basictypes.build("SNIMPY-MIB", "snimpyBoolean", "false")
         self.assertEqual(a, False)
@@ -181,7 +181,7 @@ class TestBasicTypes(unittest.TestCase):
     def testTimeticks(self):
         """Test timeticks basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyTimeticks", 676544)
-        self.assert_(isinstance(a, basictypes.Timeticks))
+        self.assertTrue(isinstance(a, basictypes.Timeticks))
         # We can compare to int but otherwise, this is a timedelta
         self.assertEqual(a, 676544)
         self.assertEqual(str(a), '1:52:45.440000')
@@ -190,29 +190,29 @@ class TestBasicTypes(unittest.TestCase):
                              timedelta(1, 3))
         self.assertEqual(str(a), '1 day, 0:00:03')
         self.assertEqual(a, (3 + 3600 * 24) * 100)
-        self.assert_(a != (3 + 3600 * 24) * 100 + 1)
-        self.assert_(a < timedelta(1, 4))
-        self.assert_(a > timedelta(1, 1))
-        self.assert_(a > 654)
-        self.assert_(a >= 654)
-        self.assert_(a < (3 + 3600 * 24) * 100 + 2)
+        self.assertTrue(a != (3 + 3600 * 24) * 100 + 1)
+        self.assertTrue(a < timedelta(1, 4))
+        self.assertTrue(a > timedelta(1, 1))
+        self.assertTrue(a > 654)
+        self.assertTrue(a >= 654)
+        self.assertTrue(a < (3 + 3600 * 24) * 100 + 2)
         self.assertEqual(a,
                          basictypes.build("SNIMPY-MIB", "snimpyTimeticks",
                                           timedelta(1, 3)))
-        self.assert_(a < basictypes.build("SNIMPY-MIB", "snimpyTimeticks",
-                                          timedelta(100, 30)))
+        self.assertTrue(a < basictypes.build("SNIMPY-MIB", "snimpyTimeticks",
+                                             timedelta(100, 30)))
 
     def testBits(self):
         """Test bit basic type"""
         a = basictypes.build("SNIMPY-MIB", "snimpyBits", [1, 2])
-        self.assert_(isinstance(a, basictypes.Bits))
+        self.assertTrue(isinstance(a, basictypes.Bits))
         self.assertEqual(a, [2, 1])
         self.assertEqual(a, (1, 2))
         self.assertEqual(a, set([1, 2]))
         self.assertEqual(a, ["second", "third"])
         self.assertEqual(a, set(["second", "third"]))
         self.assertEqual(a, ["second", 2])
-        self.assert_(a != ["second"])
+        self.assertTrue(a != ["second"])
         self.assertFalse(a == ["second"])
         self.assertFalse(a != ["second", 2])
         a |= "last"
@@ -238,7 +238,7 @@ class TestBasicTypes(unittest.TestCase):
     def testInexistentBits(self):
         """Check we cannot set inexistent bits"""
         a = basictypes.build("SNIMPY-MIB", "snimpyBits", [1, 2])
-        self.assert_(a & 1)
+        self.assertTrue(a & 1)
 
         def nope(a):
             a |= 3
@@ -250,20 +250,20 @@ class TestBasicTypes(unittest.TestCase):
             "SNIMPY-MIB",
             "snimpyOctetString",
             b"\x17\x00\x01")
-        self.assert_(isinstance(a, basictypes.OctetString))
+        self.assertTrue(isinstance(a, basictypes.OctetString))
         b = [7, 6, 5, 3, 23]
         for i in range(30):
             if i in b:
-                self.assert_(a & i)
+                self.assertTrue(a & i)
             else:
-                self.assert_(not(a & i))
-        self.assert_(a & [5, 7])
-        self.assert_(not(a & [5, 9]))
+                self.assertTrue(not(a & i))
+        self.assertTrue(a & [5, 7])
+        self.assertTrue(not(a & [5, 9]))
         a |= [2, 10]
         a -= 22
         a -= [23, 22]
-        self.assert_(a & [2, 10])
-        self.assert_(not(a & 23))
+        self.assertTrue(a & [2, 10])
+        self.assertTrue(not(a & 23))
         self.assertEqual(a, b"\x37\x20\x00")
         a |= 31
         self.assertEqual(a, b"\x37\x20\x00\x01")
@@ -580,6 +580,6 @@ class TestBasicTypes(unittest.TestCase):
         a = basictypes.build("SNIMPY-MIB",
                              "snimpyString",
                              "4521dgf")
-        self.assert_(a.startswith("4521"))
+        self.assertTrue(a.startswith("4521"))
         self.assertEqual(a.upper(), "4521DGF")
-        self.assert_(re.match("[0-9]+[defg]+", a))
+        self.assertTrue(re.match("[0-9]+[defg]+", a))

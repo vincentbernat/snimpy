@@ -25,7 +25,6 @@ Python integers. This module is some kind of a hack and its use
 outside of *Snimpy* seems convoluted.
 """
 
-import sys
 import struct
 import socket
 import re
@@ -33,22 +32,6 @@ from datetime import timedelta
 from pysnmp.proto import rfc1902
 
 from snimpy import mib
-
-PYTHON3 = sys.version_info >= (3, 0)
-if PYTHON3:
-    def ord2(x):
-        return x
-
-    def chr2(x):
-        return bytes([x & 0xff])
-
-    unicode = str
-    long = int
-else:
-    ord2 = ord
-
-    def chr2(x):
-        return chr(x & 0xff)
 
 
 def ordering_with_cmp(cls):
@@ -87,19 +70,19 @@ class Type(object):
 
         if cls == OctetString and entity.fmt is not None:
             # Promotion of OctetString to String if we have unicode stuff
-            if isinstance(value, (String, unicode)) or not raw:
+            if isinstance(value, (String, str)) or not raw:
                 cls = String
 
         if not isinstance(value, Type):
             value = cls._internal(entity, value)
         else:
             value = cls._internal(entity, value._value)
-        if issubclass(cls, unicode):
-            self = unicode.__new__(cls, value)
+        if issubclass(cls, str):
+            self = str.__new__(cls, value)
         elif issubclass(cls, bytes):
             self = bytes.__new__(cls, value)
-        elif issubclass(cls, long):
-            self = long.__new__(cls, value)
+        elif issubclass(cls, int):
+            self = int.__new__(cls, value)
         else:
             self = object.__new__(cls)
 
@@ -113,7 +96,7 @@ class Type(object):
             # individual bytes in this format, only the full displayed
             # version.
             value = String._internal(entity, self)
-            self = unicode.__new__(String, value)
+            self = str.__new__(String, value)
             self._value = value
             self.entity = entity
 
@@ -253,18 +236,19 @@ class StringOrOctetString(Type):
         b = self._toBytes()
 
         if implied or self._fixedLen(self.entity):
-            return tuple(ord2(a) for a in b)
+            return tuple(b)
         else:
-            return tuple([len(b)] + [ord2(a) for a in b])
+            return (len(b),) + tuple(b)
 
     def _toBytes(self):
         raise NotImplementedError
 
     @classmethod
     def fromOid(cls, entity, oid, implied=False):
+        oid = tuple(o & 0xff for o in oid)
         if implied:
             # Eat everything
-            return (len(oid), cls(entity, b"".join([chr2(x) for x in oid])))
+            return (len(oid), cls(entity, bytes(oid)))
         if cls._fixedLen(entity):
             length = entity.ranges
             if len(oid) < length:
@@ -272,7 +256,7 @@ class StringOrOctetString(Type):
                     "{0} is too short for wanted fixed "
                     "string (need at least {1:d})".format(oid, length))
             return (length,
-                    cls(entity, b"".join([chr2(x) for x in oid[:length]])))
+                    cls(entity, bytes(oid[:length])))
 
         # This is var-len
         if not oid:
@@ -284,7 +268,7 @@ class StringOrOctetString(Type):
                 "string (need at least {1:d})".format(oid, length))
         return (
             (length + 1,
-             cls(entity, b"".join([chr2(x) for x in oid[1:(length + 1)]]))))
+             cls(entity, bytes(oid[1:(length + 1)]))))
 
     def pack(self):
         return rfc1902.OctetString(self._toBytes())
@@ -303,7 +287,7 @@ class OctetString(StringOrOctetString, bytes):
         # Internally, we are using bytes
         if isinstance(value, bytes):
             return value
-        if isinstance(value, unicode):
+        if isinstance(value, str):
             return value.encode("ascii")
         return bytes(value)
 
@@ -311,38 +295,38 @@ class OctetString(StringOrOctetString, bytes):
         return self._value
 
     def __ior__(self, value):
-        nvalue = [ord2(u) for u in self._value]
+        nvalue = bytearray(self._value)
         if not isinstance(value, (tuple, list)):
             value = [value]
         for v in value:
-            if not isinstance(v, (int, long)):
+            if not isinstance(v, int):
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
             if len(nvalue) < (v >> 3) + 1:
                 nvalue.extend([0] * ((v >> 3) + 1 - len(self._value)))
             nvalue[v >> 3] |= 1 << (7 - v % 8)
-        return self.__class__(self.entity, b"".join([chr2(i) for i in nvalue]))
+        return self.__class__(self.entity, bytes(nvalue))
 
     def __isub__(self, value):
-        nvalue = [ord2(u) for u in self._value]
+        nvalue = bytearray(self._value)
         if not isinstance(value, (tuple, list)):
             value = [value]
         for v in value:
-            if not isinstance(v, int) and not isinstance(v, long):
+            if not isinstance(v, int):
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
             if len(nvalue) < (v >> 3) + 1:
                 continue
             nvalue[v >> 3] &= ~(1 << (7 - v % 8))
-        return self.__class__(self.entity, b"".join([chr2(i) for i in nvalue]))
+        return self.__class__(self.entity, bytes(nvalue))
         return self
 
     def __and__(self, value):
-        nvalue = [ord2(u) for u in self._value]
+        nvalue = bytearray(self._value)
         if not isinstance(value, (tuple, list)):
             value = [value]
         for v in value:
-            if not isinstance(v, (int, long)):
+            if not isinstance(v, int):
                 raise NotImplementedError(
                     "on string, bit-operation are limited to integers")
             if len(nvalue) < (v >> 3) + 1:
@@ -352,7 +336,7 @@ class OctetString(StringOrOctetString, bytes):
         return True
 
 
-class String(StringOrOctetString, unicode):
+class String(StringOrOctetString, str):
 
     """Class for a display string. Such a string is an unicode string and
     it is therefore expected that only printable characters are
@@ -416,7 +400,7 @@ class String(StringOrOctetString, unicode):
 
             # building
             if dorepeat:
-                repeat = ord2(value[i])
+                repeat = value[i]
                 i += 1
             else:
                 repeat = 1
@@ -515,7 +499,7 @@ class String(StringOrOctetString, unicode):
                 else:
                     break
             if dorepeat:
-                bb += chr2(len(repeats))
+                bb += bytes([len(repeats)])
                 bb += b"".join(repeats)
             else:
                 bb += result
@@ -531,21 +515,21 @@ class String(StringOrOctetString, unicode):
         # case if the value is an OctetString to do the conversion.
         if isinstance(value, OctetString):
             return cls._fromBytes(value._value, entity.fmt)
-        if PYTHON3 and isinstance(value, bytes):
+        if isinstance(value, bytes):
             return value.decode("utf-8")
-        return unicode(value)
+        return str(value)
 
     def __str__(self):
         return self._value
 
 
-class Integer(Type, long):
+class Integer(Type, int):
 
     """Class for any integer."""
 
     @classmethod
     def _internal(cls, entity, value):
-        return long(value)
+        return int(value)
 
     def pack(self):
         if self._value >= (1 << 64):
@@ -631,7 +615,7 @@ class Enum(Integer):
             if (v == value):
                 return k
         try:
-            return long(value)
+            return int(value)
         except Exception:
             raise ValueError("{0!r} is not a valid "
                              "value for {1}".format(value,
@@ -675,9 +659,9 @@ class Oid(Type):
     @classmethod
     def _internal(cls, entity, value):
         if isinstance(value, (list, tuple)):
-            return tuple([int(v) for v in value])
+            return tuple(int(v) for v in value)
         elif isinstance(value, str):
-            return tuple([ord2(i) for i in value.split(".") if i])
+            return tuple(int(i) for i in value.split(".") if i)
         elif isinstance(value, mib.Node):
             return tuple(value.oid)
         else:
@@ -769,7 +753,7 @@ class Timeticks(Type):
 
     @classmethod
     def _internal(cls, entity, value):
-        if isinstance(value, (int, long)):
+        if isinstance(value, int):
             # Value in centiseconds
             return timedelta(0, value / 100.)
         elif isinstance(value, timedelta):
@@ -801,7 +785,7 @@ class Timeticks(Type):
     def __cmp__(self, other):
         if isinstance(other, Timeticks):
             other = other._value
-        elif isinstance(other, (int, long)):
+        elif isinstance(other, int):
             other = timedelta(0, other / 100.)
         elif not isinstance(other, timedelta):
             raise NotImplementedError(
@@ -824,10 +808,10 @@ class Bits(Type):
         tryalternate = False
         if isinstance(value, bytes):
             for i, x in enumerate(value):
-                if ord2(x) == 0:
+                if x == 0:
                     continue
                 for j in range(8):
-                    if ord2(x) & (1 << (7 - j)):
+                    if x & (1 << (7 - j)):
                         k = (i * 8) + j
                         if k not in entity.enum:
                             tryalternate = True
@@ -863,7 +847,7 @@ class Bits(Type):
             string = []
         for b in self._value:
             string[b // 8] |= 1 << (7 - b % 8)
-        return rfc1902.Bits(b"".join([chr2(x) for x in string]))
+        return rfc1902.Bits(bytes(string))
 
     def __eq__(self, other):
         if isinstance(other, str):

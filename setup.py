@@ -29,7 +29,6 @@ if __name__ == "__main__":
               'Intended Audience :: System Administrators',
               'License :: OSI Approved :: ISC License (ISCL)',
               'Operating System :: POSIX',
-              'Programming Language :: Python :: 2',
               'Programming Language :: Python :: 3',
               'Topic :: System :: Networking',
               'Topic :: Utilities',
@@ -56,9 +55,7 @@ if __name__ == "__main__":
                                            "pysnmp >= 4",
                                            "nose",
                                            sys.version_info < (3, 6) and
-                                           "mock < 4" or "mock",
-                                           sys.version_info < (2, 7) and
-                                           "unittest2"])),
+                                           "mock < 4" or "mock"])),
           test_suite="nose.collector",
           cmdclass={
               "test": SnimpyTestCommand

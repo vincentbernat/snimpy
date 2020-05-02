@@ -28,10 +28,9 @@ Here is a simple example of use of this module::
     <String: lo>
 """
 
-import sys
 import inspect
 from time import time
-from collections import MutableMapping, Container, Iterable, Sized
+from collections.abc import MutableMapping, Container, Iterable, Sized
 from snimpy import snmp, mib, basictypes
 
 
@@ -431,9 +430,7 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
         len(list(self.iteritems()))
 
     def items(self, *args, **kwargs):
-        if sys.version_info >= (3, 0):
-            return self.iteritems(*args, **kwargs)
-        return list(self.iteritems(*args, **kwargs))
+        return self.iteritems(*args, **kwargs)
 
     def iteritems(self, table_filter=None):
         count = 0
@@ -575,9 +572,7 @@ class ProxyColumn(ProxyIter, MutableMapping):
         return ProxyColumn(self.session, self.proxy, self._loose, new_suffix)
 
     def items(self, *args, **kwargs):
-        if sys.version_info >= (3, 0):
-            return self.iteritems(*args, **kwargs)
-        return list(self.iteritems(*args, **kwargs))
+        return self.iteritems(*args, **kwargs)
 
     def iteritems(self, table_filter=None):
         resulting_filter = self._oid_suffix
