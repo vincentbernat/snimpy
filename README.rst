@@ -11,7 +11,9 @@ snimpy
 .. image:: https://coveralls.io/repos/vincentbernat/snimpy/badge.png
         :target: https://coveralls.io/r/vincentbernat/snimpy
 
-  Interactive SNMP tool.
+---
+
+ Interactive SNMP tool.
 
 *Snimpy* is a Python-based tool providing a simple interface to build
 SNMP query. Here is a very simplistic example that allows us to
