@@ -3,6 +3,7 @@ import os
 import re
 import socket
 import mock
+import ipaddress
 from datetime import timedelta
 from snimpy import mib, basictypes
 from pysnmp.proto import rfc1902
@@ -105,6 +106,16 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(a, [49, 48, 48, 49])
         a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", b"0101")
         self.assertEqual(a, [48, 49, 48, 49])
+        a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress",
+                             ipaddress.IPv4Address("1.2.3.4"))
+        self.assertEqual(a, [1, 2, 3, 4])
+
+    @unittest.expectedFailure
+    def testIpAddressXFail(self):
+        """Test incomplete IP addresses."""
+        # While 100 could be expanded to 0.0.0.100,
+        # ipaddress.IPv4Address does not accept it. It's not our job
+        # to be more Pythonic than Python.
         a = basictypes.build("SNIMPY-MIB", "snimpyIpAddress", "100")
         self.assertEqual(a, [0, 0, 0, 100])
 

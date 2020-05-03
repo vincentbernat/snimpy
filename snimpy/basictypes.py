@@ -26,8 +26,8 @@ outside of *Snimpy* seems convoluted.
 """
 
 import struct
-import socket
 import re
+import ipaddress
 from datetime import timedelta
 from pysnmp.proto import rfc1902
 
@@ -108,6 +108,10 @@ class Type(object):
 
         return self
 
+    def __init__(self, *args, **kwargs):
+        # Neutralize __init__ from other inherited classes
+        pass
+
     @classmethod
     def _internal(cls, entity, value):
         """Get internal value for a given value."""
@@ -176,7 +180,7 @@ class Type(object):
 
 
 @ordering_with_cmp
-class IpAddress(Type):
+class IpAddress(Type, ipaddress.IPv4Address):
 
     """Class representing an IP address/"""
 
@@ -184,22 +188,17 @@ class IpAddress(Type):
     def _internal(cls, entity, value):
         if isinstance(value, (list, tuple)):
             value = ".".join([str(a) for a in value])
-        elif isinstance(value, bytes) and len(value) == 4:
-            value = socket.inet_ntoa(value)
         try:
-            value = socket.inet_ntoa(socket.inet_aton(value))
-        except socket.error:
+            value = ipaddress.IPv4Address(value)
+        except ipaddress.AddressValueError:
             raise ValueError("{0!r} is not a valid IP".format(value))
-        return [int(a) for a in value.split(".")]
+        return value
 
     def pack(self):
-        return (
-            rfc1902.IpAddress(
-                str(".".join(["{0:d}".format(x) for x in self._value])))
-        )
+        return rfc1902.IpAddress(str(self._value))
 
     def toOid(self, implied=False):
-        return tuple(self._value)
+        return tuple(self._value.packed)
 
     @classmethod
     def fromOid(cls, entity, oid, implied=False):
@@ -207,9 +206,6 @@ class IpAddress(Type):
             raise ValueError(
                 "{0!r} is too short for an IP address".format(oid))
         return (4, cls(entity, oid[:4]))
-
-    def __str__(self):
-        return ".".join([str(a) for a in self._value])
 
     def __cmp__(self, other):
         if not isinstance(other, IpAddress):
@@ -224,7 +220,7 @@ class IpAddress(Type):
         return 1
 
     def __getitem__(self, nb):
-        return self._value[nb]
+        return self._value.packed[nb]
 
 
 class StringOrOctetString(Type):
