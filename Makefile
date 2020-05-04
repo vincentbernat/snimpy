@@ -29,6 +29,7 @@ clean-pyc:
 
 lint:
 	flake8 snimpy tests
+	interrogate --fail-under 50 -v snimpy tests
 
 test:
 	python -m nose
