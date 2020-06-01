@@ -21,8 +21,8 @@ try:
 except snmp.SNMPException:
     print("Cannot process %s: bad community?" % sys.argv[1])
     sys.exit(1)
-if not type.startswith("Ethernet Routing Switch 55") and \
-        not type.startswith("Ethernet Switch 425"):
+if not type.startswith(("Ethernet Routing Switch 55",
+                        "Ethernet Switch 425")):
     print("Not a 55x0: %s" % type)
     sys.exit(1)
 
