@@ -30,6 +30,7 @@ import re
 import socket
 import inspect
 import threading
+import ipaddress
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902, rfc1905
 from pysnmp.smi import error
@@ -237,7 +238,7 @@ class Session(object):
         convertors = {rfc1902.Integer: int,
                       rfc1902.Integer32: int,
                       rfc1902.OctetString: bytes,
-                      rfc1902.IpAddress: value.prettyOut,
+                      rfc1902.IpAddress: ipaddress.IPv4Address,
                       rfc1902.Counter32: int,
                       rfc1902.Counter64: int,
                       rfc1902.Gauge32: int,
