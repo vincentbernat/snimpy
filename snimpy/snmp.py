@@ -145,7 +145,7 @@ class Session(object):
         # Put authentication stuff in self._auth
         if version in [1, 2]:
             self._auth = cmdgen.CommunityData(
-                community, community, version - 1)
+                community[0:30], community, version - 1)
         elif version == 3:
             if secname is None:
                 secname = community
