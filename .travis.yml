@@ -14,6 +14,8 @@ matrix:
       env: TOX_ENV=py37
     - python: "3.8"
       env: TOX_ENV=py38
+    - python: "3.9"
+      env: TOX_ENV=py39
     - python: "3.6"
       env: TOX_ENV=lint
     - python: "3.6"
