@@ -39,3 +39,18 @@ jobs:
           pip install tox tox-gh-actions wheel
       - name: Run tests with tox
         run: tox
+      - name: Collect coveralls data
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          parallel: true
+
+  coveralls_finish:
+    name: Coveralls.io
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send results to coveralls.io
+        uses: AndreMiras/coveralls-python-action@develop
+        continue-on-error: true  # see https://github.com/AndreMiras/coveralls-python-action/issues/6
+        with:
+          parallel-finished: true
