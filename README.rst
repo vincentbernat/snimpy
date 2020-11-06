@@ -5,8 +5,7 @@ snimpy
 .. image:: https://badge.fury.io/py/snimpy.png
     :target: http://badge.fury.io/py/snimpy
     
-.. image:: https://travis-ci.org/vincentbernat/snimpy.png?branch=master
-        :target: https://travis-ci.org/vincentbernat/snimpy
+.. image:: https://github.com/vincentbernat/snimpy/workflows/Tests/badge.svg
 
 .. image:: https://coveralls.io/repos/vincentbernat/snimpy/badge.png
         :target: https://coveralls.io/r/vincentbernat/snimpy
