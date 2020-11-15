@@ -51,6 +51,5 @@ jobs:
     steps:
       - name: Send results to coveralls.io
         uses: AndreMiras/coveralls-python-action@develop
-        continue-on-error: true  # see https://github.com/AndreMiras/coveralls-python-action/issues/6
         with:
           parallel-finished: true
