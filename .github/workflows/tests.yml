@@ -3,7 +3,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: 0 7 1 * *
+    - cron: 30 7 2 * *
 jobs:
   tests:
     name: Run tests
