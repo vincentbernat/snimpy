@@ -27,7 +27,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install non-Python dependencies
         run: >
-          sudo apt -qy update
+          sudo apt -qy update;
           sudo apt -qy install
           pkg-config
           libsmi2-dev
