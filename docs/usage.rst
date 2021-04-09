@@ -26,7 +26,7 @@ environment. There are two additional objects available:
   filename. The MIB will be loaded into memory and made available in
   all SNMP managers::
 
-    load("IF-MIB")
+    load("SNMPv2-MIB")
     load("/usr/share/mibs/ietf/IF-MIB")
 
 * The `M` class which is used to instantiate a manager (a SNMP
