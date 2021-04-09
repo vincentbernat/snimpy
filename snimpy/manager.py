@@ -310,7 +310,7 @@ class Manager(object):
                 return (m, a)
             except mib.SMIException:
                 pass
-        raise AttributeError("{0} is not an attribute".format(attribute))
+        raise AttributeError("{0} not found in any MIBs".format(attribute))
 
     def __getattribute__(self, attribute):
         if attribute.startswith("_"):
