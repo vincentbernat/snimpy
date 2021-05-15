@@ -9,7 +9,6 @@ jobs:
     name: Run tests
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 3
       matrix:
         python-version:
           - 3.6
