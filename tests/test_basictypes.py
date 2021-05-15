@@ -91,7 +91,6 @@ class TestBasicTypes(unittest.TestCase):
             socket.inet_aton("10.0.4.5"))
         self.assertTrue(isinstance(a, basictypes.IpAddress))
         self.assertEqual(a, "10.0.4.5")
-        self.assertEqual(a, "10.00.4.05")
         self.assertEqual(a, [10, 0, 4, 5])
         self.assertEqual(a[2], 4)
         self.assertTrue(a < "10.1.2.4")
