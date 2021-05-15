@@ -23,7 +23,7 @@ for interface in s.ifIndex:
 for vlan in s.rcVlanId:
     for interface in vlans:
         if s.rcVlanStaticMembers[vlan] & interface:
-            vlans[interface].append("%s(%s)" % (vlan, s.rcVlanName[vlan]))
+            vlans[interface].append("{}({})".format(vlan, s.rcVlanName[vlan]))
 
 import pprint
 pprint.pprint(vlans)

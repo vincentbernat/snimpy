@@ -1,7 +1,5 @@
 #!/usr/bin/snimpy
 
-from __future__ import print_function
-
 from socket import inet_ntoa
 
 load("IP-FORWARD-MIB")
@@ -11,7 +9,7 @@ print("Using IP-FORWARD-MIB::ipCidrRouteTable...")
 routes = m.ipCidrRouteNextHop
 for x in routes:
     net, netmask, tos, src = x
-    print("%15s/%-15s via %-15s src %-15s" % (net, netmask, routes[x], src))
+    print("{:>15}/{:<15} via {:<15} src {:<15}".format(net, netmask, routes[x], src))
 
 print
 

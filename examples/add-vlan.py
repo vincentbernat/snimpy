@@ -4,8 +4,6 @@
 On Nortel switches, create a new VLAN and tag it on "TagAll" ports.
 """
 
-from __future__ import print_function
-
 import os
 import sys
 
@@ -34,7 +32,7 @@ else:
 tagged = [port for port in s.rcVlanPortPerformTagging
           if s.rcVlanPortPerformTagging[port] ]
 if len(tagged) != 2 and len(tagged) != 3:
-    print("%s does not have exactly two or three tagged ports (%r)" % (sys.argv[1], tagged))
+    print("{} does not have exactly two or three tagged ports ({!r})".format(sys.argv[1], tagged))
     sys.exit(1)
 print("VLAN %d will be tagged on ports %s" % (vlanNumber, tagged))
 s.rcVlanStaticMembers[vlanNumber] |= tagged

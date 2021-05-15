@@ -65,13 +65,13 @@ for name, obj in inspect.getmembers(error):
        inspect.isclass(obj) and \
        issubclass(obj, error.MibOperationError) and \
        obj != error.MibOperationError:
-        name = str("SNMP{0}".format(name[:-5]))
+        name = str("SNMP{}".format(name[:-5]))
         globals()[name] = type(name, (SNMPException,), {})
 del name
 del obj
 
 
-class Session(object):
+class Session:
 
     """SNMP session. An instance of this object will represent an SNMP
     session. From such an instance, one can get information from the
@@ -157,7 +157,7 @@ class Session(object):
                     "SHA1": cmdgen.usmHMACSHAAuthProtocol
                 }[authprotocol]
             except KeyError:
-                raise ValueError("{0} is not an acceptable authentication "
+                raise ValueError("{} is not an acceptable authentication "
                                  "protocol".format(authprotocol))
             try:
                 privprotocol = {
@@ -170,7 +170,7 @@ class Session(object):
                     "AES256": cmdgen.usmAesCfb256Protocol,
                 }[privprotocol]
             except KeyError:
-                raise ValueError("{0} is not an acceptable privacy "
+                raise ValueError("{} is not an acceptable privacy "
                                  "protocol".format(privprotocol))
             self._auth = cmdgen.UsmUserData(secname,
                                             authpassword,
@@ -178,7 +178,7 @@ class Session(object):
                                             authprotocol,
                                             privprotocol)
         else:
-            raise ValueError("unsupported SNMP version {0}".format(version))
+            raise ValueError("unsupported SNMP version {}".format(version))
 
         # Put transport stuff into self._transport
         mo = re.match(r'^(?:'
@@ -254,7 +254,7 @@ class Session(object):
             if isinstance(value, cl):
                 return fn(value)
         self._check_exception(value)
-        raise NotImplementedError("unable to convert {0}".format(repr(value)))
+        raise NotImplementedError("unable to convert {}".format(repr(value)))
 
     def _op(self, cmd, *oids):
         """Apply an SNMP operation"""
@@ -270,7 +270,7 @@ class Session(object):
             # We try to find a builtin exception with the same message
             exc = str(errorStatus.prettyPrint())
             exc = re.sub(r'\W+', '', exc)
-            exc = "SNMP{0}".format(exc[0].upper() + exc[1:])
+            exc = "SNMP{}".format(exc[0].upper() + exc[1:])
             if str(exc) in globals():
                 raise globals()[exc]
             raise SNMPException(errorStatus.prettyPrint())
@@ -350,7 +350,7 @@ class Session(object):
         return self._op(self._cmdgen.setCmd, *varbinds)
 
     def __repr__(self):
-        return "{0}(host={1},version={2})".format(
+        return "{}(host={},version={})".format(
             self.__class__.__name__,
             self._host,
             self._version)
@@ -414,7 +414,7 @@ class Session(object):
             return
         value = int(value)
         if value <= 0:
-            raise ValueError("{0} is not an appropriate value "
+            raise ValueError("{} is not an appropriate value "
                              "for max repeater parameter".format(
                                  value))
         self._bulk = value

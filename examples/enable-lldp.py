@@ -5,8 +5,6 @@
 Generic procedure but we restrict ourself to Nortel 55x0.
 """
 
-from __future__ import print_function
-
 import sys
 import os
 

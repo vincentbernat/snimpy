@@ -34,7 +34,7 @@ from collections.abc import MutableMapping, Container, Iterable, Sized
 from snimpy import snmp, mib, basictypes
 
 
-class DelegatedSession(object):
+class DelegatedSession:
 
     """General class for SNMP session for delegation"""
 
@@ -144,7 +144,7 @@ def MibRestrictedManager(original, mibs):
     return clone
 
 
-class Manager(object):
+class Manager:
 
     """SNMP manager. An instance of this class will represent an SNMP
     manager (client).
@@ -299,9 +299,9 @@ class Manager(object):
         # constructor in a generic way
         frame = inspect.currentframe()
         args, _, _, values = inspect.getargvalues(frame)
-        self._constructor_args = dict((a, values[a])
-                                      for a in args
-                                      if a != 'self')
+        self._constructor_args = {a: values[a]
+                                  for a in args
+                                  if a != 'self'}
 
     def _locate(self, attribute):
         for m in self._loaded:
@@ -310,7 +310,7 @@ class Manager(object):
                 return (m, a)
             except mib.SMIException:
                 pass
-        raise AttributeError("{0} not found in any MIBs".format(attribute))
+        raise AttributeError("{} not found in any MIBs".format(attribute))
 
     def __getattribute__(self, attribute):
         if attribute.startswith("_"):
@@ -341,17 +341,17 @@ class Manager(object):
         if isinstance(a, mib.Scalar):
             self._session.set(a.oid + (0,), value)
             return
-        raise AttributeError("{0} is not writable".format(attribute))
+        raise AttributeError("{} is not writable".format(attribute))
 
     def __getitem__(self, modulename):
         modulename = modulename.encode('ascii')
         for m in loaded:
             if modulename == m:
                 return MibRestrictedManager(self, [m])
-        raise KeyError("{0} is not a loaded module".format(modulename))
+        raise KeyError("{} is not a loaded module".format(modulename))
 
     def __repr__(self):
-        return "<Manager for {0}>".format(self._host)
+        return "<Manager for {}>".format(self._host)
 
     def __enter__(self):
 
@@ -374,8 +374,8 @@ class Proxy:
     """A proxy for some base type, notably a column or a table."""
 
     def __repr__(self):
-        return "<{0} for {1}>".format(self.__class__.__name__,
-                                      repr(self.proxy)[1:-1])
+        return "<{} for {}>".format(self.__class__.__name__,
+                                    repr(self.proxy)[1:-1])
 
 
 class ProxyIter(Proxy, Sized, Iterable, Container):
@@ -392,8 +392,8 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
         indextype = self.proxy.table.index
         if len(indextype) != len(index):
             raise ValueError(
-                "{0} column uses the following "
-                "indexes: {1!r}".format(self.proxy, indextype))
+                "{} column uses the following "
+                "indexes: {!r}".format(self.proxy, indextype))
         oidindex = []
         for i, ind in enumerate(index):
             # Cast to the correct type since we need "toOid()"
@@ -456,9 +456,9 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
                 noid = None
                 break
             oid = noid
-            if not((len(oid) >= len(walk_oid) and
+            if not(len(oid) >= len(walk_oid) and
                     oid[:len(walk_oid)] ==
-                    walk_oid[:len(walk_oid)])):
+                    walk_oid[:len(walk_oid)]):
                 noid = None
                 break
 

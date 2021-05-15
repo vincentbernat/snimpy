@@ -3,8 +3,6 @@
 """Disable port ingress filtering on Nortel switch (also known as
 filter-unregistered-frames)."""
 
-from __future__ import print_function
-
 import sys
 
 load("SNMPv2-MIB")

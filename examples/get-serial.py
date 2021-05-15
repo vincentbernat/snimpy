@@ -4,8 +4,6 @@
 Get serial number of a given equipment using ENTITY-MIB
 """
 
-from __future__ import print_function
-
 import sys
 
 load("ENTITY-MIB")
@@ -23,10 +21,10 @@ for i in s.entPhysicalContainedIn:
 if parent is None:
     print("[!] %s: Unable to find parent" % host)
     sys.exit(1)
-print("[+] %s: %s" % (host, s.entPhysicalDescr[parent]))
-print("[+] %s: HW %s, FW %s, SW %s" % (host,
-                                       s.entPhysicalHardwareRev[parent],
-                                       s.entPhysicalFirmwareRev[parent],
-                                       s.entPhysicalSoftwareRev[parent]))
-print("[+] %s: SN %s" % (host,
-                         s.entPhysicalSerialNum[parent]))
+print("[+] {}: {}".format(host, s.entPhysicalDescr[parent]))
+print("[+] {}: HW {}, FW {}, SW {}".format(host,
+                                           s.entPhysicalHardwareRev[parent],
+                                           s.entPhysicalFirmwareRev[parent],
+                                           s.entPhysicalSoftwareRev[parent]))
+print("[+] {}: SN {}".format(host,
+                             s.entPhysicalSerialNum[parent]))

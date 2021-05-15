@@ -28,7 +28,7 @@ class TestMain(unittest.TestCase):
         try:
             script.write("""
 load("IF-MIB")
-m = M(host="127.0.0.1:{0}",
+m = M(host="127.0.0.1:{}",
       community="public",
       version=2)
 assert(m.ifDescr[1] == "lo")

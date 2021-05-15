@@ -40,7 +40,7 @@ class SMIException(Exception):
     inherited from this one."""
 
 
-class Node(object):
+class Node:
 
     """MIB node. An instance of this class represents a MIB node. It
     can be specialized by other classes, like :class:`Scalar`,
@@ -114,7 +114,7 @@ class Node(object):
 
         if t is None or t == ffi.NULL:
             raise SMIException("unable to retrieve the declared type "
-                               "of the node '{0}'".format(self.node.name))
+                               "of the node '{}'".format(self.node.name))
 
         return ffi.string(t.name)
 
@@ -132,7 +132,7 @@ class Node(object):
 
         new_type = _getType(type_name)
         if not new_type:
-            raise SMIException("no type named {0} in any loaded module".format(
+            raise SMIException("no type named {} in any loaded module".format(
                 type_name))
 
         # Easiest way to find the new basetype is to set the override
@@ -249,16 +249,16 @@ class Node(object):
     def __repr__(self):
         r = _smi.smiRenderNode(self.node, _smi.SMI_RENDER_ALL)
         if r == ffi.NULL:
-            return "<uninitialized {0} object at {1}>".format(
+            return "<uninitialized {} object at {}>".format(
                 self.__class__.__name__, hex(id(self)))
         r = ffi.gc(r, _smi.free)
         module = _smi.smiGetNodeModule(self.node)
         if module == ffi.NULL:
-            raise SMIException("unable to get module for {0}".format(
+            raise SMIException("unable to get module for {}".format(
                 self.node.name))
-        return "<{0} {1} from '{2}'>".format(self.__class__.__name__,
-                                             ffi.string(r),
-                                             ffi.string(module.name))
+        return "<{} {} from '{}'>".format(self.__class__.__name__,
+                                          ffi.string(r),
+                                          ffi.string(module.name))
 
     def _convert(self, value):
         attr = {_smi.SMI_BASETYPE_INTEGER32: "integer32",
@@ -298,14 +298,14 @@ class Table(Node):
         if child == ffi.NULL:
             return []
         if child.nodekind != _smi.SMI_NODEKIND_ROW:
-            raise SMIException("child {0} of {1} is not a row".format(
+            raise SMIException("child {} of {} is not a row".format(
                 ffi.string(child.name),
                 ffi.string(self.node.name)))
         columns = []
         child = _smi.smiGetFirstChildNode(child)
         while child != ffi.NULL:
             if child.nodekind != _smi.SMI_NODEKIND_COLUMN:
-                raise SMIException("child {0} of {1} is not a column".format(
+                raise SMIException("child {} of {} is not a column".format(
                     ffi.string(child.name),
                     ffi.string(self.node.name)))
             columns.append(Column(child))
@@ -322,18 +322,18 @@ class Table(Node):
         if child != ffi.NULL and child.indexkind == _smi.SMI_INDEX_AUGMENT:
             child = _smi.smiGetRelatedNode(child)
             if child == ffi.NULL:
-                raise SMIException("AUGMENT index for {0} but "
+                raise SMIException("AUGMENT index for {} but "
                                    "unable to retrieve it".format(
                                        ffi.string(self.node.name)))
         if child == ffi.NULL:
-            raise SMIException("{0} does not have a row".format(
+            raise SMIException("{} does not have a row".format(
                 ffi.string(self.node.name)))
         if child.nodekind != _smi.SMI_NODEKIND_ROW:
-            raise SMIException("child {0} of {1} is not a row".format(
+            raise SMIException("child {} of {} is not a row".format(
                 ffi.string(child.name),
                 ffi.string(self.node.name)))
         if child.indexkind != _smi.SMI_INDEX_INDEX:
-            raise SMIException("child {0} of {1} has an unhandled "
+            raise SMIException("child {} of {} has an unhandled "
                                "kind of index".format(
                                    ffi.string(child.name),
                                    ffi.string(self.node.name)))
@@ -367,10 +367,10 @@ class Table(Node):
             nelement = _smi.smiGetElementNode(element)
             if nelement == ffi.NULL:
                 raise SMIException("cannot get index "
-                                   "associated with {0}".format(
+                                   "associated with {}".format(
                                        ffi.string(self.node.name)))
             if nelement.nodekind != _smi.SMI_NODEKIND_COLUMN:
-                raise SMIException("index {0} for {1} is "
+                raise SMIException("index {} for {} is "
                                    "not a column".format(
                                        ffi.string(nelement.name),
                                        ffi.string(self.node.name)))
@@ -392,18 +392,18 @@ class Column(Node):
         """
         parent = _smi.smiGetParentNode(self.node)
         if parent == ffi.NULL:
-            raise SMIException("unable to get parent of {0}".format(
+            raise SMIException("unable to get parent of {}".format(
                 ffi.string(self.node.name)))
         if parent.nodekind != _smi.SMI_NODEKIND_ROW:
-            raise SMIException("parent {0} of {1} is not a row".format(
+            raise SMIException("parent {} of {} is not a row".format(
                 ffi.string(parent.name),
                 ffi.string(self.node.name)))
         parent = _smi.smiGetParentNode(parent)
         if parent == ffi.NULL:
-            raise SMIException("unable to get parent of {0}".format(
+            raise SMIException("unable to get parent of {}".format(
                 ffi.string(self.node.name)))
         if parent.nodekind != _smi.SMI_NODEKIND_TABLE:
-            raise SMIException("parent {0} of {1} is not a table".format(
+            raise SMIException("parent {} of {} is not a table".format(
                 ffi.string(parent.name),
                 ffi.string(self.node.name)))
         t = Table(parent)
@@ -428,7 +428,7 @@ class Notification(Node):
             nelement = _smi.smiGetElementNode(element)
             if nelement == ffi.NULL:
                 raise SMIException("cannot get object "
-                                   "associated with {0}".format(
+                                   "associated with {}".format(
                                        ffi.string(self.node.name)))
             if nelement.nodekind == _smi.SMI_NODEKIND_COLUMN:
                 lindex.append(Column(nelement))
@@ -437,7 +437,7 @@ class Notification(Node):
             elif nelement.nodekind == _smi.SMI_NODEKIND_SCALAR:
                 lindex.append(Scalar(nelement))
             else:
-                raise SMIException("object {0} for {1} is "
+                raise SMIException("object {} for {} is "
                                    "not a node".format(
                                        ffi.string(nelement.name),
                                        ffi.string(self.node.name)))
@@ -452,8 +452,8 @@ _lastError = None
 def _logError(path, line, severity, msg, tag):
     global _lastError
     if path != ffi.NULL and msg != ffi.NULL:
-        _lastError = "{0}:{1}: {2}".format(ffi.string(path), line,
-                                           ffi.string(msg))
+        _lastError = "{}:{}: {}".format(ffi.string(path), line,
+                                        ffi.string(msg))
     else:
         _lastError = None
 
@@ -494,7 +494,7 @@ def path(path=None):
     if not isinstance(path, bytes):
         path = path.encode("utf8")
     if _smi.smiSetPath(path) < 0:
-        raise SMIException("unable to set the path {0}".format(path))
+        raise SMIException("unable to set the path {}".format(path))
 
 
 def _get_module(name):
@@ -534,10 +534,10 @@ def get(mib, name):
         mib = mib.encode("ascii")
     module = _get_module(mib)
     if module is None:
-        raise SMIException("no module named {0}".format(mib))
+        raise SMIException("no module named {}".format(mib))
     node = _smi.smiGetNode(module, name.encode("ascii"))
     if node == ffi.NULL:
-        raise SMIException("in {0}, no node named {1}".format(
+        raise SMIException("in {}, no node named {}".format(
             mib, name))
     pnode = _kind2object(node.nodekind)
     return pnode(node)
@@ -551,7 +551,7 @@ def getByOid(oid):
     """
     node = _smi.smiGetNodeByOID(len(oid), oid)
     if node == ffi.NULL:
-        raise SMIException("no node for {0}".format(
+        raise SMIException("no node for {}".format(
             ".".join([str(o) for o in oid])))
     pnode = _kind2object(node.nodekind)
     return pnode(node)
@@ -583,7 +583,7 @@ def _get_kind(mib, kind):
         mib = mib.encode("ascii")
     module = _get_module(mib)
     if module is None:
-        raise SMIException("no module named {0}".format(mib))
+        raise SMIException("no module named {}".format(mib))
     lnode = []
     node = _smi.smiGetFirstNode(module, kind)
     while node != ffi.NULL:
@@ -653,15 +653,15 @@ def load(mib):
         mib = mib.encode("ascii")
     modulename = _smi.smiLoadModule(mib)
     if modulename == ffi.NULL:
-        raise SMIException("unable to find {0} (check the path)".format(mib))
+        raise SMIException("unable to find {} (check the path)".format(mib))
     modulename = ffi.string(modulename)
     if not _get_module(modulename.decode("ascii")):
         details = "check with smilint -s -l1"
         if _lastError is not None:
-            details = "{0}: {1}".format(_lastError,
-                                        details)
+            details = "{}: {}".format(_lastError,
+                                      details)
         raise SMIException(
-            "{0} contains major SMI error ({1})".format(mib, details))
+            "{} contains major SMI error ({})".format(mib, details))
     return modulename
 
 

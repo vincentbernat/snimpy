@@ -21,7 +21,7 @@ class TestManager(unittest.TestCase):
         cls.agent.terminate()
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
+        self.manager = Manager(host="127.0.0.1:{}".format(self.agent.port),
                                community="public",
                                version=2)
         self.session = self.manager._session
@@ -241,7 +241,7 @@ class TestManagerGet(TestManager):
         """Try to walk a non-existent table"""
         agent2 = agent.TestAgent(emptyTable=False)
         try:
-            manager = Manager(host="127.0.0.1:{0}".format(agent2.port),
+            manager = Manager(host="127.0.0.1:{}".format(agent2.port),
                               community="public",
                               version=2)
             [(idx,) for idx in manager.snimpyEmptyDescr]
@@ -398,7 +398,7 @@ class TestManagerWithNone(TestManagerGet):
     """Test a manager answering None for inexistent stuff"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
+        self.manager = Manager(host="127.0.0.1:{}".format(self.agent.port),
                                community="public",
                                version=2, none=True)
         self.session = self.manager._session._session
@@ -415,7 +415,7 @@ class TestCachingManager(TestManagerGet):
     """Test if caching manager works like regular manager"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
+        self.manager = Manager(host="127.0.0.1:{}".format(self.agent.port),
                                community="public",
                                version=2, cache=1)
         self.session = self.manager._session._session
@@ -446,7 +446,7 @@ class TestCachingManagerWithModificatons(TestManager):
     """Test if caching manager works with modifications"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
+        self.manager = Manager(host="127.0.0.1:{}".format(self.agent.port),
                                community="public",
                                version=2, cache=1)
         self.session = self.manager._session._session
@@ -499,7 +499,7 @@ class TestManagerLoose(TestManager):
     """Test when the agent is returning invalid values with loose mode"""
 
     def setUp(self):
-        self.manager = Manager(host="127.0.0.1:{0}".format(self.agent.port),
+        self.manager = Manager(host="127.0.0.1:{}".format(self.agent.port),
                                community="public",
                                version=2, loose=True)
         self.session = self.manager._session

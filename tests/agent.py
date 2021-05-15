@@ -7,7 +7,7 @@ from pysnmp.carrier.asynsock.dgram import udp, udp6
 from pysnmp.proto.api import v2c
 
 
-class TestAgent(object):
+class TestAgent:
 
     next_port = [random.randint(22000, 32000)]
 
@@ -95,7 +95,7 @@ class TestAgent(object):
             MibScalar((1, 3, 6, 1, 2, 1, 1, 1), v2c.OctetString()),
             MibScalarInstance((1, 3, 6, 1, 2, 1, 1, 1), (0,),
                               v2c.OctetString(
-                                  "Snimpy Test Agent {0}".format(
+                                  "Snimpy Test Agent {}".format(
                                       self.community))),
             # SNMPv2-MIB::sysObjectID
             MibScalar((1, 3, 6, 1, 2, 1, 1, 2), v2c.ObjectIdentifier()),

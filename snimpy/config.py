@@ -33,7 +33,7 @@ class Conf:
             userconf = self.userconf
         try:
             conffile = open(os.path.expanduser(userconf))
-        except (OSError, IOError):
+        except OSError:
             pass
         else:
             try:

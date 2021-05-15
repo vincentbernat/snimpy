@@ -148,7 +148,7 @@ class TestSnmp1(unittest.TestCase):
         self.session = snmp.Session(**params)
 
     def setUpSession(self, agent, password):
-        return dict(host="127.0.0.1:{0}".format(agent.port),
+        return dict(host="127.0.0.1:{}".format(agent.port),
                     community=password,
                     version=self.version)
 
@@ -243,7 +243,7 @@ class TestSnmp1(unittest.TestCase):
 
     def testSetMacAddress(self):
         """Set a MAC address."""
-        self.setAndCheck('snimpyMacAddress', u"a0:b0:c0:d0:e:ff")
+        self.setAndCheck('snimpyMacAddress', "a0:b0:c0:d0:e:ff")
         oid, a = self.session.get((1, 3, 6, 1, 2, 1, 45121, 1, 15, 0))[0]
         # This is software loopback
         self.assertEqual(a, b"\xa0\xb0\xc0\xd0\x0e\xff")
@@ -320,9 +320,9 @@ class TestSnmp1(unittest.TestCase):
         count = 20
         agents = []
         for i in range(count):
-            agents.append(self.addAgent('community{0}'.format(i),
-                                        'community{0}-authpass'.format(i),
-                                        'community{0}-privpass'.format(i)))
+            agents.append(self.addAgent('community{}'.format(i),
+                                        'community{}-authpass'.format(i),
+                                        'community{}-privpass'.format(i)))
         ooid = mib.get('SNMPv2-MIB', 'sysDescr').oid + (0,)
 
         threads = []
@@ -332,17 +332,17 @@ class TestSnmp1(unittest.TestCase):
 
         # Start one thread
         def run(i):
-            params = self.setUpSession(agents[i], 'community{0}'.format(i))
+            params = self.setUpSession(agents[i], 'community{}'.format(i))
             session = snmp.Session(**params)
             session.timeout = 10 * 1000 * 1000
             oid, a = session.get(ooid)[0]
-            exp = ("Snimpy Test Agent community{0}".format(i)).encode('ascii')
+            exp = ("Snimpy Test Agent community{}".format(i)).encode('ascii')
             with lock:
                 if oid == ooid and \
                    a == exp:
-                    successes.append("community{0}".format(i))
+                    successes.append("community{}".format(i))
                 else:
-                    failures.append("community{0}".format(i))
+                    failures.append("community{}".format(i))
         for i in range(count):
             threads.append(threading.Thread(target=run, args=(i,)))
         for i in range(count):
@@ -351,7 +351,7 @@ class TestSnmp1(unittest.TestCase):
             threads[i].join()
         self.assertEqual(failures, [])
         self.assertEqual(sorted(successes),
-                         sorted(["community{0}".format(i)
+                         sorted(["community{}".format(i)
                                  for i in range(count)]))
 
 
@@ -395,13 +395,13 @@ class TestSnmp3(TestSnmp2):
     version = 3
 
     def setUpSession(self, agent, password):
-        return dict(host="127.0.0.1:{0}".format(agent.port),
+        return dict(host="127.0.0.1:{}".format(agent.port),
                     version=3,
                     secname="read-write",
                     authprotocol="MD5",
-                    authpassword="{0}-authpass".format(password),
+                    authpassword="{}-authpass".format(password),
                     privprotocol="AES",
-                    privpassword="{0}-privpass".format(password))
+                    privpassword="{}-privpass".format(password))
 
 
 class TestSnmpTransports(unittest.TestCase):
@@ -417,7 +417,7 @@ class TestSnmpTransports(unittest.TestCase):
     def _test(self, ipv6, host):
         m = agent.TestAgent(ipv6)
         session = snmp.Session(
-            host="{0}:{1}".format(host, m.port),
+            host="{}:{}".format(host, m.port),
             community="public",
             version=2)
         try:

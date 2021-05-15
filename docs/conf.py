@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import sys
 import os
@@ -25,8 +24,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Snimpy'
-copyright = u'2015, Vincent Bernat'
+project = 'Snimpy'
+copyright = '2015, Vincent Bernat'
 
 version = snimpy.__version__
 release = snimpy.__version__

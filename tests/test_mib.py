@@ -64,11 +64,11 @@ class TestMibSnimpy(unittest.TestCase):
         self.notifications = ["snimpyNotification"]
         self.notifications.sort()
 
-        self.expected_modules = [u"SNMPv2-SMI",
-                                 u"SNMPv2-TC",
-                                 u"SNIMPY-MIB",
-                                 u"INET-ADDRESS-MIB",
-                                 u"IANAifType-MIB"]
+        self.expected_modules = ["SNMPv2-SMI",
+                                 "SNMPv2-TC",
+                                 "SNIMPY-MIB",
+                                 "INET-ADDRESS-MIB",
+                                 "IANAifType-MIB"]
 
     def tearDown(self):
         mib.reset()
@@ -345,7 +345,7 @@ class TestMibSnimpy(unittest.TestCase):
         addrtype = addrtype_attr.type(addrtype_attr, "ipv4")
         self.assertEqual(addrtype, "ipv4")
         addr_attr.typeName = b"InetAddressIPv4"
-        ipv4 = u"127.0.0.1"
+        ipv4 = "127.0.0.1"
         ipv4_oid = (4, 127, 0, 0, 1)
 
         addr = addr_attr.type(addr_attr, ipv4)
@@ -360,9 +360,9 @@ class TestMibSnimpy(unittest.TestCase):
         # Try both IPv6 and non-bytes name.
         addrtype = addrtype_attr.type(addrtype_attr, "ipv6")
         self.assertEqual(addrtype, "ipv6")
-        addr_attr.typeName = u"InetAddressIPv6"
+        addr_attr.typeName = "InetAddressIPv6"
         # Snimpy does not use leading zeroes.
-        ipv6 = u'102:304:506:708:90a:b0c:d0e:f01'
+        ipv6 = '102:304:506:708:90a:b0c:d0e:f01'
         ipv6_oid = (16, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
                     0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x01)
 
@@ -377,7 +377,7 @@ class TestMibSnimpy(unittest.TestCase):
 
         # Try a type from a different module (chosen because snmpwalk
         # prints IPv6 addresses incorrectly).
-        ipv6_1xformat = u'1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:1'
+        ipv6_1xformat = '1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:1'
         addr_attr.typeName = "PhysAddress"
 
         addr = addr_attr.type(addr_attr, ipv6_1xformat)
@@ -406,7 +406,7 @@ class TestMibSnimpy(unittest.TestCase):
 
         # Parse error.
         attr.typeName = "InetAddressIPv4"
-        self.assertRaises(ValueError, attr.type, attr, u"01:02:03:04")
+        self.assertRaises(ValueError, attr.type, attr, "01:02:03:04")
 
     def testTypeName(self):
         """Check that we can get the current declared type name"""
@@ -431,7 +431,7 @@ class TestSmi(unittest.TestCase):
         """Test we can get default SMI path"""
         current = mib.path()
         self.assertTrue(type(current), str)
-        self.assertNotEqual(mib.path(), u"")
+        self.assertNotEqual(mib.path(), "")
 
     def testSetPath(self):
         """Test we can set path to some value"""

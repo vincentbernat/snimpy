@@ -7,8 +7,6 @@ Usage:
  ./set-syslog-ntp.py [syslog|ntp] host community first [...]
 """
 
-from __future__ import print_function
-
 import os
 import sys
 

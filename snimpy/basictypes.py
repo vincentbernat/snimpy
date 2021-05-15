@@ -48,7 +48,7 @@ def ordering_with_cmp(cls):
     return cls
 
 
-class Type(object):
+class Type:
 
     """Base class for all types."""
 
@@ -65,8 +65,8 @@ class Type(object):
         :return: an instance of the new typed value
         """
         if entity.type != cls:
-            raise ValueError("MIB node is {0}. We are {1}".format(entity.type,
-                                                                  cls))
+            raise ValueError("MIB node is {}. We are {}".format(entity.type,
+                                                                cls))
 
         if cls == OctetString and entity.fmt is not None:
             # Promotion of OctetString to String if we have unicode stuff
@@ -175,8 +175,8 @@ class Type(object):
         return str(self._value)
 
     def __repr__(self):
-        return '<{0}: {1}>'.format(self.__class__.__name__,
-                                   str(self))
+        return '<{}: {}>'.format(self.__class__.__name__,
+                                 str(self))
 
 
 @ordering_with_cmp
@@ -191,7 +191,7 @@ class IpAddress(Type, ipaddress.IPv4Address):
         try:
             value = ipaddress.IPv4Address(value)
         except ipaddress.AddressValueError:
-            raise ValueError("{0!r} is not a valid IP".format(value))
+            raise ValueError("{!r} is not a valid IP".format(value))
         return value
 
     def pack(self):
@@ -204,7 +204,7 @@ class IpAddress(Type, ipaddress.IPv4Address):
     def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 4:
             raise ValueError(
-                "{0!r} is too short for an IP address".format(oid))
+                "{!r} is too short for an IP address".format(oid))
         return (4, cls(entity, oid[:4]))
 
     def __cmp__(self, other):
@@ -249,8 +249,8 @@ class StringOrOctetString(Type):
             length = entity.ranges
             if len(oid) < length:
                 raise ValueError(
-                    "{0} is too short for wanted fixed "
-                    "string (need at least {1:d})".format(oid, length))
+                    "{} is too short for wanted fixed "
+                    "string (need at least {:d})".format(oid, length))
             return (length,
                     cls(entity, bytes(oid[:length])))
 
@@ -260,8 +260,8 @@ class StringOrOctetString(Type):
         length = oid[0]
         if len(oid) < length + 1:
             raise ValueError(
-                "{0} is too short for variable-len "
-                "string (need at least {1:d})".format(oid, length))
+                "{} is too short for variable-len "
+                "string (need at least {:d})".format(oid, length))
         return (
             (length + 1,
              cls(entity, bytes(oid[1:(length + 1)]))))
@@ -423,8 +423,8 @@ class String(StringOrOctetString, str):
                 elif format == "t":
                     result += bb.decode("utf-8")
                 else:
-                    raise ValueError("{0!r} cannot be represented with "
-                                     "the given display string ({1})".format(
+                    raise ValueError("{!r} cannot be represented with "
+                                     "the given display string ({})".format(
                                          bb, fmt))
                 result += sep
             if sep and term:
@@ -460,16 +460,16 @@ class String(StringOrOctetString, str):
                 elif format == "t":
                     fmatch = "(?P<t>(?:.|\n){{1,{0}}})".format(length)
                 else:
-                    raise ValueError("{0!r} cannot be parsed due to an "
-                                     "incorrect format ({1})".format(
+                    raise ValueError("{!r} cannot be parsed due to an "
+                                     "incorrect format ({})".format(
                                          self._value, fmt))
             repeats = []
             while True:
                 mo = re.match(fmatch, self._value[i:])
                 if not mo:
-                    raise ValueError("{0!r} cannot be parsed because it "
-                                     "does not match format {1} at "
-                                     "index {2}".format(self._value, fmt, i))
+                    raise ValueError("{!r} cannot be parsed because it "
+                                     "does not match format {} at "
+                                     "index {}".format(self._value, fmt, i))
                 if format in ["o", "x", "d"]:
                     if format == "o":
                         r = int(mo.group("o"), 8)
@@ -544,7 +544,7 @@ class Integer(Type, int):
     @classmethod
     def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
-            raise ValueError("{0} is too short for an integer".format(oid))
+            raise ValueError("{} is too short for an integer".format(oid))
         return (1, cls(entity, oid[0]))
 
     def __str__(self):
@@ -570,7 +570,7 @@ class Integer(Type, int):
                 result = str(self._value)
                 if len(result) < dec + 1:
                     result = "0" * (dec + 1 - len(result)) + result
-                return "{0}.{1}".format(result[:-2], result[-2:])
+                return "{}.{}".format(result[:-2], result[-2:])
         return str(self._value)
 
 
@@ -613,9 +613,9 @@ class Enum(Integer):
         try:
             return int(value)
         except Exception:
-            raise ValueError("{0!r} is not a valid "
-                             "value for {1}".format(value,
-                                                    entity))
+            raise ValueError("{!r} is not a valid "
+                             "value for {}".format(value,
+                                                   entity))
 
     def pack(self):
         return rfc1902.Integer(self._value)
@@ -624,7 +624,7 @@ class Enum(Integer):
     def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
             raise ValueError(
-                "{0!r} is too short for an enumeration".format(oid))
+                "{!r} is too short for an enumeration".format(oid))
         return (1, cls(entity, oid[0]))
 
     def __eq__(self, other):
@@ -641,7 +641,7 @@ class Enum(Integer):
     def __str__(self):
         if self._value in self.entity.enum:
             return (
-                "{0}({1:d})".format(self.entity.enum[self._value], self._value)
+                "{}({:d})".format(self.entity.enum[self._value], self._value)
             )
         else:
             return str(self._value)
@@ -662,7 +662,7 @@ class Oid(Type):
             return tuple(value.oid)
         else:
             raise TypeError(
-                "don't know how to convert {0!r} to OID".format(value))
+                "don't know how to convert {!r} to OID".format(value))
 
     def pack(self):
         return rfc1902.univ.ObjectIdentifier(self._value)
@@ -678,18 +678,18 @@ class Oid(Type):
         if cls._fixedLen(entity):
             # A fixed OID? We don't like this. Provide a real example.
             raise ValueError(
-                "{0!r} seems to be a fixed-len OID index. Odd.".format(entity))
+                "{!r} seems to be a fixed-len OID index. Odd.".format(entity))
         if not implied:
             # This index is not implied. We need the len
             if len(oid) < 1:
                 raise ValueError(
-                    "{0!r} is too short for a not "
+                    "{!r} is too short for a not "
                     "implied index".format(entity))
             length = oid[0]
             if len(oid) < length + 1:
                 raise ValueError(
-                    "{0!r} has an incorrect size "
-                    "(needs at least {1:d})".format(oid, length))
+                    "{!r} has an incorrect size "
+                    "(needs at least {:d})".format(oid, length))
             return (length + 1, cls(entity, oid[1:(length + 1)]))
         else:
             # This index is implied. Eat everything
@@ -756,7 +756,7 @@ class Timeticks(Type):
             return value
         else:
             raise TypeError(
-                "dunno how to handle {0!r} ({1})".format(value, type(value)))
+                "dunno how to handle {!r} ({})".format(value, type(value)))
 
     def __int__(self):
         return self._value.days * 3600 * 24 * 100 + \
@@ -769,7 +769,7 @@ class Timeticks(Type):
     @classmethod
     def fromOid(cls, entity, oid, implied=False):
         if len(oid) < 1:
-            raise ValueError("{0!r} is too short for a timetick".format(oid))
+            raise ValueError("{!r} is too short for a timetick".format(oid))
         return (1, cls(entity, oid[0]))
 
     def pack(self):
@@ -786,7 +786,7 @@ class Timeticks(Type):
         elif not isinstance(other, timedelta):
             raise NotImplementedError(
                 "only compare to int or "
-                "timedelta, not {0}".format(type(other)))
+                "timedelta, not {}".format(type(other)))
         if self._value == other:
             return 0
         if self._value < other:
@@ -820,7 +820,7 @@ class Bits(Type):
             else:
                 bits = set()
         elif not isinstance(value, (tuple, list, set, frozenset)):
-            value = set([value])
+            value = {value}
         for v in value:
             found = False
             if v in entity.enum:
@@ -833,7 +833,7 @@ class Bits(Type):
                         found = True
                         break
             if not found:
-                raise ValueError("{0!r} is not a valid bit value".format(v))
+                raise ValueError("{!r} is not a valid bit value".format(v))
         return bits
 
     def pack(self):
@@ -858,7 +858,7 @@ class Bits(Type):
     def __str__(self):
         result = []
         for b in sorted(self._value):
-            result.append("{0}({1:d})".format(self.entity.enum[b], b))
+            result.append("{}({:d})".format(self.entity.enum[b], b))
         return ", ".join(result)
 
     def __and__(self, other):

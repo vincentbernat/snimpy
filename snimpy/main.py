@@ -45,7 +45,7 @@ from snimpy.config import Conf
 def interact(argv=sys.argv):  # pragma: no cover
     conf = Conf().load()
 
-    banner = "\033[1mSnimpy\033[0m ({0}) -- {1}.\n".format(
+    banner = "\033[1mSnimpy\033[0m ({}) -- {}.\n".format(
         snimpy.__version__, snimpy.__doc__)
     banner += "  load        -> load an additional MIB\n"
     banner += "  M           -> manager object"
@@ -152,7 +152,7 @@ def interact(argv=sys.argv):  # pragma: no cover
                 try:
                     readline.read_history_file(
                         os.path.expanduser(conf.histfile))
-                except IOError:
+                except OSError:
                     pass
                 atexit.register(lambda: readline.write_history_file(
                     os.path.expanduser(conf.histfile)))

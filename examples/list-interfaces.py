@@ -1,7 +1,5 @@
 #!/usr/bin/snimpy
 
-from __future__ import print_function
-
 load("IF-MIB")
 m=M()
 
