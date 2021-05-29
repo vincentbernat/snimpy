@@ -3,7 +3,7 @@
 History
 -------
 
-1.0.0 (????-??-??)
+1.0.0 (2021-05-29)
 ++++++++++++++++++
 
 * Drop compatibility with Python 2.
