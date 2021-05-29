@@ -2,12 +2,12 @@
 snimpy
 ===============================
 
-.. image:: https://badge.fury.io/py/snimpy.png
+.. image:: https://badge.fury.io/py/snimpy.svg
     :target: http://badge.fury.io/py/snimpy
     
 .. image:: https://github.com/vincentbernat/snimpy/workflows/Tests/badge.svg
 
-.. image:: https://coveralls.io/repos/vincentbernat/snimpy/badge.png
+.. image:: https://coveralls.io/repos/vincentbernat/snimpy/badge.svg
         :target: https://coveralls.io/r/vincentbernat/snimpy
 
 ---
