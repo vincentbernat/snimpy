@@ -33,7 +33,7 @@ lint:
 	interrogate --fail-under 50 -v snimpy tests
 
 test:
-	$(python) -m nose
+	$(python) -m pytest
 
 test-all:
 	tox

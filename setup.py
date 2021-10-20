@@ -51,12 +51,6 @@ if __name__ == "__main__":
           cffi_modules=(not rtd and ["snimpy/smi_build.py:ffi"] or []),
           install_requires=["cffi >= 1.0.0", "pysnmp >= 4", "setuptools"],
           setup_requires=["cffi >= 1.0.0", "vcversioner"],
-          tests_require=list(filter(None, ["cffi >= 1.0.0",
-                                           "pysnmp >= 4",
-                                           "nose",
-                                           sys.version_info < (3, 6) and
-                                           "mock < 4" or "mock"])),
-          test_suite="nose.collector",
           cmdclass={
               "test": SnimpyTestCommand
           },

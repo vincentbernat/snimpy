@@ -108,4 +108,4 @@ Tips
 
 To run a subset of tests::
 
-	$ python -m nose tests/test_snmp.py
+	$ python3 -m pytest tests/test_snmp.py
