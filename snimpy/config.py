@@ -31,10 +31,10 @@ class Conf:
     def load(self, userconf=None):
         if userconf is None:
             userconf = self.userconf
-        spec = importlib.util.spec_from_loader('confuser',
-                                               importlib.machinery.SourceFileLoader(
-                                                   'confuser',
-                                                   os.path.expanduser(userconf)))
+        loader = importlib.machinery.SourceFileLoader(
+            'confuser',
+            os.path.expanduser(userconf))
+        spec = importlib.util.spec_from_loader('confuser', loader)
         if spec is not None:
             try:
                 confuser = importlib.util.module_from_spec(spec)
