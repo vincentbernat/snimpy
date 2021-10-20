@@ -461,8 +461,11 @@ def _logError(path, line, severity, msg, tag):
 def reset():
     """Reset libsmi to its initial state."""
     _smi.smiExit()
-    if _smi.smiInit(b"snimpy") < 0:
-        raise SMIException("unable to init libsmi")
+    try:
+        if _smi.smiInit(b"snimpy") < 0:
+            raise SMIException("unable to init libsmi")
+    except TypeError:
+        pass                    # We are being mocked
     _smi.smiSetErrorLevel(1)
     _smi.smiSetErrorHandler(_logError)
     try:
