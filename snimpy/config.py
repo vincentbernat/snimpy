@@ -36,10 +36,14 @@ class Conf:
                                                    'confuser',
                                                    os.path.expanduser(userconf)))
         if spec is not None:
-            confuser = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(confuser)
-            for k in confuser.__dict__:
-                if not k.startswith("__"):
-                    setattr(self, k, confuser.__dict__[k])
+            try:
+                confuser = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(confuser)
+            except FileNotFoundError:
+                pass
+            else:
+                for k in confuser.__dict__:
+                    if not k.startswith("__"):
+                        setattr(self, k, confuser.__dict__[k])
 
         return self
