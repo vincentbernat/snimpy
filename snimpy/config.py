@@ -17,7 +17,7 @@
 #
 
 import os.path
-import imp
+import importlib
 
 
 class Conf:
@@ -31,19 +31,15 @@ class Conf:
     def load(self, userconf=None):
         if userconf is None:
             userconf = self.userconf
-        try:
-            conffile = open(os.path.expanduser(userconf))
-        except OSError:
-            pass
-        else:
-            try:
-                confuser = imp.load_module("confuser", conffile,
-                                           os.path.expanduser(userconf),
-                                           ("conf", 'r', imp.PY_SOURCE))
-                for k in confuser.__dict__:
-                    if not k.startswith("__"):
-                        setattr(self, k, confuser.__dict__[k])
-            finally:
-                conffile.close()
+        spec = importlib.util.spec_from_loader('confuser',
+                                               importlib.machinery.SourceFileLoader(
+                                                   'confuser',
+                                                   os.path.expanduser(userconf)))
+        if spec is not None:
+            confuser = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(confuser)
+            for k in confuser.__dict__:
+                if not k.startswith("__"):
+                    setattr(self, k, confuser.__dict__[k])
 
         return self
