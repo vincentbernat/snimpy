@@ -38,7 +38,7 @@ test-all:
 	tox
 
 coverage:
-	coverage run --source snimpy setup.py test
+	coverage run --source snimpy -m unittest discover -s tests
 	coverage report -m
 	coverage html
 	$(open) htmlcov/index.html
@@ -49,8 +49,9 @@ docs:
 	$(open) docs/_build/html/index.html
 
 release: clean
-	python setup.py sdist upload
+	python -m build
+	twine upload
 
 sdist: clean
-	python setup.py sdist
+	python -m build
 	ls -l dist
