@@ -1,6 +1,7 @@
 .PHONY: clean-pyc clean-build docs
 
 open := $(shell { which xdg-open || which open; } 2>/dev/null)
+python = python3
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -32,7 +33,7 @@ lint:
 	interrogate --fail-under 50 -v snimpy tests
 
 test:
-	python -m nose
+	$(python) -m nose
 
 test-all:
 	tox
@@ -49,9 +50,9 @@ docs:
 	$(open) docs/_build/html/index.html
 
 release: clean
-	python -m build
+	$(python) -m build
 	twine upload
 
 sdist: clean
-	python -m build
+	$(python) -m build
 	ls -l dist
