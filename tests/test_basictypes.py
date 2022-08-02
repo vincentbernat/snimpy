@@ -179,8 +179,8 @@ class TestBasicTypes(unittest.TestCase):
         self.assertTrue(isinstance(a, basictypes.Boolean))
         self.assertEqual(a, True)
         self.assertTrue(a)
-        self.assertTrue(not(not(a)))
-        self.assertEqual(not(a), False)
+        self.assertTrue(not not a)
+        self.assertEqual(not a, False)
         a = basictypes.build("SNIMPY-MIB", "snimpyBoolean", "false")
         self.assertEqual(a, False)
         b = basictypes.build("SNIMPY-MIB", "snimpyBoolean", True)
@@ -265,14 +265,14 @@ class TestBasicTypes(unittest.TestCase):
             if i in b:
                 self.assertTrue(a & i)
             else:
-                self.assertTrue(not(a & i))
+                self.assertTrue(not (a & i))
         self.assertTrue(a & [5, 7])
-        self.assertTrue(not(a & [5, 9]))
+        self.assertTrue(not (a & [5, 9]))
         a |= [2, 10]
         a -= 22
         a -= [23, 22]
         self.assertTrue(a & [2, 10])
-        self.assertTrue(not(a & 23))
+        self.assertTrue(not (a & 23))
         self.assertEqual(a, b"\x37\x20\x00")
         a |= 31
         self.assertEqual(a, b"\x37\x20\x00\x01")
@@ -341,9 +341,11 @@ class TestBasicTypes(unittest.TestCase):
                 (len(tt[key]), v))
 
     def testTooLargeOid(self):
-        """Handle the special case of octet string as OID with too large octets.
+        """Handle the special case of octet string as OID with too
+        large octets.
 
         See: https://github.com/vincentbernat/snimpy/pull/14
+
         """
         self.assertEqual(mib.get("SNIMPY-MIB",
                                  "snimpyIndexImplied").type.fromOid(

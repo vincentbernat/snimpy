@@ -123,7 +123,7 @@ class CachedSession(DelegatedSession):
         return self.getorwalk("get", *args)
 
     def walk(self, *args):
-        assert(len(args) == 1)  # we should ony walk one oid at a time
+        assert len(args) == 1  # we should ony walk one oid at a time
         return self.getorwalk("walkmore", *args)
 
     def flush(self):
@@ -456,7 +456,7 @@ class ProxyIter(Proxy, Sized, Iterable, Container):
                 noid = None
                 break
             oid = noid
-            if not(len(oid) >= len(walk_oid) and
+            if not (len(oid) >= len(walk_oid) and
                     oid[:len(walk_oid)] ==
                     walk_oid[:len(walk_oid)]):
                 noid = None

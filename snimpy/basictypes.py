@@ -327,7 +327,7 @@ class OctetString(StringOrOctetString, bytes):
                     "on string, bit-operation are limited to integers")
             if len(nvalue) < (v >> 3) + 1:
                 return False
-            if not(nvalue[v >> 3] & (1 << (7 - v % 8))):
+            if not (nvalue[v >> 3] & (1 << (7 - v % 8))):
                 return False
         return True
 
@@ -636,7 +636,7 @@ class Enum(Integer):
         return self._value == other._value
 
     def __ne__(self, other):
-        return not(self.__eq__(other))
+        return not self.__eq__(other)
 
     def __str__(self):
         if self._value in self.entity.enum:
