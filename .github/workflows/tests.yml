@@ -15,6 +15,7 @@ jobs:
           - 3.7
           - 3.8
           - 3.9
+          - 3.10
     steps:
       - uses: actions/checkout@v1
         with:
@@ -39,16 +40,19 @@ jobs:
       - name: Run tests with tox
         run: tox
       - name: Collect coveralls data
-        uses: AndreMiras/coveralls-python-action@develop
+        uses: coverallsapp/github-action@master
         with:
           parallel: true
+          github-token: ${{ secrets.github_token }}
+          flag-name: run-python${{ matrix.python-version }}
 
-  coveralls_finish:
+  coveralls-finish:
     name: Coveralls.io
     needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Send results to coveralls.io
-        uses: AndreMiras/coveralls-python-action@develop
+        uses: coverallsapp/github-action@master
         with:
           parallel-finished: true
+          github-token: ${{ secrets.github_token }}
