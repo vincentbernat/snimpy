@@ -40,19 +40,16 @@ jobs:
       - name: Run tests with tox
         run: tox
       - name: Collect coveralls data
-        uses: coverallsapp/github-action@master
+        uses: AndreMiras/coveralls-python-action@develop
         with:
           parallel: true
-          github-token: ${{ secrets.github_token }}
-          flag-name: run-python${{ matrix.python-version }}
 
-  coveralls-finish:
+  coveralls_finish:
     name: Coveralls.io
     needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Send results to coveralls.io
-        uses: coverallsapp/github-action@master
+        uses: AndreMiras/coveralls-python-action@develop
         with:
           parallel-finished: true
-          github-token: ${{ secrets.github_token }}
