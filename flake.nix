@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
+    nixpkgs.url = "nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = { self, ... }@inputs:
@@ -8,8 +8,8 @@
       let
         pkgs = inputs.nixpkgs.legacyPackages."${system}";
       in
-      rec {
-        defaultPackage = pkgs.python3Packages.buildPythonPackage rec {
+      {
+        packages.default = pkgs.python3Packages.buildPythonPackage {
           name = "snimpy";
           src = self;
           preConfigure = ''
@@ -21,6 +21,13 @@
           propagatedBuildInputs = with pkgs.python3Packages; [ cffi pysnmp ipython ];
           buildInputs = with pkgs; [ libsmi pkgs.python3Packages.vcversioner ];
         };
-        defaultApp = { type = "app"; program = "${defaultPackage}/bin/snimpy"; };
+        apps.default = { type = "app"; program = "${self.packages."${system}".default}/bin/snimpy"; };
+        devShells.default = pkgs.mkShell {
+          name = "snimpy-dev";
+          buildInputs = [
+            self.packages."${system}".default.inputDerivation
+            pkgs.python3Packages.ipython
+          ];
+        };
       });
 }
