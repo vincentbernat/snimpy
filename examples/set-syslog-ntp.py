@@ -19,7 +19,7 @@ operation = sys.argv[1]
 try:
     s = M(host=host, community=sys.argv[3])
     sid = str(s.sysObjectID)
-except snmp.SNMPException, e:
+except snmp.SNMPException as e:
     print("%s: %s" % (host, e))
     sys.exit(1)
 
