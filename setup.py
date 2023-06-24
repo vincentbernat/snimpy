@@ -1,5 +1,4 @@
 import os
-import sys
 from setuptools import setup
 from setuptools.command.test import test
 import snimpy
