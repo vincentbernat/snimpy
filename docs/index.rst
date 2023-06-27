@@ -45,7 +45,7 @@ compiled. Moreover, the exposed interface is still low-level. Sending
 a simple SNMP GET can either take 10 lines or one line wrapped into 10
 lines.
 
-.. _pysnmp: http://pysnmp.sourceforge.net/
+.. _pysnmp: https://www.pysnmp.com/
 
 The two main points of *Snimpy* are:
 

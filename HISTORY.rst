@@ -112,7 +112,7 @@ History
   C module.
 * More unittests. Many bugfixes.
 
-.. _PySNMP: http://pysnmp.sourceforge.net/
+.. _PySNMP: https://www.pysnmp.com/
 
 0.6.4 (2013-03-21)
 ++++++++++++++++++
