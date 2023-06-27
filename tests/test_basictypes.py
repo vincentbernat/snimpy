@@ -1,8 +1,8 @@
 import unittest
+import unittest.mock as mock
 import os
 import re
 import socket
-import mock
 import ipaddress
 from datetime import timedelta
 from snimpy import mib, basictypes

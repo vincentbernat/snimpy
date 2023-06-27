@@ -1,12 +1,12 @@
 import os
 import tempfile
 import code  # noqa: F401
-import mock
 import platform
 from snimpy.main import interact
 from multiprocessing import Process
 import agent
 import unittest
+import unittest.mock as mock
 
 
 class TestMain(unittest.TestCase):

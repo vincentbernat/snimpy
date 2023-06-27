@@ -17,7 +17,7 @@
            echo "1.0.0-0-000000000000" > version.txt
           '';
           checkPhase = "pytest";
-          checkInputs = with pkgs.python3Packages; [ pytest mock coverage ];
+          checkInputs = with pkgs.python3Packages; [ pytest coverage ];
           propagatedBuildInputs = with pkgs.python3Packages; [ cffi pysnmp ipython ];
           buildInputs = with pkgs; [ libsmi pkgs.python3Packages.vcversioner ];
         };

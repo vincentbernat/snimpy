@@ -2,7 +2,7 @@
 
 import sys
 import os
-from mock import Mock
+from unittest.mock import Mock
 
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
