@@ -3,6 +3,11 @@
 History
 -------
 
+1.0.1 (2023-06-30)
+++++++++++++++++++
+
+* Switch to pysnmp-lextudio, a maintained fork of PySNMP.
+
 1.0.0 (2021-05-29)
 ++++++++++++++++++
 
