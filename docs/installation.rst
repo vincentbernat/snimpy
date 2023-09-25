@@ -39,3 +39,7 @@ On Debian and Ubuntu, *Snimpy* is also available as a package you can
 install with::
 
     $ sudo apt-get install snimpy
+
+If you plan to use custom MIBs, note that as snimpy relies on libsmi_ to
+find the MIBs, so you have to add the path to these MIBs in /etc/smi.conf or
+$HOME/.smirc .
