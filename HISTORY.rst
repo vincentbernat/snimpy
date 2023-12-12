@@ -3,6 +3,11 @@
 History
 -------
 
+1.0.2 (2023-12-12)
+++++++++++++++++++
+
+* Compatibility with Python 3.12 by adding dependency to pyasyncore.
+
 1.0.1 (2023-06-30)
 ++++++++++++++++++
 
