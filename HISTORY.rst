@@ -3,6 +3,11 @@
 History
 -------
 
+1.0.3 (2024-05-09)
+++++++++++++++++++
+
+* Temporarily depend on pysnmp-lextudio < 6 to fix stuck SNMP requests.
+
 1.0.2 (2023-12-12)
 ++++++++++++++++++
 
