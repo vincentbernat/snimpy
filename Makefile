@@ -51,7 +51,7 @@ docs:
 
 release: clean
 	$(python) -m build
-	twine upload
+	twine upload dist/*.tar.gz
 
 sdist: clean
 	$(python) -m build
