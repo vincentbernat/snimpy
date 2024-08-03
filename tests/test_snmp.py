@@ -70,7 +70,7 @@ class TestSnmpSession(unittest.TestCase):
 
     def testSnmpV3Protocols(self):
         """Check accepted auth and privacy protocols"""
-        for auth in ["MD5", "SHA"]:
+        for auth in ["MD5", "SHA", "SHA224", "SHA256", "SHA384", "SHA512"]:
             for priv in ["AES", "AES128", "DES"]:
                 snmp.Session(host="localhost",
                              version=3,
