@@ -106,8 +106,8 @@ class Session:
         :param secname: Security name to use for SNMPv3 only.
         :type secname: str
         :param authprotocol: Authorization protocol to use for
-            SNMPv3. This can be `None` or either the string `SHA` or
-            `MD5`.
+            SNMPv3. This can be `None` or one of the strings `SHA`,
+            `MD5`, `SHA224`, `SHA256`, `SHA384` or `SHA512`.
         :type authprotocol: None or str
         :param authpassword: Authorization password if authorization
             protocol is not `None`.
@@ -154,7 +154,11 @@ class Session:
                     None: cmdgen.usmNoAuthProtocol,
                     "MD5": cmdgen.usmHMACMD5AuthProtocol,
                     "SHA": cmdgen.usmHMACSHAAuthProtocol,
-                    "SHA1": cmdgen.usmHMACSHAAuthProtocol
+                    "SHA1": cmdgen.usmHMACSHAAuthProtocol,
+                    "SHA224": cmdgen.usmHMAC128SHA224AuthProtocol,
+                    "SHA256": cmdgen.usmHMAC192SHA256AuthProtocol,
+                    "SHA384": cmdgen.usmHMAC256SHA384AuthProtocol,
+                    "SHA512": cmdgen.usmHMAC384SHA512AuthProtocol,
                 }[authprotocol]
             except KeyError:
                 raise ValueError("{} is not an acceptable authentication "
