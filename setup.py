@@ -53,6 +53,7 @@ if __name__ == "__main__":
         install_requires=[
             "cffi >= 1.0.0",
             "pysnmp-lextudio >= 4, < 6",
+            "pyasn1 <= 0.6.0",
             'pyasyncore; python_version >= "3.12"',
             "setuptools",
         ],
