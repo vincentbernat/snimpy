@@ -9,7 +9,7 @@
         pkgs = inputs.nixpkgs.legacyPackages."${system}";
         checkInputs = with pkgs.python3Packages; [ pytest coverage ];
         buildInputs = with pkgs.python3Packages; [ pkgs.libsmi vcversioner ];
-        propagatedBuildInputs = with pkgs.python3Packages; [ cffi pysnmp-lextudio ipython ];
+        propagatedBuildInputs = with pkgs.python3Packages; [ cffi pysnmp ipython ];
       in
       {
         packages.default = pkgs.python3Packages.buildPythonPackage {
