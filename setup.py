@@ -52,7 +52,7 @@ if __name__ == "__main__":
         cffi_modules=(not rtd and ["snimpy/smi_build.py:ffi"] or []),
         install_requires=[
             "cffi >= 1.0.0",
-            "pysnmp-lextudio >= 4, < 6",
+            "pysnmp >= 4, < 6",
             "pyasn1 <= 0.6.0",
             'pyasyncore; python_version >= "3.12"',
             "setuptools",
