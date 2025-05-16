@@ -1,21 +1,7 @@
 import os
-from setuptools import setup
-from setuptools.command.test import test
-import snimpy
+from setuptools import setup, find_packages
 
 rtd = os.environ.get("READTHEDOCS", None) == "True"
-
-
-class SnimpyTestCommand(test):
-    def run_tests(self, *args, **kwds):
-        # Ensure we keep a reference to multiprocessing and pysnmp to
-        # avoid errors at the end of the test
-        import multiprocessing
-        import pysnmp
-
-        SnimpyTestCommand.multiprocessing = multiprocessing
-        SnimpyTestCommand.pysnmp = pysnmp
-        return test.run_tests(self, *args, **kwds)
 
 
 if __name__ == "__main__":
@@ -36,11 +22,11 @@ if __name__ == "__main__":
             "Topic :: System :: Monitoring",
         ],
         url="https://github.com/vincentbernat/snimpy",
-        description=snimpy.__doc__,
+        description="interactive SNMP tool",
         long_description=readme + "\n\n" + history,
         long_description_content_type="text/x-rst",
-        author=snimpy.__author__,
-        author_email=snimpy.__email__,
+        author="Vincent Bernat",
+        author_email="bernat@luffy.cx",
         packages=["snimpy"],
         entry_points={
             "console_scripts": [
@@ -57,10 +43,6 @@ if __name__ == "__main__":
             'pyasyncore; python_version >= "3.12"',
             "setuptools",
         ],
-        setup_requires=["cffi >= 1.0.0", "vcversioner"],
-        cmdclass={"test": SnimpyTestCommand},
-        pbr=False,
-        vcversioner={
-            "version_module_paths": ["snimpy/_version.py"],
-        },
+        setup_requires=["cffi >= 1.0.0", "setuptools_scm"],
+        use_scm_version=True,
     )
