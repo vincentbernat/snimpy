@@ -3,6 +3,12 @@
 History
 -------
 
+1.0.4 (2025-10-25)
+++++++++++++++++++
+
+* Temporarily depend on pyasn1 <= 0.6.0 to fix compatibility issues.
+* Convert build to PEP517.
+
 1.0.3 (2024-05-09)
 ++++++++++++++++++
 
