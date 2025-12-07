@@ -6,3 +6,5 @@ build:
     python: "3.12"
 sphinx:
   configuration: docs/conf.py
+submodules:
+  include: all
