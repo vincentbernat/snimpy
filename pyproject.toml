@@ -2,5 +2,48 @@
 requires = ["setuptools >= 42.0.0", "setuptools_scm", "cffi >= 1.0.0"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "snimpy"
+description = "interactive SNMP tool"
+requires-python = ">= 3.9"
+dynamic = ["version"]
+readme = "README.rst"
+license = "ISC"
+authors = [
+    { name = "Vincent Bernat", email = "bernat@luffy.cx" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: System :: Networking",
+    "Topic :: Utilities",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "cffi >= 1.0.0",
+    "pysnmp >= 7",
+    "pysnmpcrypto",
+    "setuptools",
+]
+
+[project.scripts]
+snimpy = "snimpy.main:interact"
+
+[project.urls]
+Homepage = "https://github.com/vincentbernat/snimpy"
+
+[tool.setuptools]
+packages = ["snimpy"]
+zip-safe = false
+
 [tool.setuptools_scm]
 write_to = "snimpy/_version.py"
