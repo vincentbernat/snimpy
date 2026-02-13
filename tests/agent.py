@@ -1,4 +1,4 @@
-from multiprocessing import Process, Queue
+import multiprocessing as mp
 import random
 import sys
 
@@ -42,15 +42,16 @@ class TestAgent:
     def __init__(self, ipv6=False, community='public',
                  authpass='authpass', privpass='privpass',
                  emptyTable=True):
-        q = Queue()
+        ctx = mp.get_context('forkserver')
+        q = ctx.Queue()
         self.ipv6 = ipv6
         self.emptyTable = emptyTable
         self.community = community
         self.authpass = authpass
         self.privpass = privpass
         self.next_port[0] += 1
-        self._process = Process(target=self._setup,
-                                args=(q, self.next_port[0]))
+        self._process = ctx.Process(target=self._setup,
+                                    args=(q, self.next_port[0]))
         self._process.start()
         self.port = q.get()
 
