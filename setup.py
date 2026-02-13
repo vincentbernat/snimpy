@@ -38,9 +38,8 @@ if __name__ == "__main__":
         cffi_modules=(not rtd and ["snimpy/smi_build.py:ffi"] or []),
         install_requires=[
             "cffi >= 1.0.0",
-            "pysnmp >= 4, < 6",
-            "pyasn1 <= 0.6.0",
-            'pyasyncore; python_version >= "3.12"',
+            "pysnmp >= 7",
+            "pysnmpcrypto",
             "setuptools",
         ],
         setup_requires=["cffi >= 1.0.0", "setuptools_scm"],
