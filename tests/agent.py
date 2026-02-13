@@ -1,3 +1,4 @@
+import asyncio
 import multiprocessing as mp
 import random
 import sys
@@ -64,6 +65,8 @@ class TestAgent:
         The port the agent is listening too will be returned using the
         provided queue.
         """
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         snmpEngine = engine.SnmpEngine()
         if self.ipv6:
             config.add_transport(
@@ -421,3 +424,4 @@ class TestAgent:
         q.put(port)
         snmpEngine.transport_dispatcher.job_started(1)
         snmpEngine.transport_dispatcher.run_dispatcher()
+        loop.close()
