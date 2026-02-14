@@ -3,6 +3,12 @@
 History
 -------
 
+1.1.0 (2026-02-14)
+++++++++++++++++++
+
+* Update for PySNMP 7. This version does not work with previous versions of PySNMP.
+* Modernize build system.
+
 1.0.4 (2025-10-25)
 ++++++++++++++++++
 
