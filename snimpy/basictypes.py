@@ -419,7 +419,7 @@ class String(StringOrOctetString, str):
                     else:       # format == "d":
                         result += str(number)
                 elif format == "a":
-                    result += bb.decode("ascii")
+                    result += bb.decode("ascii", "ignore")
                 elif format == "t":
                     result += bb.decode("utf-8")
                 else:
@@ -645,6 +645,9 @@ class Enum(Integer):
             )
         else:
             return str(self._value)
+
+    def __hash__(self):
+        return self._value
 
 
 @ordering_with_cmp
