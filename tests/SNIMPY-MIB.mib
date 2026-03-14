@@ -544,6 +544,38 @@ snimpyReuseIndexValue OBJECT-TYPE
             "Integer value"
     ::= { snimpyReuseIndexEntry 1 }
 
+-- A table that augments snimpySimpleTable
+
+snimpyAugmentTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SnimpyAugmentEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A table that augments snimpySimpleTable"
+    ::= { snimpyTables 8 }
+
+snimpyAugmentEntry OBJECT-TYPE
+    SYNTAX      SnimpyAugmentEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for our augmenting table"
+    AUGMENTS { snimpySimpleEntry }
+    ::= { snimpyAugmentTable 1 }
+
+SnimpyAugmentEntry ::=
+    SEQUENCE {
+        snimpyAugmentExtra       DisplayString
+    }
+
+snimpyAugmentExtra OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Extra column added by augmentation"
+    ::= { snimpyAugmentEntry 1 }
+
 -- A notification
 
 snimpyNotification NOTIFICATION-TYPE

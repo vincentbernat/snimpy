@@ -16,6 +16,7 @@ class TestMibSnimpy(unittest.TestCase):
         self.tables = ["snimpyComplexTable",
                        "snimpyInetAddressTable",
                        "snimpySimpleTable",
+                       "snimpyAugmentTable",
                        "snimpyIndexTable",
                        "snimpyInvalidTable",
                        "snimpyEmptyTable",
@@ -41,7 +42,8 @@ class TestMibSnimpy(unittest.TestCase):
                         "snimpyInvalidDescr",
                         "snimpyEmptyIndex",
                         "snimpyEmptyDescr",
-                        "snimpyReuseIndexValue"
+                        "snimpyReuseIndexValue",
+                        "snimpyAugmentExtra"
                         ]
         self.columns.sort()
         self.scalars = ["snimpyIpAddress",
@@ -296,6 +298,32 @@ class TestMibSnimpy(unittest.TestCase):
             mib.get("SNIMPY-MIB",
                     'snimpyIndexTable').implied,
             True)
+
+    def testAugments(self):
+        """Test that AUGMENTS tables use the base table's indexes"""
+        augment = mib.get("SNIMPY-MIB", "snimpyAugmentTable")
+        base = mib.get("SNIMPY-MIB", "snimpySimpleTable")
+        self.assertTrue(isinstance(augment, mib.Table))
+
+        # Index should come from the base table
+        self.assertEqual(
+            [str(i) for i in augment.index],
+            [str(i) for i in base.index])
+        self.assertEqual(
+            [str(i) for i in augment.index],
+            ["snimpySimpleIndex"])
+
+        # Implied should match the base table
+        self.assertFalse(augment.implied)
+
+        # The augmenting table should have its own columns
+        aug_columns = [str(c) for c in augment.columns]
+        self.assertEqual(aug_columns, ["snimpyAugmentExtra"])
+
+        # Column-to-table relationship should work
+        col = mib.get("SNIMPY-MIB", "snimpyAugmentExtra")
+        self.assertTrue(isinstance(col, mib.Column))
+        self.assertEqual(str(col.table), "snimpyAugmentTable")
 
     def testOid(self):
         """Test that objects are rooted at the correct OID"""
