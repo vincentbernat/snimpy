@@ -321,7 +321,8 @@ class Session:
             walker = walk_cmd(
                 self._engine, self._auth, self._transport,
                 self._contextdata,
-                ObjectType(ObjectIdentity(oid)), lookupMib=False)
+                ObjectType(ObjectIdentity(oid)),
+                lookupMib=False, lexicographicMode=False)
             async for result in walker:
                 errorIndication, errorStatus, errorIndex, varBinds = result
                 self._check_error(errorIndication, errorStatus)
@@ -336,7 +337,8 @@ class Session:
             walker = bulk_walk_cmd(
                 self._engine, self._auth, self._transport,
                 self._contextdata, 0, bulk,
-                ObjectType(ObjectIdentity(oid)), lookupMib=False)
+                ObjectType(ObjectIdentity(oid)),
+                lookupMib=False, lexicographicMode=False)
             async for result in walker:
                 errorIndication, errorStatus, errorIndex, varBinds = result
                 self._check_error(errorIndication, errorStatus)

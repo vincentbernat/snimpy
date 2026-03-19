@@ -298,6 +298,16 @@ class TestSnmp1(unittest.TestCase):
                           (ooid + (2,), b"eth0"),
                           (ooid + (3,), b"eth1")))
 
+    def testWalkStopsAtSubtree(self):
+        """Check that walkmore does not walk beyond the subtree"""
+        ooid = mib.get("IF-MIB", "ifDescr").oid
+        results = self.session.walkmore(ooid)
+        for noid, _ in results:
+            self.assertTrue(
+                len(noid) >= len(ooid) and noid[:len(ooid)] == ooid,
+                "walkmore returned OID {} outside of subtree {}".format(
+                    noid, ooid))
+
     def testSeveralSessions(self):
         """Test with two sessions"""
         agent2 = self.addAgent('private',
