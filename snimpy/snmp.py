@@ -82,19 +82,65 @@ del name
 del obj
 
 
+class _LoopGuard:
+    """Cancel pending tasks and close the event loop on thread exit.
+
+    pysnmp's AsyncioDispatcher creates a background handle_timeout()
+    task that runs forever.  When a thread exits, this task must be
+    properly cancelled and awaited — otherwise asyncio emits "Task
+    was destroyed but it is pending!" warnings.
+
+    This guard is stored in thread-local data alongside the engine
+    and event loop.  Because nothing else references it, it is the
+    first object to reach refcount 0 when the thread-local dict is
+    cleared, so its __del__ runs before the engine's dispatcher
+    tries to clean up the same tasks."""
+
+    def __init__(self, loop):
+        self._loop = loop
+
+    def __del__(self):
+        loop = self._loop
+        if loop.is_closed():
+            return
+        pending = asyncio.all_tasks(loop)
+        for task in pending:
+            task.cancel()
+        if pending:
+            try:
+                loop.run_until_complete(
+                    asyncio.gather(*pending, return_exceptions=True))
+            except RuntimeError:
+                pass
+        loop.close()
+
+
+class _SnimpyEngine:
+    """Manage a per-thread SnmpEngine and event loop."""
+
+    _tls = threading.local()
+
+    @classmethod
+    def get(cls):
+        """Return the per-thread (SnmpEngine, loop) pair."""
+        if not hasattr(cls._tls, "engine"):
+            cls._tls.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(cls._tls.loop)
+            cls._tls.engine = SnmpEngine()
+            cls._tls.guard = _LoopGuard(cls._tls.loop)
+        return cls._tls.engine, cls._tls.loop
+
+
 class Session:
 
     """SNMP session. An instance of this object will represent an SNMP
     session. From such an instance, one can get information from the
     associated agent."""
 
-    _tls = threading.local()
-
     def _run(self, coro):
-        """Run an async coroutine synchronously using a thread-local loop."""
-        if not hasattr(self._tls, "loop"):
-            self._tls.loop = asyncio.new_event_loop()
-        return self._tls.loop.run_until_complete(coro)
+        """Run an async coroutine synchronously."""
+        _, loop = _SnimpyEngine.get()
+        return loop.run_until_complete(coro)
 
     def __init__(self, host,
                  community="public", version=2,
@@ -148,14 +194,8 @@ class Session:
         self._host = host
         self._version = version
         self._none = none
-        if version == 3:
-            self._engine = SnmpEngine()
-            self._contextname = contextname
-        else:
-            if not hasattr(self._tls, "engine"):
-                self._tls.engine = SnmpEngine()
-            self._engine = self._tls.engine
-            self._contextname = None
+        self._engine, _ = _SnimpyEngine.get()
+        self._contextname = contextname if version == 3 else None
         if version == 1 and none:
             raise ValueError("None-GET requests not compatible with SNMPv1")
 
