@@ -3,6 +3,13 @@
 History
 -------
 
+1.1.1 (2026-02-20)
+++++++++++++++++++
+
+* Don't walk too much when iterating on a column.
+* Fix leaked timeout tasks.
+* Improve performance on SNMPv1 and SNMPv2c.
+
 1.1.0 (2026-02-14)
 ++++++++++++++++++
 
