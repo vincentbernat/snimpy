@@ -32,19 +32,12 @@ import inspect
 import threading
 import asyncio
 import ipaddress
-from pysnmp.hlapi.v3arch.asyncio import (
-    SnmpEngine, CommunityData, UsmUserData,
-    UdpTransportTarget, Udp6TransportTarget, ContextData,
-    ObjectType, ObjectIdentity,
-    get_cmd, set_cmd, walk_cmd, bulk_walk_cmd,
-    usmNoAuthProtocol, usmHMACMD5AuthProtocol, usmHMACSHAAuthProtocol,
-    usmHMAC128SHA224AuthProtocol, usmHMAC192SHA256AuthProtocol,
-    usmHMAC256SHA384AuthProtocol, usmHMAC384SHA512AuthProtocol,
-    usmNoPrivProtocol, usmDESPrivProtocol, usm3DESEDEPrivProtocol,
-    usmAesCfb128Protocol, usmAesCfb192Protocol, usmAesCfb256Protocol,
-)
+import pysnmp.hlapi.v1arch.asyncio as v1
+import pysnmp.hlapi.v3arch.asyncio as v3
+from pyasn1.type import univ
 from pysnmp.proto import rfc1902, rfc1905
 from pysnmp.smi import error
+from pysnmp.smi.rfc1902 import ObjectType, ObjectIdentity
 
 
 class SNMPException(Exception):
@@ -116,19 +109,34 @@ class _LoopGuard:
 
 
 class _SnimpyEngine:
-    """Manage a per-thread SnmpEngine and event loop."""
+    """Manage per-thread SNMP backends and event loop."""
 
     _tls = threading.local()
 
     @classmethod
-    def get(cls):
-        """Return the per-thread (SnmpEngine, loop) pair."""
-        if not hasattr(cls._tls, "engine"):
+    def loop(cls):
+        """Return the per-thread event loop, creating one if needed."""
+        if not hasattr(cls._tls, "loop"):
             cls._tls.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(cls._tls.loop)
-            cls._tls.engine = SnmpEngine()
             cls._tls.guard = _LoopGuard(cls._tls.loop)
-        return cls._tls.engine, cls._tls.loop
+        return cls._tls.loop
+
+    @classmethod
+    def dispatcher(cls):
+        """Return the per-thread v1arch SnmpDispatcher."""
+        cls.loop()
+        if not hasattr(cls._tls, "dispatcher"):
+            cls._tls.dispatcher = v1.SnmpDispatcher()
+        return cls._tls.dispatcher
+
+    @classmethod
+    def engine(cls):
+        """Return the per-thread v3arch SnmpEngine."""
+        cls.loop()
+        if not hasattr(cls._tls, "engine"):
+            cls._tls.engine = v3.SnmpEngine()
+        return cls._tls.engine
 
 
 class Session:
@@ -139,8 +147,7 @@ class Session:
 
     def _run(self, coro):
         """Run an async coroutine synchronously."""
-        _, loop = _SnimpyEngine.get()
-        return loop.run_until_complete(coro)
+        return _SnimpyEngine.loop().run_until_complete(coro)
 
     def __init__(self, host,
                  community="public", version=2,
@@ -194,50 +201,67 @@ class Session:
         self._host = host
         self._version = version
         self._none = none
-        self._engine, _ = _SnimpyEngine.get()
-        self._contextname = contextname if version == 3 else None
         if version == 1 and none:
             raise ValueError("None-GET requests not compatible with SNMPv1")
 
-        # Put authentication stuff in self._auth
+        # Put authentication stuff in self._auth and select backend
         if version in [1, 2]:
-            self._auth = CommunityData(
-                community[0:30], community, version - 1)
+            self._auth = v1.CommunityData(community, mpModel=version - 1)
+            self._cmd_args = (_SnimpyEngine.dispatcher(), self._auth)
+            self._get_cmd = v1.get_cmd
+            self._set_cmd = v1.set_cmd
+            self._walk_cmd = v1.walk_cmd
+            self._bulk_walk_cmd = v1.bulk_walk_cmd
+            UdpTarget = v1.UdpTransportTarget
+            Udp6Target = v1.Udp6TransportTarget
         elif version == 3:
             if secname is None:
                 secname = community
             try:
                 authprotocol = {
-                    None: usmNoAuthProtocol,
-                    "MD5": usmHMACMD5AuthProtocol,
-                    "SHA": usmHMACSHAAuthProtocol,
-                    "SHA1": usmHMACSHAAuthProtocol,
-                    "SHA224": usmHMAC128SHA224AuthProtocol,
-                    "SHA256": usmHMAC192SHA256AuthProtocol,
-                    "SHA384": usmHMAC256SHA384AuthProtocol,
-                    "SHA512": usmHMAC384SHA512AuthProtocol,
+                    None: v3.usmNoAuthProtocol,
+                    "MD5": v3.usmHMACMD5AuthProtocol,
+                    "SHA": v3.usmHMACSHAAuthProtocol,
+                    "SHA1": v3.usmHMACSHAAuthProtocol,
+                    "SHA224": v3.usmHMAC128SHA224AuthProtocol,
+                    "SHA256": v3.usmHMAC192SHA256AuthProtocol,
+                    "SHA384": v3.usmHMAC256SHA384AuthProtocol,
+                    "SHA512": v3.usmHMAC384SHA512AuthProtocol,
                 }[authprotocol]
             except KeyError:
                 raise ValueError("{} is not an acceptable authentication "
                                  "protocol".format(authprotocol))
             try:
                 privprotocol = {
-                    None: usmNoPrivProtocol,
-                    "DES": usmDESPrivProtocol,
-                    "3DES": usm3DESEDEPrivProtocol,
-                    "AES": usmAesCfb128Protocol,
-                    "AES128": usmAesCfb128Protocol,
-                    "AES192": usmAesCfb192Protocol,
-                    "AES256": usmAesCfb256Protocol,
+                    None: v3.usmNoPrivProtocol,
+                    "DES": v3.usmDESPrivProtocol,
+                    "3DES": v3.usm3DESEDEPrivProtocol,
+                    "AES": v3.usmAesCfb128Protocol,
+                    "AES128": v3.usmAesCfb128Protocol,
+                    "AES192": v3.usmAesCfb192Protocol,
+                    "AES256": v3.usmAesCfb256Protocol,
                 }[privprotocol]
             except KeyError:
                 raise ValueError("{} is not an acceptable privacy "
                                  "protocol".format(privprotocol))
-            self._auth = UsmUserData(secname,
-                                     authpassword,
-                                     privpassword,
-                                     authprotocol,
-                                     privprotocol)
+            self._auth = v3.UsmUserData(secname,
+                                        authpassword,
+                                        privpassword,
+                                        authprotocol,
+                                        privprotocol)
+            if contextname:
+                contextdata = v3.ContextData(
+                    contextName=rfc1902.OctetString(contextname))
+            else:
+                contextdata = v3.ContextData()
+            self._cmd_args = (_SnimpyEngine.engine(), self._auth)
+            self._contextdata = contextdata
+            self._get_cmd = v3.get_cmd
+            self._set_cmd = v3.set_cmd
+            self._walk_cmd = v3.walk_cmd
+            self._bulk_walk_cmd = v3.bulk_walk_cmd
+            UdpTarget = v3.UdpTransportTarget
+            Udp6Target = v3.Udp6TransportTarget
         else:
             raise ValueError("unsupported SNMP version {}".format(version))
 
@@ -254,34 +278,23 @@ class Session:
             port = 161
         if mo.group("ipv6"):
             self._transport = self._run(
-                Udp6TransportTarget.create((mo.group("ipv6"), port)))
+                Udp6Target.create((mo.group("ipv6"), port)))
         elif mo.group("ipv4"):
             self._transport = self._run(
-                UdpTransportTarget.create((mo.group("ipv4"), port)))
+                UdpTarget.create((mo.group("ipv4"), port)))
         else:
             results = socket.getaddrinfo(mo.group("any"),
                                          port,
                                          0,
                                          socket.SOCK_DGRAM,
                                          socket.IPPROTO_UDP)
-            # We should try to connect to each result to determine if
-            # the given family is available. However, we cannot do
-            # that over UDP. Let's implement a safe choice. If we have
-            # an IPv4 address, use that. If not, use IPv6. If we want
-            # to add an option to force IPv6, it is a good place.
             if [x for x in results if x[0] == socket.AF_INET]:
                 self._transport = self._run(
-                    UdpTransportTarget.create((mo.group("any"), port)))
+                    UdpTarget.create((mo.group("any"), port)))
             else:
                 self._transport = self._run(
-                    Udp6TransportTarget.create((mo.group("any"), port)))
-
-        # Context data
-        if self._contextname:
-            self._contextdata = ContextData(
-                contextName=rfc1902.OctetString(self._contextname))
-        else:
-            self._contextdata = ContextData()
+                    Udp6Target.create((mo.group("any"), port)))
+        self._cmd_args += (self._transport,)
 
         # Bulk stuff
         self.bulk = bulk
@@ -316,6 +329,12 @@ class Session:
             value = value.getOid()
         except AttributeError:
             pass
+        if self._none:
+            if isinstance(value, rfc1905.NoSuchObject):
+                return None
+            if isinstance(value, rfc1905.NoSuchInstance):
+                return None
+        self._check_exception(value)
         convertors = {rfc1902.Integer: int,
                       rfc1902.Integer32: int,
                       rfc1902.OctetString: bytes,
@@ -327,15 +346,21 @@ class Session:
                       rfc1902.TimeTicks: int,
                       rfc1902.Bits: str,
                       rfc1902.Opaque: str,
-                      rfc1902.univ.ObjectIdentifier: tuple}
-        if self._none:
-            convertors[rfc1905.NoSuchObject] = lambda x: None
-            convertors[rfc1905.NoSuchInstance] = lambda x: None
+                      rfc1902.univ.ObjectIdentifier: tuple,
+                      # v1arch returns raw pyasn1 types
+                      univ.Integer: int,
+                      univ.OctetString: bytes,
+                      univ.ObjectIdentifier: tuple}
         for cl, fn in convertors.items():
             if isinstance(value, cl):
                 return fn(value)
-        self._check_exception(value)
         raise NotImplementedError("unable to convert {}".format(repr(value)))
+
+    def _extra_args(self):
+        """Return version-specific extra args (contextData for v3)."""
+        if self._version == 3:
+            return (self._contextdata,)
+        return ()
 
     def get(self, *oids):
         """Retrieve an OID value using GET.
@@ -345,8 +370,8 @@ class Session:
         """
         objecttypes = [ObjectType(ObjectIdentity(oid)) for oid in oids]
         errorIndication, errorStatus, errorIndex, varBinds = self._run(
-            get_cmd(self._engine, self._auth, self._transport,
-                    self._contextdata, *objecttypes, lookupMib=False))
+            self._get_cmd(*self._cmd_args, *self._extra_args(),
+                          *objecttypes, lookupMib=False))
         self._check_error(errorIndication, errorStatus)
         results = [(tuple(name), self._convert(val))
                    for name, val in varBinds]
@@ -358,9 +383,8 @@ class Session:
         """Collect results from GETNEXT-based walk."""
         results = []
         for oid in oids:
-            walker = walk_cmd(
-                self._engine, self._auth, self._transport,
-                self._contextdata,
+            walker = self._walk_cmd(
+                *self._cmd_args, *self._extra_args(),
                 ObjectType(ObjectIdentity(oid)),
                 lookupMib=False, lexicographicMode=False)
             async for result in walker:
@@ -374,9 +398,8 @@ class Session:
         """Collect results from GETBULK-based walk."""
         results = []
         for oid in oids:
-            walker = bulk_walk_cmd(
-                self._engine, self._auth, self._transport,
-                self._contextdata, 0, bulk,
+            walker = self._bulk_walk_cmd(
+                *self._cmd_args, *self._extra_args(), 0, bulk,
                 ObjectType(ObjectIdentity(oid)),
                 lookupMib=False, lexicographicMode=False)
             async for result in walker:
@@ -441,8 +464,8 @@ class Session:
         objecttypes = [ObjectType(ObjectIdentity(oid), val.pack())
                        for oid, val in zip(args[0::2], args[1::2])]
         errorIndication, errorStatus, errorIndex, varBinds = self._run(
-            set_cmd(self._engine, self._auth, self._transport,
-                    self._contextdata, *objecttypes, lookupMib=False))
+            self._set_cmd(*self._cmd_args, *self._extra_args(),
+                          *objecttypes, lookupMib=False))
         self._check_error(errorIndication, errorStatus)
         results = [(tuple(name), self._convert(val))
                    for name, val in varBinds]
