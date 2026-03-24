@@ -32,7 +32,6 @@ import inspect
 import threading
 import asyncio
 import ipaddress
-import pysnmp.hlapi.v1arch.asyncio as v1
 import pysnmp.hlapi.v3arch.asyncio as v3
 from pyasn1.type import univ
 from pysnmp.proto import rfc1902, rfc1905
@@ -123,14 +122,6 @@ class _SnimpyEngine:
         return cls._tls.loop
 
     @classmethod
-    def dispatcher(cls):
-        """Return the per-thread v1arch SnmpDispatcher."""
-        cls.loop()
-        if not hasattr(cls._tls, "dispatcher"):
-            cls._tls.dispatcher = v1.SnmpDispatcher()
-        return cls._tls.dispatcher
-
-    @classmethod
     def engine(cls):
         """Return the per-thread v3arch SnmpEngine."""
         cls.loop()
@@ -206,14 +197,15 @@ class Session:
 
         # Put authentication stuff in self._auth and select backend
         if version in [1, 2]:
-            self._auth = v1.CommunityData(community, mpModel=version - 1)
-            self._cmd_args = (_SnimpyEngine.dispatcher(), self._auth)
-            self._get_cmd = v1.get_cmd
-            self._set_cmd = v1.set_cmd
-            self._walk_cmd = v1.walk_cmd
-            self._bulk_walk_cmd = v1.bulk_walk_cmd
-            UdpTarget = v1.UdpTransportTarget
-            Udp6Target = v1.Udp6TransportTarget
+            self._auth = v3.CommunityData(community, mpModel=version - 1)
+            self._contextdata = v3.ContextData()
+            self._cmd_args = (_SnimpyEngine.engine(), self._auth)
+            self._get_cmd = v3.get_cmd
+            self._set_cmd = v3.set_cmd
+            self._walk_cmd = v3.walk_cmd
+            self._bulk_walk_cmd = v3.bulk_walk_cmd
+            UdpTarget = v3.UdpTransportTarget
+            Udp6Target = v3.Udp6TransportTarget
         elif version == 3:
             if secname is None:
                 secname = community
@@ -356,11 +348,6 @@ class Session:
                 return fn(value)
         raise NotImplementedError("unable to convert {}".format(repr(value)))
 
-    def _extra_args(self):
-        """Return version-specific extra args (contextData for v3)."""
-        if self._version == 3:
-            return (self._contextdata,)
-        return ()
 
     def get(self, *oids):
         """Retrieve an OID value using GET.
@@ -370,7 +357,7 @@ class Session:
         """
         objecttypes = [ObjectType(ObjectIdentity(oid)) for oid in oids]
         errorIndication, errorStatus, errorIndex, varBinds = self._run(
-            self._get_cmd(*self._cmd_args, *self._extra_args(),
+            self._get_cmd(*self._cmd_args, self._contextdata,
                           *objecttypes, lookupMib=False))
         self._check_error(errorIndication, errorStatus)
         results = [(tuple(name), self._convert(val))
@@ -379,37 +366,15 @@ class Session:
             raise SNMPException("empty answer")
         return tuple(results)
 
-    @property
-    def _request_timeout(self):
-        """Upper bound for a single SNMP request (seconds).
-
-        pysnmp v1arch set_cmd/next_cmd/bulk_cmd may hang forever on
-        timeout due to a missing RequestTimedOut guard in their
-        callbacks (fixed upstream in lextudio/pysnmp#225).  This
-        value is used with asyncio.wait_for as a safety net.
-        """
-        return self._transport.timeout * (self._transport.retries + 1) + 1
-
     async def _walk_async(self, *oids):
         """Collect results from GETNEXT-based walk."""
         results = []
-        timeout = self._request_timeout
         for oid in oids:
             walker = self._walk_cmd(
-                *self._cmd_args, *self._extra_args(),
+                *self._cmd_args, self._contextdata,
                 ObjectType(ObjectIdentity(oid)),
                 lookupMib=False, lexicographicMode=False)
-            aiter = walker.__aiter__()
-            while True:
-                try:
-                    result = await asyncio.wait_for(
-                        aiter.__anext__(),
-                        timeout=timeout)
-                except StopAsyncIteration:
-                    break
-                except asyncio.TimeoutError:
-                    raise SNMPException(
-                        "No SNMP response received before timeout")
+            async for result in walker:
                 errorIndication, errorStatus, errorIndex, varBinds = result
                 self._check_error(errorIndication, errorStatus)
                 for name, val in varBinds:
@@ -419,23 +384,12 @@ class Session:
     async def _bulkwalk_async(self, bulk, *oids):
         """Collect results from GETBULK-based walk."""
         results = []
-        timeout = self._request_timeout
         for oid in oids:
             walker = self._bulk_walk_cmd(
-                *self._cmd_args, *self._extra_args(), 0, bulk,
+                *self._cmd_args, self._contextdata, 0, bulk,
                 ObjectType(ObjectIdentity(oid)),
                 lookupMib=False, lexicographicMode=False)
-            aiter = walker.__aiter__()
-            while True:
-                try:
-                    result = await asyncio.wait_for(
-                        aiter.__anext__(),
-                        timeout=timeout)
-                except StopAsyncIteration:
-                    break
-                except asyncio.TimeoutError:
-                    raise SNMPException(
-                        "No SNMP response received before timeout")
+            async for result in walker:
                 errorIndication, errorStatus, errorIndex, varBinds = result
                 self._check_error(errorIndication, errorStatus)
                 for name, val in varBinds:
@@ -482,16 +436,6 @@ class Session:
                 if (len(noid) >= len(oid) and
                     noid[:len(oid)] == oid[:len(oid)]))
 
-    async def _set_async(self, *objecttypes):
-        """Run a SET command with a timeout guard."""
-        try:
-            return await asyncio.wait_for(
-                self._set_cmd(*self._cmd_args, *self._extra_args(),
-                              *objecttypes, lookupMib=False),
-                timeout=self._request_timeout)
-        except asyncio.TimeoutError:
-            raise SNMPException("No SNMP response received before timeout")
-
     def set(self, *args):
         """Set an OID value using SET. This function takes an odd number of
         arguments. They are working by pair. The first member is an
@@ -506,7 +450,8 @@ class Session:
         objecttypes = [ObjectType(ObjectIdentity(oid), val.pack())
                        for oid, val in zip(args[0::2], args[1::2])]
         errorIndication, errorStatus, errorIndex, varBinds = self._run(
-            self._set_async(*objecttypes))
+            self._set_cmd(*self._cmd_args, self._contextdata,
+                          *objecttypes, lookupMib=False))
         self._check_error(errorIndication, errorStatus)
         results = [(tuple(name), self._convert(val))
                    for name, val in varBinds]
