@@ -379,15 +379,37 @@ class Session:
             raise SNMPException("empty answer")
         return tuple(results)
 
+    @property
+    def _request_timeout(self):
+        """Upper bound for a single SNMP request (seconds).
+
+        pysnmp v1arch set_cmd/next_cmd/bulk_cmd may hang forever on
+        timeout due to a missing RequestTimedOut guard in their
+        callbacks (fixed upstream in lextudio/pysnmp#225).  This
+        value is used with asyncio.wait_for as a safety net.
+        """
+        return self._transport.timeout * (self._transport.retries + 1) + 1
+
     async def _walk_async(self, *oids):
         """Collect results from GETNEXT-based walk."""
         results = []
+        timeout = self._request_timeout
         for oid in oids:
             walker = self._walk_cmd(
                 *self._cmd_args, *self._extra_args(),
                 ObjectType(ObjectIdentity(oid)),
                 lookupMib=False, lexicographicMode=False)
-            async for result in walker:
+            aiter = walker.__aiter__()
+            while True:
+                try:
+                    result = await asyncio.wait_for(
+                        aiter.__anext__(),
+                        timeout=timeout)
+                except StopAsyncIteration:
+                    break
+                except asyncio.TimeoutError:
+                    raise SNMPException(
+                        "No SNMP response received before timeout")
                 errorIndication, errorStatus, errorIndex, varBinds = result
                 self._check_error(errorIndication, errorStatus)
                 for name, val in varBinds:
@@ -397,12 +419,23 @@ class Session:
     async def _bulkwalk_async(self, bulk, *oids):
         """Collect results from GETBULK-based walk."""
         results = []
+        timeout = self._request_timeout
         for oid in oids:
             walker = self._bulk_walk_cmd(
                 *self._cmd_args, *self._extra_args(), 0, bulk,
                 ObjectType(ObjectIdentity(oid)),
                 lookupMib=False, lexicographicMode=False)
-            async for result in walker:
+            aiter = walker.__aiter__()
+            while True:
+                try:
+                    result = await asyncio.wait_for(
+                        aiter.__anext__(),
+                        timeout=timeout)
+                except StopAsyncIteration:
+                    break
+                except asyncio.TimeoutError:
+                    raise SNMPException(
+                        "No SNMP response received before timeout")
                 errorIndication, errorStatus, errorIndex, varBinds = result
                 self._check_error(errorIndication, errorStatus)
                 for name, val in varBinds:
@@ -449,8 +482,17 @@ class Session:
                 if (len(noid) >= len(oid) and
                     noid[:len(oid)] == oid[:len(oid)]))
 
-    def set(self, *args):
+    async def _set_async(self, *objecttypes):
+        """Run a SET command with a timeout guard."""
+        try:
+            return await asyncio.wait_for(
+                self._set_cmd(*self._cmd_args, *self._extra_args(),
+                              *objecttypes, lookupMib=False),
+                timeout=self._request_timeout)
+        except asyncio.TimeoutError:
+            raise SNMPException("No SNMP response received before timeout")
 
+    def set(self, *args):
         """Set an OID value using SET. This function takes an odd number of
         arguments. They are working by pair. The first member is an
         OID and the second one is :class:`basictypes.Type` instace
@@ -464,8 +506,7 @@ class Session:
         objecttypes = [ObjectType(ObjectIdentity(oid), val.pack())
                        for oid, val in zip(args[0::2], args[1::2])]
         errorIndication, errorStatus, errorIndex, varBinds = self._run(
-            self._set_cmd(*self._cmd_args, *self._extra_args(),
-                          *objecttypes, lookupMib=False))
+            self._set_async(*objecttypes))
         self._check_error(errorIndication, errorStatus)
         results = [(tuple(name), self._convert(val))
                    for name, val in varBinds]
