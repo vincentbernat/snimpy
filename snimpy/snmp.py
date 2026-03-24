@@ -348,7 +348,6 @@ class Session:
                 return fn(value)
         raise NotImplementedError("unable to convert {}".format(repr(value)))
 
-
     def get(self, *oids):
         """Retrieve an OID value using GET.
 
