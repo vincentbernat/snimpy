@@ -3,6 +3,11 @@
 History
 -------
 
+1.1.2 (2026-02-28)
+++++++++++++++++++
+
+* Fix timeout handling for SNMPv1 and SNMPv2c walk and set operations.
+
 1.1.1 (2026-02-20)
 ++++++++++++++++++
 
