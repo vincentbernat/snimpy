@@ -167,11 +167,11 @@ class TestAgent:
             # IF-MIB::ifInOctets
             MibTableColumn((1, 3, 6, 1, 2, 1, 2, 2, 1, 10), v2c.Integer()),
             RandomMibScalarInstance(
-                (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (1,), v2c.Gauge32()),
+                (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (1,), v2c.Gauge32(0)),
             RandomMibScalarInstance(
-                (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (2,), v2c.Gauge32()),
+                (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (2,), v2c.Gauge32(0)),
             RandomMibScalarInstance(
-                (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (3,), v2c.Gauge32()),
+                (1, 3, 6, 1, 2, 1, 2, 2, 1, 10), (3,), v2c.Gauge32(0)),
 
             # IF-MIB::ifRcvAddressTable
             MibTable((1, 3, 6, 1, 2, 1, 31, 1, 4)),
