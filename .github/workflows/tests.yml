@@ -37,6 +37,7 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
       - name: Install non-Python dependencies
         run: >
           sudo apt -qy update;
